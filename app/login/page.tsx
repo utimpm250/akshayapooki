@@ -59,29 +59,11 @@ export default function LoginPage() {
     if (isValid) {
       // Store current logged-in user details properly so dashboard displays the exact staff name
       localStorage.setItem('loggedInUser', JSON.stringify({ username: displayName, role: assignedRole }));
-      
-      // Also record attendance log automatically upon successful login
-      try {
-        const existingLogs = JSON.parse(localStorage.getItem('staff_attendance_logs') || '[]');
-        const todayStr = new Date().toISOString().split('T')[0];
-        const alreadyLoggedToday = existingLogs.some((log: any) => 
-          log.staffName?.toLowerCase() === displayName.toLowerCase() && 
-          new Date(log.timestamp || log.date).toISOString().split('T')[0] === todayStr
-        );
-
-        if (!alreadyLoggedToday) {
-          existingLogs.push({
-            id: Date.now().toString(),
-            staffName: displayName,
-            role: assignedRole,
-            timestamp: new Date().toISOString(),
-            loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          });
-          localStorage.setItem('staff_attendance_logs', JSON.stringify(existingLogs));
-        }
-      } catch (err) {
-        console.error("Error saving attendance log", err);
-      }
+      // Save today's login session date
+localStorage.setItem(
+  "loginSessionDate",
+  new Date().toISOString().split("T")[0]
+);
 
       // Redirect to dashboard
       router.push('/dashboard');

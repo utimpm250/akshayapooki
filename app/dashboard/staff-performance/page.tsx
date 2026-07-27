@@ -294,7 +294,7 @@ const monthNames = [
 
       const isPresent = !!dayLog;
       const loginTime = dayLog ? (dayLog.loginTime || new Date(dayLog.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : null;
-
+const logoutTime = dayLog?.logoutTime || "--";
       daysGrid.push(
         <div key={day} className={`h-24 border rounded-xl p-2.5 flex flex-col justify-between transition ${isPresent ? 'bg-emerald-50/40 border-emerald-200' : 'bg-red-50/20 border-red-100'}`}>
           <div className="flex justify-between items-center">
@@ -306,7 +306,9 @@ const monthNames = [
               <p className="text-[10px] font-bold text-emerald-800 flex items-center gap-1">
                 <Clock size={10} /> In: {loginTime}
               </p>
-              <p className="text-[9px] text-slate-400">Out: --</p>
+              <p className="text-[9px] text-slate-400">
+  Out: {logoutTime}
+</p>
             </div>
           ) : (
             <span className="text-[10px] text-red-400 font-medium italic">Absent</span>

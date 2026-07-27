@@ -309,10 +309,45 @@ const togglePinSidebar = () => {
 
   localStorage.setItem(pinKey, String(newValue));
 };
-  const handleLogout = () => {
-    localStorage.removeItem("loggedInUser");
-    router.push("/login");
-  };
+const handleLogout = () => {
+  try {
+    const logs = JSON.parse(
+      localStorage.getItem("staff_attendance_logs") || "[]"
+    );
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const index = logs.findIndex((log: any) => {
+      const logDate = new Date(log.timestamp)
+        .toISOString()
+        .split("T")[0];
+
+      return (
+        log.staffName?.toLowerCase() === currentUser.username.toLowerCase() &&
+        logDate === today
+      );
+    });
+
+    if (index !== -1) {
+      logs[index].logoutTime = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      localStorage.setItem(
+        "staff_attendance_logs",
+        JSON.stringify(logs)
+      );
+    }
+  } catch (err) {
+    console.error("Error saving logout time", err);
+  }
+
+  localStorage.removeItem("loggedInUser");
+  localStorage.removeItem("loginSessionDate");
+
+  router.push("/login");
+};
 
   const isActive = (path: string) =>
     pathname === path;
