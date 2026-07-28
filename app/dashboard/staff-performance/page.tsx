@@ -415,16 +415,6 @@ export default function StaffPerformancePage() {
               </option>
             ))}
           </select>
-
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) =>
-              setSearchQuery(e.target.value)
-            }
-            placeholder="Search customer or staff..."
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500"
-          />
         </div>
       </div>
 

@@ -93,9 +93,9 @@ const saveHoliday = () => {
     JSON.stringify(updated)
   );
 
-  setHolidayList(updated);
+setHolidayList(updated);
 
-  window.location.reload();
+onClose();
 };
 
   const deleteHoliday = () => {
@@ -113,9 +113,11 @@ const saveHoliday = () => {
       JSON.stringify(updated)
     );
 
-    setHolidayList(updated);
+setHolidayList(updated);
 
-    window.location.reload();
+setEditing(true);
+
+onClose();
 
   };
 
