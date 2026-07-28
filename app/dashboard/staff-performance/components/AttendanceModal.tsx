@@ -19,6 +19,7 @@ interface AttendanceModalProps {
   date: Date | null;
   record: PerformanceRecord | null;
   holiday: Holiday | null;
+  onHolidayChange: () => void;
 }
 
 export default function AttendanceModal({
@@ -27,6 +28,7 @@ export default function AttendanceModal({
   date,
   record,
   holiday,
+  onHolidayChange,
 }: AttendanceModalProps) {
 
   const [holidayName, setHolidayName] =
@@ -95,6 +97,8 @@ const saveHoliday = () => {
 
 setHolidayList(updated);
 
+onHolidayChange();
+
 onClose();
 };
 
@@ -115,10 +119,9 @@ onClose();
 
 setHolidayList(updated);
 
-setEditing(true);
+onHolidayChange();
 
 onClose();
-
   };
 
   return (

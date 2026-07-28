@@ -532,20 +532,21 @@ export default function StaffPerformancePage() {
         </div>
       </div>
 
-      <AttendanceModal
-        open={attendanceModalOpen}
-        onClose={closeAttendanceModal}
-        date={selectedDate}
-        record={selectedRecord}
-        holiday={selectedHoliday}
-      />
+<AttendanceModal
+  open={attendanceModalOpen}
+  onClose={closeAttendanceModal}
+  date={selectedDate}
+  record={selectedRecord}
+  holiday={selectedHoliday}
+  onHolidayChange={() => {
+    setHolidays(loadHolidays());
 
-<SalaryHistoryModal
-  isOpen={salaryHistoryOpen}
-  salaryHistory={selectedSalaryHistory}
-  onClose={() =>
-    setSalaryHistoryOpen(false)
-  }
+    if (selectedDate) {
+      setSelectedHoliday(
+        getHoliday(loadHolidays(), selectedDate)
+      );
+    }
+  }}
 />
     </div>
   );
