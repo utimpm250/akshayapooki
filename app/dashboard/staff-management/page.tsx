@@ -13,15 +13,74 @@ interface Staff {
   phone: string;
   role: string;
   salary: number;
+  password: string;
 }
 
 const INITIAL_STAFF: Staff[] = [
-  { id: '1', staffId: '#1', name: 'Admin User', email: 'admin@gmail.com', phone: '8589868773', role: 'Admin', salary: 10000 },
-  { id: '2', staffId: '#2', name: 'FASNIL', email: 'fasnil@gmail.com', phone: '9544739520', role: 'Accountant', salary: 10000 },
-  { id: '3', staffId: '#3', name: 'SUMAYYA', email: 'sumayya@gmail.com', phone: '7025400130', role: 'Staff', salary: 10000 },
-  { id: '4', staffId: '#4', name: 'SHEEJA', email: 'sheeja@gmail.com', phone: '8907428080', role: 'Staff', salary: 10000 },
-  { id: '5', staffId: '#5', name: 'SAHLA', email: 'sahla@gmail.com', phone: '9037977659', role: 'Staff', salary: 10000 },
-  { id: '6', staffId: '#6', name: 'test', email: 'test@gmail.com', phone: '9876543210', role: 'Staff', salary: 10000 },
+  {
+  id: '1',
+  staffId: '#1',
+  name: 'Admin User',
+  email: 'admin@gmail.com',
+  phone: '8589868773',
+  role: 'Admin',
+  salary: 10000,
+  password: 'admin123'
+}
+{ 
+  id: '2',
+  staffId: '#2',
+  name: 'FASNIL',
+  email: 'fasnil@gmail.com',
+  phone: '9544739520',
+  role: 'Accountant',
+  salary: 10000,
+  password: 'fasnil123'
+},
+
+{
+  id: '3',
+  staffId: '#3',
+  name: 'SUMAYYA',
+  email: 'sumayya@gmail.com',
+  phone: '7025400130',
+  role: 'Staff',
+  salary: 10000,
+  password: 'sumayya123'
+},
+
+{
+  id: '4',
+  staffId: '#4',
+  name: 'SHEEJA',
+  email: 'sheeja@gmail.com',
+  phone: '8907428080',
+  role: 'Staff',
+  salary: 10000,
+  password: 'sheeja123'
+},
+
+{
+  id: '5',
+  staffId: '#5',
+  name: 'SAHLA',
+  email: 'sahla@gmail.com',
+  phone: '9037977659',
+  role: 'Staff',
+  salary: 10000,
+  password: 'sahla123'
+},
+
+{
+  id: '6',
+  staffId: '#6',
+  name: 'test',
+  email: 'test@gmail.com',
+  phone: '9876543210',
+  role: 'Staff',
+  salary: 10000,
+  password: 'test123'
+},
 ];
 
 export default function StaffManagementPage() {
@@ -46,7 +105,7 @@ export default function StaffManagementPage() {
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editRole, setEditRole] = useState('');
-  const [editSalary, setEditSalary] = useState(0);
+  const [editPassword, setEditPassword] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem('smart_akshaya_staff');
@@ -77,15 +136,18 @@ export default function StaffManagementPage() {
     e.preventDefault();
     if (!newName.trim()) return;
 
-    const newStaffMember: Staff = {
-      id: Date.now().toString(),
-      staffId: `#${staffList.length + 1}`,
-      name: newName,
-      email: newEmail || 'N/A',
-      phone: newPhone || 'N/A',
-      role: newRole,
-      salary: Number(newSalary) || 0
-    };
+const newStaffMember: Staff = {
+  id: Date.now().toString(),
+  staffId: `#${staffList.length + 1}`,
+  name: newName,
+  email: newEmail || 'N/A',
+  phone: newPhone || 'N/A',
+  role: newRole,
+  salary: Number(newSalary) || 0,
+  password:
+    newPassword ||
+    `${newName.split(" ")[0].toLowerCase()}akshaya`
+};
 
     const updatedList = [newStaffMember, ...staffList];
     setStaffList(updatedList);
@@ -106,7 +168,7 @@ export default function StaffManagementPage() {
     setEditEmail(staff.email);
     setEditPhone(staff.phone);
     setEditRole(staff.role);
-    setEditSalary(staff.salary);
+    setEditPassword(staff.password || "");
     setShowEditModal(true);
   };
 
@@ -116,14 +178,15 @@ export default function StaffManagementPage() {
 
     const updatedList = staffList.map(s => {
       if (s.id === selectedStaff.id) {
-        return {
-          ...s,
-          name: editName,
-          email: editEmail,
-          phone: editPhone,
-          role: editRole,
-          salary: Number(editSalary)
-        };
+return {
+  ...s,
+  name: editName,
+  email: editEmail,
+  phone: editPhone,
+  role: editRole,
+  salary: Number(editSalary),
+  password: editPassword
+};
       }
       return s;
     });
@@ -510,11 +573,13 @@ export default function StaffManagementPage() {
                 </div>
                 <div className="relative mt-1.5">
                   <Key size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="password"
-                    placeholder="Leave empty to keep current"
-                    className="w-full border border-slate-200 rounded-xl pl-10 pr-10 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
-                  />
+<input
+  type="password"
+  placeholder="Enter new password"
+  className="w-full border border-slate-200 rounded-xl pl-10 pr-10 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+  value={editPassword}
+  onChange={(e) => setEditPassword(e.target.value)}
+/>
                   <Eye size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-slate-600" />
                 </div>
               </div>
