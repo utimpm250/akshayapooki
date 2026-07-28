@@ -16,17 +16,25 @@ interface SummaryCardsProps {
 
   // Daily
   dailyDate: Date;
-  setDailyDate: React.Dispatch<React.SetStateAction<Date>>;
+  setDailyDate: React.Dispatch<
+    React.SetStateAction<Date>
+  >;
 
   // Monthly
   selectedMonth: number;
   selectedYear: number;
-  setSelectedMonth: React.Dispatch<React.SetStateAction<number>>;
-  setSelectedYear: React.Dispatch<React.SetStateAction<number>>;
+  setSelectedMonth: React.Dispatch<
+    React.SetStateAction<number>
+  >;
+  setSelectedYear: React.Dispatch<
+    React.SetStateAction<number>
+  >;
 
   // Yearly
   yearlyYear: number;
-  setYearlyYear: React.Dispatch<React.SetStateAction<number>>;
+  setYearlyYear: React.Dispatch<
+    React.SetStateAction<number>
+  >;
 }
 
 export default function SummaryCards({
@@ -65,77 +73,106 @@ export default function SummaryCards({
      DAILY SUMMARY
   ====================================================== */
 
-  const cardDailyRecords = records.filter((record) => {
-    const matchesStaff =
-      selectedStaff === "All" ||
-      record.staffName?.toLowerCase() ===
-        selectedStaff.toLowerCase();
+  const cardDailyRecords = records.filter(
+    (record) => {
 
-    const date = new Date(record.timestamp);
+      const matchesStaff =
+        selectedStaff === "All" ||
+        record.staffName?.toLowerCase() ===
+          selectedStaff.toLowerCase();
 
-    return (
-      matchesStaff &&
-      date.getDate() === dailyDate.getDate() &&
-      date.getMonth() === dailyDate.getMonth() &&
-      date.getFullYear() === dailyDate.getFullYear()
+      const date = new Date(
+        record.timestamp
+      );
+
+      return (
+        matchesStaff &&
+        date.getDate() ===
+          dailyDate.getDate() &&
+        date.getMonth() ===
+          dailyDate.getMonth() &&
+        date.getFullYear() ===
+          dailyDate.getFullYear()
+      );
+
+    }
+  );
+
+  const dailyServicesCount =
+    cardDailyRecords.length;
+
+  const dailyDeptFee =
+    cardDailyRecords.reduce(
+      (acc, curr) =>
+        acc +
+        Number(curr.departmentFee || 0),
+      0
     );
-  });
+      const dailyServiceCharge =
+    cardDailyRecords.reduce(
+      (acc, curr) =>
+        acc +
+        Number(curr.serviceCharge || 0),
+      0
+    );
 
-  const dailyServicesCount = cardDailyRecords.length;
+  const dailyGpayUpi =
+    cardDailyRecords.reduce(
+      (acc, curr) =>
+        acc +
+        Number(curr.gpayUpiAmount || 0),
+      0
+    );
 
-  const dailyDeptFee = cardDailyRecords.reduce(
-    (acc, curr) =>
-      acc + Number(curr.departmentFee || 0),
-    0
-  );
+  const dailyOpeningBal =
+    cardDailyRecords.reduce(
+      (acc, curr) =>
+        acc +
+        Number(curr.openingBalance || 0),
+      0
+    );
 
-const dailyServiceCharge = cardDailyRecords.reduce(
-  (acc, curr) =>
-    acc + Number(curr.serviceCharge || 0),
-  0
-);
+  const dailyTotalCash =
+    cardDailyRecords.reduce(
+      (acc, curr) =>
+        acc +
+        Number(curr.totalAmount || 0),
+      0
+    );
 
-const dailyGpayUpi = cardDailyRecords.reduce(
-  (acc, curr) =>
-    acc + Number(curr.gpayUpiAmount || 0),
-  0
-);
-
-const dailyOpeningBal = cardDailyRecords.reduce(
-  (acc, curr) =>
-    acc + Number(curr.openingBalance || 0),
-  0
-);
-
-const dailyTotalCash = cardDailyRecords.reduce(
-  (acc, curr) =>
-    acc + Number(curr.totalAmount || 0),
-  0
-);
-  const dailyCommission = cardDailyRecords.reduce(
-    (acc, curr) =>
-      acc + Number(curr.commission || 0),
-    0
-  );
+  const dailyCommission =
+    cardDailyRecords.reduce(
+      (acc, curr) =>
+        acc +
+        Number(curr.commission || 0),
+      0
+    );
 
   /* ======================================================
      MONTHLY SUMMARY
   ====================================================== */
 
-  const cardMonthlyRecords = records.filter((record) => {
-    const matchesStaff =
-      selectedStaff === "All" ||
-      record.staffName?.toLowerCase() ===
-        selectedStaff.toLowerCase();
+  const cardMonthlyRecords =
+    records.filter((record) => {
 
-    const date = new Date(record.timestamp);
+      const matchesStaff =
+        selectedStaff === "All" ||
+        record.staffName?.toLowerCase() ===
+          selectedStaff.toLowerCase();
 
-    return (
-      matchesStaff &&
-      date.getMonth() === selectedMonth &&
-      date.getFullYear() === selectedYear
-    );
-  });
+      const date = new Date(
+        record.timestamp
+      );
+
+      return (
+        matchesStaff &&
+        date.getMonth() ===
+          selectedMonth &&
+        date.getFullYear() ===
+          selectedYear
+      );
+
+    });
 
   const monthlyServicesCount =
     cardMonthlyRecords.length;
@@ -143,33 +180,37 @@ const dailyTotalCash = cardDailyRecords.reduce(
   const monthlyDeptFee =
     cardMonthlyRecords.reduce(
       (acc, curr) =>
-        acc + Number(curr.departmentFee || 0),
+        acc +
+        Number(curr.departmentFee || 0),
       0
     );
 
   const monthlyServiceCharge =
     cardMonthlyRecords.reduce(
       (acc, curr) =>
-        acc + Number(curr.serviceCharge || 0),
+        acc +
+        Number(curr.serviceCharge || 0),
       0
     );
 
   const monthlyCash =
     cardMonthlyRecords.reduce(
       (acc, curr) =>
-        acc + Number(curr.totalAmount || 0),
+        acc +
+        Number(curr.totalAmount || 0),
       0
     );
 
   const monthlyCommission =
     cardMonthlyRecords.reduce(
       (acc, curr) =>
-        acc + Number(curr.commission || 0),
+        acc +
+        Number(curr.commission || 0),
       0
     );
-
-  const monthlyAttendanceLogs =
+      const monthlyAttendanceLogs =
     attendanceLogs.filter((log) => {
+
       const date = new Date(
         log.date ||
           log.loginTime ||
@@ -177,9 +218,12 @@ const dailyTotalCash = cardDailyRecords.reduce(
       );
 
       return (
-        date.getMonth() === selectedMonth &&
-        date.getFullYear() === selectedYear
+        date.getMonth() ===
+          selectedMonth &&
+        date.getFullYear() ===
+          selectedYear
       );
+
     });
 
   const monthlyPresentDays =
@@ -187,7 +231,8 @@ const dailyTotalCash = cardDailyRecords.reduce(
       (log) =>
         (
           log.status || "present"
-        ).toLowerCase() === "present"
+        ).toLowerCase() ===
+        "present"
     ).length;
 
   const monthlyAbsentDays =
@@ -195,67 +240,80 @@ const dailyTotalCash = cardDailyRecords.reduce(
       (log) =>
         (
           log.status || ""
-        ).toLowerCase() === "absent"
+        ).toLowerCase() ===
+        "absent"
     ).length;
 
   /* ======================================================
      YEARLY SUMMARY
   ====================================================== */
 
-  const cardYearlyRecords = records.filter(
-    (record) => {
+  const cardYearlyRecords =
+    records.filter((record) => {
+
       const matchesStaff =
         selectedStaff === "All" ||
         record.staffName?.toLowerCase() ===
           selectedStaff.toLowerCase();
 
-      const date = new Date(record.timestamp);
+      const date = new Date(
+        record.timestamp
+      );
 
       return (
         matchesStaff &&
-        date.getFullYear() === yearlyYear
+        date.getFullYear() ===
+          yearlyYear
       );
-    }
-  );
-    const yearlyServicesCount =
+
+    });
+
+  const yearlyServicesCount =
     cardYearlyRecords.length;
 
   const yearlyDeptFee =
     cardYearlyRecords.reduce(
       (acc, curr) =>
-        acc + Number(curr.departmentFee || 0),
+        acc +
+        Number(curr.departmentFee || 0),
       0
     );
 
   const yearlyServiceCharge =
     cardYearlyRecords.reduce(
       (acc, curr) =>
-        acc + Number(curr.serviceCharge || 0),
+        acc +
+        Number(curr.serviceCharge || 0),
       0
     );
 
-const yearlyGpayUpi = cardYearlyRecords.reduce(
-  (acc, curr) =>
-    acc + Number(curr.gpayUpiAmount || 0),
-  0
-);
+  const yearlyGpayUpi =
+    cardYearlyRecords.reduce(
+      (acc, curr) =>
+        acc +
+        Number(curr.gpayUpiAmount || 0),
+      0
+    );
+
   const yearlyCash =
     cardYearlyRecords.reduce(
       (acc, curr) =>
-        acc + Number(curr.totalAmount || 0),
+        acc +
+        Number(curr.totalAmount || 0),
       0
     );
 
   const yearlyCommission =
     cardYearlyRecords.reduce(
       (acc, curr) =>
-        acc + Number(curr.commission || 0),
+        acc +
+        Number(curr.commission || 0),
       0
     );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* ===============================
           DAILY PERFORMANCE
       ================================ */}
@@ -264,17 +322,17 @@ const yearlyGpayUpi = cardYearlyRecords.reduce(
 
         <div className="flex justify-between items-center border-b pb-3">
 
-          <h3 className="text-xs font-black uppercase text-slate-700 tracking-wider">
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
             Daily Performance
           </h3>
 
-          <div className="bg-indigo-50 text-indigo-600 p-2 rounded-xl">
+          <div className="rounded-xl bg-indigo-50 p-2 text-indigo-600">
             <Calendar size={16} />
           </div>
 
         </div>
 
-        <div className="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
+        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-2">
 
           <button
             onClick={() => {
@@ -282,7 +340,7 @@ const yearlyGpayUpi = cardYearlyRecords.reduce(
               prev.setDate(prev.getDate() - 1);
               setDailyDate(prev);
             }}
-            className="p-1.5 hover:bg-white rounded-lg text-slate-600 shadow-sm transition"
+            className="rounded-lg p-1.5 text-slate-600 shadow-sm transition hover:bg-white"
           >
             <ChevronLeft size={16} />
           </button>
@@ -301,67 +359,67 @@ const yearlyGpayUpi = cardYearlyRecords.reduce(
               next.setDate(next.getDate() + 1);
               setDailyDate(next);
             }}
-            className="p-1.5 hover:bg-white rounded-lg text-slate-600 shadow-sm transition"
+            className="rounded-lg p-1.5 text-slate-600 shadow-sm transition hover:bg-white"
           >
             <ChevronRight size={16} />
           </button>
 
         </div>
 
-        <div className="text-center py-2">
+        <div className="py-2 text-center">
 
           <h2 className="text-3xl font-black text-slate-900">
             {dailyServicesCount}
           </h2>
 
-          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Total Services
           </p>
 
         </div>
-                <div className="space-y-2.5 text-xs border-t pt-4">
 
-          <div className="flex justify-between text-slate-600 font-medium">
+        <div className="space-y-2.5 border-t pt-4 text-xs">
+
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Dept. Fee</span>
             <span className="font-bold text-slate-900">
               ₹{dailyDeptFee.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Service Charge</span>
             <span className="font-bold text-slate-900">
               ₹{dailyServiceCharge.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>GPay / UPI</span>
             <span className="font-bold text-slate-900">
               ₹{dailyGpayUpi.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Opening Balance</span>
             <span className="font-bold text-slate-900">
               ₹{dailyOpeningBal.toFixed(2)}
             </span>
           </div>
-
-          <div className="flex justify-between text-slate-600 font-medium pt-2 border-t">
+                    <div className="flex justify-between border-t pt-2 font-medium text-slate-600">
 
             <span className="font-black text-slate-800">
               Total Cash
             </span>
 
-            <span className="font-black text-slate-900 text-sm">
+            <span className="text-sm font-black text-slate-900">
               ₹{dailyTotalCash.toFixed(2)}
             </span>
 
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
 
             <span>
               Commission
@@ -385,24 +443,24 @@ const yearlyGpayUpi = cardYearlyRecords.reduce(
 
         <div className="flex justify-between items-center border-b pb-3">
 
-          <h3 className="text-xs font-black uppercase text-slate-700 tracking-wider">
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
             Monthly Performance
           </h3>
 
-          <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
+          <div className="rounded-xl bg-emerald-50 p-2 text-emerald-600">
             <Calendar size={16} />
           </div>
 
         </div>
 
-        <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+        <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2">
 
           <select
             value={selectedMonth}
             onChange={(e) =>
               setSelectedMonth(Number(e.target.value))
             }
-            className="bg-white border border-slate-200 text-xs font-bold rounded-lg p-1.5 outline-none cursor-pointer"
+            className="rounded-lg border border-slate-200 bg-white p-1.5 text-xs font-bold outline-none cursor-pointer"
           >
             {monthNames.map((month, index) => (
               <option
@@ -413,12 +471,13 @@ const yearlyGpayUpi = cardYearlyRecords.reduce(
               </option>
             ))}
           </select>
-                    <select
+
+          <select
             value={selectedYear}
             onChange={(e) =>
               setSelectedYear(Number(e.target.value))
             }
-            className="bg-white border border-slate-200 text-xs font-bold rounded-lg p-1.5 outline-none cursor-pointer"
+            className="rounded-lg border border-slate-200 bg-white p-1.5 text-xs font-bold outline-none cursor-pointer"
           >
             {[2024, 2025, 2026, 2027].map((year) => (
               <option
@@ -432,62 +491,61 @@ const yearlyGpayUpi = cardYearlyRecords.reduce(
 
         </div>
 
-        <div className="text-center py-2">
+        <div className="py-2 text-center">
 
           <h2 className="text-3xl font-black text-slate-900">
             {monthlyServicesCount}
           </h2>
 
-          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Total Services
           </p>
 
         </div>
 
-        <div className="space-y-2.5 text-xs border-t pt-4">
-
-          <div className="flex justify-between text-slate-600 font-medium">
+        <div className="space-y-2.5 border-t pt-4 text-xs">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Dept. Fee</span>
             <span className="font-bold text-slate-900">
               ₹{monthlyDeptFee.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Service Charge</span>
             <span className="font-bold text-slate-900">
               ₹{monthlyServiceCharge.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Present Days</span>
             <span className="font-bold text-emerald-600">
               {monthlyPresentDays}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Absent Days</span>
             <span className="font-bold text-red-600">
               {monthlyAbsentDays}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Cash</span>
             <span className="font-bold text-slate-900">
               ₹{monthlyCash.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium pt-2 border-t">
+          <div className="flex justify-between border-t pt-2 font-medium text-slate-600">
 
             <span className="font-black text-slate-800">
               Commission
             </span>
 
-            <span className="font-black text-emerald-600 text-sm">
+            <span className="text-sm font-black text-emerald-600">
               ₹{monthlyCommission.toFixed(2)}
             </span>
 
@@ -505,23 +563,24 @@ const yearlyGpayUpi = cardYearlyRecords.reduce(
 
         <div className="flex justify-between items-center border-b pb-3">
 
-          <h3 className="text-xs font-black uppercase text-slate-700 tracking-wider">
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
             Yearly Performance
           </h3>
 
-          <div className="bg-amber-50 text-amber-600 p-2 rounded-xl">
+          <div className="rounded-xl bg-amber-50 p-2 text-amber-600">
             <Calendar size={16} />
           </div>
 
         </div>
-                <div className="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
+
+        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-2">
 
           <select
             value={yearlyYear}
             onChange={(e) =>
               setYearlyYear(Number(e.target.value))
             }
-            className="w-full bg-white border border-slate-200 text-xs font-bold rounded-lg p-1.5 outline-none text-center cursor-pointer"
+            className="w-full rounded-lg border border-slate-200 bg-white p-1.5 text-center text-xs font-bold outline-none cursor-pointer"
           >
             {[2024, 2025, 2026, 2027].map((year) => (
               <option
@@ -535,55 +594,55 @@ const yearlyGpayUpi = cardYearlyRecords.reduce(
 
         </div>
 
-        <div className="text-center py-2">
+        <div className="py-2 text-center">
 
           <h2 className="text-3xl font-black text-slate-900">
             {yearlyServicesCount}
           </h2>
 
-          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Total Services
           </p>
 
         </div>
 
-        <div className="space-y-2.5 text-xs border-t pt-4">
+        <div className="space-y-2.5 border-t pt-4 text-xs">
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Dept. Fee</span>
             <span className="font-bold text-slate-900">
               ₹{yearlyDeptFee.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Service Charge</span>
             <span className="font-bold text-slate-900">
               ₹{yearlyServiceCharge.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>GPay / UPI</span>
             <span className="font-bold text-slate-900">
               ₹{yearlyGpayUpi.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium">
+          <div className="flex justify-between font-medium text-slate-600">
             <span>Cash</span>
             <span className="font-bold text-slate-900">
               ₹{yearlyCash.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex justify-between text-slate-600 font-medium pt-2 border-t">
+          <div className="flex justify-between border-t pt-2 font-medium text-slate-600">
 
             <span className="font-black text-slate-800">
               Commission
             </span>
 
-            <span className="font-black text-emerald-600 text-sm">
+            <span className="text-sm font-black text-emerald-600">
               ₹{yearlyCommission.toFixed(2)}
             </span>
 
@@ -594,5 +653,7 @@ const yearlyGpayUpi = cardYearlyRecords.reduce(
       </div>
 
     </div>
+
   );
+
 }

@@ -30,6 +30,8 @@ export default function AttendanceCalendar({
   const month = currentMonth.getMonth();
   const year = currentMonth.getFullYear();
 
+  const today = new Date();
+
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
 
@@ -63,22 +65,36 @@ export default function AttendanceCalendar({
     "December",
   ];
 
+  const years = [];
+
+  for (
+    let y = today.getFullYear() - 5;
+    y <= today.getFullYear() + 5;
+    y++
+  ) {
+    years.push(y);
+  }
+
   const hasAttendance = (date: Date) => {
 
-    const day = date.toISOString().split("T")[0];
+    const day =
+      date.toISOString().split("T")[0];
 
     return records.find(
-      (record) => record.date === day
+      (record) =>
+        record.date === day
     );
 
   };
 
   const isHoliday = (date: Date) => {
 
-    const day = date.toISOString().split("T")[0];
+    const day =
+      date.toISOString().split("T")[0];
 
     return holidays.find(
-      (holiday) => holiday.date === day
+      (holiday) =>
+        holiday.date === day
     );
 
   };
@@ -89,38 +105,117 @@ export default function AttendanceCalendar({
     calendarDays.push(null);
   }
 
-  for (let day = 1; day <= daysInMonth; day++) {
+  for (
+    let day = 1;
+    day <= daysInMonth;
+    day++
+  ) {
     calendarDays.push(
       new Date(year, month, day)
     );
   }
+    return (
 
-  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="flex flex-col gap-4 border-b border-slate-200 p-6 lg:flex-row lg:items-center lg:justify-between">
 
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-        <button
-          onClick={previousMonth}
-          className="p-2 rounded-lg hover:bg-slate-100 transition"
-        >
-          <ChevronLeft size={18} />
-        </button>
+        <div className="flex items-center gap-2">
 
-        <h2 className="text-lg font-bold text-slate-800">
-          {monthNames[month]} {year}
-        </h2>
+          <button
+            onClick={previousMonth}
+            className="rounded-lg border border-slate-200 p-2 hover:bg-slate-100 transition"
+          >
+            <ChevronLeft size={18} />
+          </button>
 
-        <button
-          onClick={nextMonth}
-          className="p-2 rounded-lg hover:bg-slate-100 transition"
-        >
-          <ChevronRight size={18} />
-        </button>
+          <select
+            value={month}
+            onChange={(e) =>
+              setCurrentMonth(
+                new Date(
+                  year,
+                  Number(e.target.value),
+                  1
+                )
+              )
+            }
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
+          >
+            {monthNames.map((name, index) => (
+              <option
+                key={index}
+                value={index}
+              >
+                {name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={year}
+            onChange={(e) =>
+              setCurrentMonth(
+                new Date(
+                  Number(e.target.value),
+                  month,
+                  1
+                )
+              )
+            }
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
+          >
+            {years.map((yr) => (
+              <option
+                key={yr}
+                value={yr}
+              >
+                {yr}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={nextMonth}
+            className="rounded-lg border border-slate-200 p-2 hover:bg-slate-100 transition"
+          >
+            <ChevronRight size={18} />
+          </button>
+
+        </div>
+
+        <div className="flex flex-wrap gap-4 text-xs font-semibold">
+
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-emerald-500"></span>
+            Present
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-slate-300"></span>
+            Absent
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-amber-500"></span>
+            Holiday
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-blue-500"></span>
+            Today
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-slate-100 border"></span>
+            Future
+          </div>
+
+        </div>
 
       </div>
 
-      <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
+      <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
 
         {[
           "Sun",
@@ -131,14 +226,12 @@ export default function AttendanceCalendar({
           "Fri",
           "Sat",
         ].map((day) => (
-
-          <div
+                    <div
             key={day}
-            className="py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500"
+            className="border-r border-slate-200 py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500 last:border-r-0"
           >
             {day}
           </div>
-
         ))}
 
       </div>
@@ -148,25 +241,29 @@ export default function AttendanceCalendar({
         {calendarDays.map((date, index) => {
 
           if (!date) {
-
             return (
               <div
                 key={index}
                 className="h-28 border border-slate-100 bg-slate-50"
               />
             );
-
           }
 
-          const attendance = hasAttendance(date);
-          const holiday = isHoliday(date);
+          const attendance =
+            hasAttendance(date);
+
+          const holiday =
+            isHoliday(date);
 
           const isSunday =
             date.getDay() === 0;
 
-          const today =
-            new Date().toDateString() ===
+          const isToday =
+            today.toDateString() ===
             date.toDateString();
+
+          const isFuture =
+            date > today;
 
           let bgClass =
             "bg-white hover:bg-slate-50";
@@ -186,17 +283,26 @@ export default function AttendanceCalendar({
               "bg-red-50 hover:bg-red-100";
           }
 
+          if (isFuture) {
+            bgClass =
+              "bg-slate-50";
+          }
+
           return (
+
             <div
               key={date.toISOString()}
-              onClick={() => onDateClick(date)}
-              className={`h-28 border border-slate-100 p-2 cursor-pointer transition ${bgClass}`}
+              onClick={() =>
+                onDateClick(date)
+              }
+              className={`h-28 cursor-pointer border border-slate-100 p-2 transition ${bgClass}`}
             >
-                              <div className="flex items-center justify-between mb-2">
+
+              <div className="mb-2 flex items-center justify-between">
 
                 <span
                   className={`text-sm font-bold ${
-                    today
+                    isToday
                       ? "text-blue-600"
                       : "text-slate-700"
                   }`}
@@ -204,8 +310,8 @@ export default function AttendanceCalendar({
                   {date.getDate()}
                 </span>
 
-                {today && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-600 text-white font-bold">
+                {isToday && (
+                  <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">
                     Today
                   </span>
                 )}
@@ -216,19 +322,18 @@ export default function AttendanceCalendar({
 
                 <div className="space-y-1">
 
-                  <div className="text-[10px] font-bold text-amber-700 uppercase">
+                  <div className="text-[10px] font-bold uppercase text-amber-700">
                     Holiday
                   </div>
 
-                  <div className="text-[11px] text-amber-800 font-medium leading-tight">
+                  <div className="text-[11px] font-medium leading-tight text-amber-800">
                     {holiday.name}
                   </div>
 
                 </div>
 
               ) : attendance ? (
-
-                <div className="space-y-1">
+                                <div className="space-y-1">
 
                   <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                     Present
@@ -262,6 +367,16 @@ export default function AttendanceCalendar({
 
                 </div>
 
+              ) : isFuture ? (
+
+                <div className="flex h-16 items-center justify-center">
+
+                  <span className="rounded-full bg-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-500">
+                    Future
+                  </span>
+
+                </div>
+
               ) : (
 
                 <div className="flex h-16 items-center justify-center">
@@ -279,7 +394,8 @@ export default function AttendanceCalendar({
           );
 
         })}
-              </div>
+
+      </div>
 
     </div>
 

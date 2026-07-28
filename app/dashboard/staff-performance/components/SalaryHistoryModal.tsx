@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { X } from "lucide-react";
+import {
+  X,
+  Wallet,
+  Calendar,
+  CreditCard,
+  User,
+} from "lucide-react";
 
 import { SalaryHistory } from "../types";
 
@@ -23,127 +29,208 @@ export default function SalaryHistoryModal({
 
   return (
 
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
 
-      <div className="w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="w-full max-w-6xl overflow-hidden rounded-2xl bg-white shadow-2xl">
 
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
 
-          <div>
+          <div className="flex items-center gap-4">
 
-            <h2 className="text-xl font-bold text-slate-800">
-              Salary Payment History
-            </h2>
+            <div className="rounded-xl bg-emerald-100 p-3">
 
-            <p className="text-sm text-slate-500">
-              All recorded salary payments
-            </p>
+              <Wallet
+                size={24}
+                className="text-emerald-700"
+              />
+
+            </div>
+
+            <div>
+
+              <h2 className="text-xl font-bold text-slate-800">
+                Salary Payment History
+              </h2>
+
+              <p className="text-sm text-slate-500">
+                Complete salary payment records
+              </p>
+
+            </div>
 
           </div>
 
           <button
             onClick={onClose}
-            className="rounded-lg p-2 transition hover:bg-slate-100"
+            className="rounded-xl p-2 transition hover:bg-slate-100"
           >
-            <X size={20} />
+            <X size={22} />
           </button>
 
         </div>
 
         <div className="max-h-[70vh] overflow-auto">
 
-          <table className="w-full text-left text-sm">
+          {salaryHistory.length === 0 ? (
 
-            <thead className="sticky top-0 bg-slate-50">
+            <div className="flex flex-col items-center justify-center p-16">
 
-              <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
+              <Wallet
+                size={50}
+                className="text-slate-300"
+              />
 
-                <th className="px-4 py-3">
-                  Date
-                </th>
+              <h3 className="mt-5 text-xl font-bold text-slate-700">
+                No Salary History
+              </h3>
 
-                <th className="px-4 py-3">
-                  Staff
-                </th>
+              <p className="mt-2 text-sm text-slate-500">
+                No salary payments have been recorded yet.
+              </p>
 
-                <th className="px-4 py-3 text-right">
-                  Amount
-                </th>
+            </div>
 
-                <th className="px-4 py-3">
-                  Method
-                </th>
+          ) : (
 
-                <th className="px-4 py-3">
-                  Notes
-                </th>
+            <table className="min-w-full">
 
-              </tr>
+              <thead className="sticky top-0 bg-slate-50">
 
-            </thead>
+                <tr className="border-b border-slate-200">
+                                    <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
 
-            <tbody className="divide-y divide-slate-100">
-              {salaryHistory.length === 0 ? (
+                    <div className="flex items-center gap-2">
 
-                <tr>
+                      <Calendar size={14} />
 
-                  <td
-                    colSpan={5}
-                    className="px-6 py-12 text-center text-slate-500"
-                  >
-                    No salary payment history found.
-                  </td>
+                      Date
+
+                    </div>
+
+                  </th>
+
+                  <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+
+                    <div className="flex items-center gap-2">
+
+                      <User size={14} />
+
+                      Staff
+
+                    </div>
+
+                  </th>
+
+                  <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
+
+                    <div className="flex items-center justify-end gap-2">
+
+                      <Wallet size={14} />
+
+                      Amount
+
+                    </div>
+
+                  </th>
+
+                  <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+
+                    <div className="flex items-center gap-2">
+
+                      <CreditCard size={14} />
+
+                      Payment Method
+
+                    </div>
+
+                  </th>
+
+                  <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+
+                    Notes
+
+                  </th>
 
                 </tr>
 
-              ) : (
+              </thead>
 
-                salaryHistory.map((salary) => (
+              <tbody className="divide-y divide-slate-100">
+
+                {salaryHistory.map((salary) => (
 
                   <tr
                     key={salary.id}
                     className="transition hover:bg-slate-50"
                   >
 
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-4 whitespace-nowrap font-medium text-slate-700">
+
                       {new Date(
                         salary.paymentDate
                       ).toLocaleDateString("en-GB")}
+
                     </td>
 
-                    <td className="px-4 py-3 font-semibold text-slate-800">
+                    <td className="px-5 py-4 font-semibold text-slate-800">
+
                       {salary.staffName}
+
                     </td>
 
-                    <td className="px-4 py-3 text-right font-bold text-emerald-600">
-                      ₹{Number(salary.amount || 0).toFixed(2)}
+                    <td className="px-5 py-4 text-right">
+
+                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-700">
+
+                        ₹{Number(
+                          salary.amount || 0
+                        ).toFixed(2)}
+
+                      </span>
+
                     </td>
 
-                    <td className="px-4 py-3">
-                      {salary.paymentMethod}
+                    <td className="px-5 py-4">
+
+                      <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+
+                        {salary.paymentMethod}
+
+                      </span>
+
                     </td>
 
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-5 py-4 text-slate-600">
+
                       {salary.notes || "-"}
+
                     </td>
 
                   </tr>
 
-                ))
+                ))}
 
-              )}
+              </tbody>
 
-            </tbody>
+            </table>
 
-          </table>
+          )}
 
         </div>
+                <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
 
-        <div className="flex justify-end border-t border-slate-200 px-6 py-4">
+          <div className="text-sm text-slate-500">
+
+            Total Records :
+            <span className="ml-2 font-bold text-slate-800">
+              {salaryHistory.length}
+            </span>
+
+          </div>
 
           <button
             onClick={onClose}
-            className="rounded-lg bg-slate-800 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-900"
+            className="rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             Close
           </button>
