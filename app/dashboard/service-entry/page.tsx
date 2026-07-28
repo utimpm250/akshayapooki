@@ -461,7 +461,28 @@ function ServiceEntryForm() {
 const existingRecords = JSON.parse(
   localStorage.getItem("performanceRecords") || "[]"
 );
+if (isCredit) {
+  const creditBills = JSON.parse(
+    localStorage.getItem("smart_akshaya_bills") || "[]"
+  );
 
+  creditBills.unshift({
+    id: "BILL-" + Date.now(),
+    customerName: customerName,
+    mobileNumber: mobile,
+    date: new Date().toISOString().split("T")[0],
+    staffName: currentStaff,
+    status: "Credit",
+    totalAmount: totalAmount,
+    paidAmount: totalPaid,
+    owedAmount: balance,
+  });
+
+  localStorage.setItem(
+    "smart_akshaya_bills",
+    JSON.stringify(creditBills)
+  );
+}
 const departmentFee = items.reduce(
   (sum, item) => sum + (Number(item.walletChg) * Number(item.qty)),
   0

@@ -27,10 +27,16 @@ export const matchesStaff = (
     selectedStaff.toLowerCase();
 
 export const getCredit = (rows: BillRecord[]) =>
-  rows.reduce(
-    (sum, row) => sum + Number(row.credit || 0),
-    0
-  );
+  rows.reduce((sum, row: any) => {
+    const amount =
+      Number(row.credit) ||
+      Number(row.owedAmount) ||
+      Number(row.pendingAmount) ||
+      Number(row.balance) ||
+      0;
+
+    return sum + amount;
+  }, 0);
 
 export const createSummary = (
   rows: PerformanceRecord[],

@@ -250,7 +250,12 @@ export default function SummaryCards({
       selectedStaff,
     ]
   );
-
+console.log({
+  selectedStaff,
+  dailyBills,
+  monthlyBills,
+  yearlyBills,
+});
   const staff = useMemo(
     () =>
       staffRecords.find((row) =>
