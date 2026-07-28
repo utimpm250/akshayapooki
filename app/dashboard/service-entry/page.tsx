@@ -457,7 +457,54 @@ function ServiceEntryForm() {
     }
     processWalletUpdates();
     saveCustomerToDirectory(); // Automatically sync customer details
+// Save Staff Performance Record
+const existingRecords = JSON.parse(
+  localStorage.getItem("performanceRecords") || "[]"
+);
 
+const departmentFee = items.reduce(
+  (sum, item) => sum + (Number(item.walletChg) * Number(item.qty)),
+  0
+);
+
+const serviceCharge = items.reduce(
+  (sum, item) => sum + (Number(item.srvChg) * Number(item.qty)),
+  0
+);
+
+const performanceRecord = {
+  id: "PERF-" + Date.now(),
+  date: new Date().toISOString().split("T")[0],
+  timestamp: new Date().toISOString(),
+
+  staffName: currentStaff,
+  customerName: customerName || "Walk-in",
+  phone: mobile,
+
+  totalServices: items.length,
+
+  departmentFee,
+  serviceCharge,
+
+  totalAmount,
+
+  cashAmount: Number(cash),
+  gpayUpiAmount: Number(gpay),
+
+  openingBalance: Number(previousBalance),
+
+  commission: 0,
+
+  loginTime: "",
+  logoutTime: ""
+};
+
+existingRecords.unshift(performanceRecord);
+
+localStorage.setItem(
+  "performanceRecords",
+  JSON.stringify(existingRecords)
+);
     alert("Bill Completed Successfully & Customer Details Saved!");
     handleClearForm();
     router.push('/dashboard/service-entry');
