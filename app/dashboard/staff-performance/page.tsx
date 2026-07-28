@@ -542,9 +542,9 @@ export default function StaffPerformancePage() {
     setHolidays(loadHolidays());
 
     if (selectedDate) {
-      setSelectedHoliday(
-        getHoliday(loadHolidays(), selectedDate)
-      );
+setSelectedHoliday(
+  getHoliday(loadHolidays(), selectedDate) ?? null
+);
     }
   }}
 />
