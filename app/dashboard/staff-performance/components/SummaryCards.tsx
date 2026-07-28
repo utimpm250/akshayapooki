@@ -1,0 +1,598 @@
+"use client";
+
+import React from "react";
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
+import { PerformanceRecord } from "../types";
+
+interface SummaryCardsProps {
+  records: PerformanceRecord[];
+  attendanceLogs: any[];
+  selectedStaff: string;
+
+  // Daily
+  dailyDate: Date;
+  setDailyDate: React.Dispatch<React.SetStateAction<Date>>;
+
+  // Monthly
+  selectedMonth: number;
+  selectedYear: number;
+  setSelectedMonth: React.Dispatch<React.SetStateAction<number>>;
+  setSelectedYear: React.Dispatch<React.SetStateAction<number>>;
+
+  // Yearly
+  yearlyYear: number;
+  setYearlyYear: React.Dispatch<React.SetStateAction<number>>;
+}
+
+export default function SummaryCards({
+  records,
+  attendanceLogs,
+  selectedStaff,
+
+  dailyDate,
+  setDailyDate,
+
+  selectedMonth,
+  selectedYear,
+  setSelectedMonth,
+  setSelectedYear,
+
+  yearlyYear,
+  setYearlyYear,
+}: SummaryCardsProps) {
+
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  /* ======================================================
+     DAILY SUMMARY
+  ====================================================== */
+
+  const cardDailyRecords = records.filter((record) => {
+    const matchesStaff =
+      selectedStaff === "All" ||
+      record.staffName?.toLowerCase() ===
+        selectedStaff.toLowerCase();
+
+    const date = new Date(record.timestamp);
+
+    return (
+      matchesStaff &&
+      date.getDate() === dailyDate.getDate() &&
+      date.getMonth() === dailyDate.getMonth() &&
+      date.getFullYear() === dailyDate.getFullYear()
+    );
+  });
+
+  const dailyServicesCount = cardDailyRecords.length;
+
+  const dailyDeptFee = cardDailyRecords.reduce(
+    (acc, curr) =>
+      acc + Number(curr.departmentFee || 0),
+    0
+  );
+
+const dailyServiceCharge = cardDailyRecords.reduce(
+  (acc, curr) =>
+    acc + Number(curr.serviceCharge || 0),
+  0
+);
+
+const dailyGpayUpi = cardDailyRecords.reduce(
+  (acc, curr) =>
+    acc + Number(curr.gpayUpiAmount || 0),
+  0
+);
+
+const dailyOpeningBal = cardDailyRecords.reduce(
+  (acc, curr) =>
+    acc + Number(curr.openingBalance || 0),
+  0
+);
+
+const dailyTotalCash = cardDailyRecords.reduce(
+  (acc, curr) =>
+    acc + Number(curr.totalAmount || 0),
+  0
+);
+  const dailyCommission = cardDailyRecords.reduce(
+    (acc, curr) =>
+      acc + Number(curr.commission || 0),
+    0
+  );
+
+  /* ======================================================
+     MONTHLY SUMMARY
+  ====================================================== */
+
+  const cardMonthlyRecords = records.filter((record) => {
+    const matchesStaff =
+      selectedStaff === "All" ||
+      record.staffName?.toLowerCase() ===
+        selectedStaff.toLowerCase();
+
+    const date = new Date(record.timestamp);
+
+    return (
+      matchesStaff &&
+      date.getMonth() === selectedMonth &&
+      date.getFullYear() === selectedYear
+    );
+  });
+
+  const monthlyServicesCount =
+    cardMonthlyRecords.length;
+
+  const monthlyDeptFee =
+    cardMonthlyRecords.reduce(
+      (acc, curr) =>
+        acc + Number(curr.departmentFee || 0),
+      0
+    );
+
+  const monthlyServiceCharge =
+    cardMonthlyRecords.reduce(
+      (acc, curr) =>
+        acc + Number(curr.serviceCharge || 0),
+      0
+    );
+
+  const monthlyCash =
+    cardMonthlyRecords.reduce(
+      (acc, curr) =>
+        acc + Number(curr.totalAmount || 0),
+      0
+    );
+
+  const monthlyCommission =
+    cardMonthlyRecords.reduce(
+      (acc, curr) =>
+        acc + Number(curr.commission || 0),
+      0
+    );
+
+  const monthlyAttendanceLogs =
+    attendanceLogs.filter((log) => {
+      const date = new Date(
+        log.date ||
+          log.loginTime ||
+          log.timestamp
+      );
+
+      return (
+        date.getMonth() === selectedMonth &&
+        date.getFullYear() === selectedYear
+      );
+    });
+
+  const monthlyPresentDays =
+    monthlyAttendanceLogs.filter(
+      (log) =>
+        (
+          log.status || "present"
+        ).toLowerCase() === "present"
+    ).length;
+
+  const monthlyAbsentDays =
+    monthlyAttendanceLogs.filter(
+      (log) =>
+        (
+          log.status || ""
+        ).toLowerCase() === "absent"
+    ).length;
+
+  /* ======================================================
+     YEARLY SUMMARY
+  ====================================================== */
+
+  const cardYearlyRecords = records.filter(
+    (record) => {
+      const matchesStaff =
+        selectedStaff === "All" ||
+        record.staffName?.toLowerCase() ===
+          selectedStaff.toLowerCase();
+
+      const date = new Date(record.timestamp);
+
+      return (
+        matchesStaff &&
+        date.getFullYear() === yearlyYear
+      );
+    }
+  );
+    const yearlyServicesCount =
+    cardYearlyRecords.length;
+
+  const yearlyDeptFee =
+    cardYearlyRecords.reduce(
+      (acc, curr) =>
+        acc + Number(curr.departmentFee || 0),
+      0
+    );
+
+  const yearlyServiceCharge =
+    cardYearlyRecords.reduce(
+      (acc, curr) =>
+        acc + Number(curr.serviceCharge || 0),
+      0
+    );
+
+const yearlyGpayUpi = cardYearlyRecords.reduce(
+  (acc, curr) =>
+    acc + Number(curr.gpayUpiAmount || 0),
+  0
+);
+  const yearlyCash =
+    cardYearlyRecords.reduce(
+      (acc, curr) =>
+        acc + Number(curr.totalAmount || 0),
+      0
+    );
+
+  const yearlyCommission =
+    cardYearlyRecords.reduce(
+      (acc, curr) =>
+        acc + Number(curr.commission || 0),
+      0
+    );
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      {/* ===============================
+          DAILY PERFORMANCE
+      ================================ */}
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5 relative overflow-hidden">
+
+        <div className="flex justify-between items-center border-b pb-3">
+
+          <h3 className="text-xs font-black uppercase text-slate-700 tracking-wider">
+            Daily Performance
+          </h3>
+
+          <div className="bg-indigo-50 text-indigo-600 p-2 rounded-xl">
+            <Calendar size={16} />
+          </div>
+
+        </div>
+
+        <div className="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
+
+          <button
+            onClick={() => {
+              const prev = new Date(dailyDate);
+              prev.setDate(prev.getDate() - 1);
+              setDailyDate(prev);
+            }}
+            className="p-1.5 hover:bg-white rounded-lg text-slate-600 shadow-sm transition"
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          <span className="text-xs font-bold text-slate-800">
+            {dailyDate.toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </span>
+
+          <button
+            onClick={() => {
+              const next = new Date(dailyDate);
+              next.setDate(next.getDate() + 1);
+              setDailyDate(next);
+            }}
+            className="p-1.5 hover:bg-white rounded-lg text-slate-600 shadow-sm transition"
+          >
+            <ChevronRight size={16} />
+          </button>
+
+        </div>
+
+        <div className="text-center py-2">
+
+          <h2 className="text-3xl font-black text-slate-900">
+            {dailyServicesCount}
+          </h2>
+
+          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+            Total Services
+          </p>
+
+        </div>
+                <div className="space-y-2.5 text-xs border-t pt-4">
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Dept. Fee</span>
+            <span className="font-bold text-slate-900">
+              ₹{dailyDeptFee.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Service Charge</span>
+            <span className="font-bold text-slate-900">
+              ₹{dailyServiceCharge.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>GPay / UPI</span>
+            <span className="font-bold text-slate-900">
+              ₹{dailyGpayUpi.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Opening Balance</span>
+            <span className="font-bold text-slate-900">
+              ₹{dailyOpeningBal.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium pt-2 border-t">
+
+            <span className="font-black text-slate-800">
+              Total Cash
+            </span>
+
+            <span className="font-black text-slate-900 text-sm">
+              ₹{dailyTotalCash.toFixed(2)}
+            </span>
+
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+
+            <span>
+              Commission
+            </span>
+
+            <span className="font-bold text-emerald-600">
+              ₹{dailyCommission.toFixed(2)}
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* ===============================
+          MONTHLY PERFORMANCE
+      ================================ */}
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5 relative overflow-hidden">
+
+        <div className="flex justify-between items-center border-b pb-3">
+
+          <h3 className="text-xs font-black uppercase text-slate-700 tracking-wider">
+            Monthly Performance
+          </h3>
+
+          <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
+            <Calendar size={16} />
+          </div>
+
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+
+          <select
+            value={selectedMonth}
+            onChange={(e) =>
+              setSelectedMonth(Number(e.target.value))
+            }
+            className="bg-white border border-slate-200 text-xs font-bold rounded-lg p-1.5 outline-none cursor-pointer"
+          >
+            {monthNames.map((month, index) => (
+              <option
+                key={index}
+                value={index}
+              >
+                {month}
+              </option>
+            ))}
+          </select>
+                    <select
+            value={selectedYear}
+            onChange={(e) =>
+              setSelectedYear(Number(e.target.value))
+            }
+            className="bg-white border border-slate-200 text-xs font-bold rounded-lg p-1.5 outline-none cursor-pointer"
+          >
+            {[2024, 2025, 2026, 2027].map((year) => (
+              <option
+                key={year}
+                value={year}
+              >
+                {year}
+              </option>
+            ))}
+          </select>
+
+        </div>
+
+        <div className="text-center py-2">
+
+          <h2 className="text-3xl font-black text-slate-900">
+            {monthlyServicesCount}
+          </h2>
+
+          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+            Total Services
+          </p>
+
+        </div>
+
+        <div className="space-y-2.5 text-xs border-t pt-4">
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Dept. Fee</span>
+            <span className="font-bold text-slate-900">
+              ₹{monthlyDeptFee.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Service Charge</span>
+            <span className="font-bold text-slate-900">
+              ₹{monthlyServiceCharge.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Present Days</span>
+            <span className="font-bold text-emerald-600">
+              {monthlyPresentDays}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Absent Days</span>
+            <span className="font-bold text-red-600">
+              {monthlyAbsentDays}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Cash</span>
+            <span className="font-bold text-slate-900">
+              ₹{monthlyCash.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium pt-2 border-t">
+
+            <span className="font-black text-slate-800">
+              Commission
+            </span>
+
+            <span className="font-black text-emerald-600 text-sm">
+              ₹{monthlyCommission.toFixed(2)}
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* ===============================
+          YEARLY PERFORMANCE
+      ================================ */}
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5 relative overflow-hidden">
+
+        <div className="flex justify-between items-center border-b pb-3">
+
+          <h3 className="text-xs font-black uppercase text-slate-700 tracking-wider">
+            Yearly Performance
+          </h3>
+
+          <div className="bg-amber-50 text-amber-600 p-2 rounded-xl">
+            <Calendar size={16} />
+          </div>
+
+        </div>
+                <div className="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
+
+          <select
+            value={yearlyYear}
+            onChange={(e) =>
+              setYearlyYear(Number(e.target.value))
+            }
+            className="w-full bg-white border border-slate-200 text-xs font-bold rounded-lg p-1.5 outline-none text-center cursor-pointer"
+          >
+            {[2024, 2025, 2026, 2027].map((year) => (
+              <option
+                key={year}
+                value={year}
+              >
+                {year}
+              </option>
+            ))}
+          </select>
+
+        </div>
+
+        <div className="text-center py-2">
+
+          <h2 className="text-3xl font-black text-slate-900">
+            {yearlyServicesCount}
+          </h2>
+
+          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+            Total Services
+          </p>
+
+        </div>
+
+        <div className="space-y-2.5 text-xs border-t pt-4">
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Dept. Fee</span>
+            <span className="font-bold text-slate-900">
+              ₹{yearlyDeptFee.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Service Charge</span>
+            <span className="font-bold text-slate-900">
+              ₹{yearlyServiceCharge.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>GPay / UPI</span>
+            <span className="font-bold text-slate-900">
+              ₹{yearlyGpayUpi.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium">
+            <span>Cash</span>
+            <span className="font-bold text-slate-900">
+              ₹{yearlyCash.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-slate-600 font-medium pt-2 border-t">
+
+            <span className="font-black text-slate-800">
+              Commission
+            </span>
+
+            <span className="font-black text-emerald-600 text-sm">
+              ₹{yearlyCommission.toFixed(2)}
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
