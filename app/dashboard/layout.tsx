@@ -154,7 +154,7 @@ const [currentUser, setCurrentUser] = useState({
 const [sidebarPinned, setSidebarPinned] = useState(false);
 
 const [allowedMenus, setAllowedMenus] =
-  useState<MenuItem[]>(allMenuItems);
+  useState<MenuItem[]>([]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -202,9 +202,11 @@ useEffect(() => {
     return;
   }
 
-  const permissions = JSON.parse(
-    localStorage.getItem("role_feature_permissions") || "[]"
-  );
+const permissions = JSON.parse(
+  localStorage.getItem("role_feature_permissions") || "[]"
+);
+
+console.log("Permissions:", permissions);
 
   const filteredMenus = allMenuItems.filter((menu) => {
     if (menu.permissionKey === "Feature Permissions") {
@@ -214,6 +216,8 @@ useEffect(() => {
     const permission = permissions.find(
       (p: any) => p.featureName === menu.permissionKey
     );
+
+console.log(menu.permissionKey, permission);
 
     if (!permission) {
       return false;
@@ -225,6 +229,9 @@ useEffect(() => {
 
     return permission.staffAccess;
   });
+console.log("Role:", role);
+console.log("Permissions:", permissions);
+console.log("Filtered Menus:", filteredMenus);
 
   setAllowedMenus(filteredMenus);
 

@@ -108,15 +108,23 @@ export default function FeaturePermissionsPage() {
 
   // Load saved permissions from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('role_feature_permissions');
-    if (saved) {
-      try {
-        setPermissions(JSON.parse(saved));
-      } catch (e) {
-        console.error("Error loading permissions", e);
-      }
+  const saved = localStorage.getItem("role_feature_permissions");
+
+  if (saved) {
+    try {
+      setPermissions(JSON.parse(saved));
+    } catch (e) {
+      console.error("Error loading permissions", e);
     }
-  }, []);
+  } else {
+    localStorage.setItem(
+      "role_feature_permissions",
+      JSON.stringify(initialPermissions)
+    );
+
+    setPermissions(initialPermissions);
+  }
+}, []);
 
   const handleToggle = (id: string, roleType: 'accountantAccess' | 'staffAccess') => {
     const updated = permissions.map(item => {
