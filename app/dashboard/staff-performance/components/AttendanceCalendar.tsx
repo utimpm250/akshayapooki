@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,16 +15,18 @@ interface AttendanceCalendarProps {
   records: PerformanceRecord[];
   holidays: Holiday[];
   currentMonth: Date;
-  setCurrentMonth: (date: Date) => void;
+  onMonthChange: (date: Date) => void;
   onDateClick: (date: Date) => void;
+  selectedStaff: string;
 }
 
 export default function AttendanceCalendar({
   records,
   holidays,
   currentMonth,
-  setCurrentMonth,
+  onMonthChange,
   onDateClick,
+  selectedStaff,
 }: AttendanceCalendarProps) {
 
   const month = currentMonth.getMonth();
@@ -39,13 +41,13 @@ export default function AttendanceCalendar({
   const daysInMonth = lastDay.getDate();
 
   const previousMonth = () => {
-    setCurrentMonth(
+    onMonthChange(
       new Date(year, month - 1, 1)
     );
   };
 
   const nextMonth = () => {
-    setCurrentMonth(
+    onMonthChange(
       new Date(year, month + 1, 1)
     );
   };
@@ -65,7 +67,7 @@ export default function AttendanceCalendar({
     "December",
   ];
 
-  const years = [];
+  const years: number[] = [];
 
   for (
     let y = today.getFullYear() - 5;
@@ -76,27 +78,21 @@ export default function AttendanceCalendar({
   }
 
   const hasAttendance = (date: Date) => {
-
     const day =
       date.toISOString().split("T")[0];
 
     return records.find(
-      (record) =>
-        record.date === day
+      (record) => record.date === day
     );
-
   };
 
   const isHoliday = (date: Date) => {
-
     const day =
       date.toISOString().split("T")[0];
 
     return holidays.find(
-      (holiday) =>
-        holiday.date === day
+      (holiday) => holiday.date === day
     );
-
   };
 
   const calendarDays: (Date | null)[] = [];
@@ -114,286 +110,381 @@ export default function AttendanceCalendar({
       new Date(year, month, day)
     );
   }
-    return (
 
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+  const attendanceSummary =
+    useMemo(() => {
 
-      <div className="flex flex-col gap-4 border-b border-slate-200 p-6 lg:flex-row lg:items-center lg:justify-between">
+      let present = 0;
+      let absent = 0;
+      let holiday = 0;
 
-        <div className="flex items-center gap-2">
+      for (
+        let day = 1;
+        day <= daysInMonth;
+        day++
+      ) {
 
-          <button
-            onClick={previousMonth}
-            className="rounded-lg border border-slate-200 p-2 hover:bg-slate-100 transition"
-          >
-            <ChevronLeft size={18} />
-          </button>
+        const date = new Date(
+          year,
+          month,
+          day
+        );
 
-          <select
-            value={month}
-            onChange={(e) =>
-              setCurrentMonth(
-                new Date(
-                  year,
-                  Number(e.target.value),
-                  1
-                )
-              )
-            }
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-          >
-            {monthNames.map((name, index) => (
-              <option
-                key={index}
-                value={index}
-              >
-                {name}
-              </option>
-            ))}
-          </select>
+        if (date > today) continue;
 
-          <select
-            value={year}
-            onChange={(e) =>
-              setCurrentMonth(
-                new Date(
-                  Number(e.target.value),
-                  month,
-                  1
-                )
-              )
-            }
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-          >
-            {years.map((yr) => (
-              <option
-                key={yr}
-                value={yr}
-              >
-                {yr}
-              </option>
-            ))}
-          </select>
+        if (date.getDay() === 0) continue;
 
-          <button
-            onClick={nextMonth}
-            className="rounded-lg border border-slate-200 p-2 hover:bg-slate-100 transition"
-          >
-            <ChevronRight size={18} />
-          </button>
+        if (isHoliday(date)) {
+          holiday++;
+          continue;
+        }
+
+        if (hasAttendance(date)) {
+          present++;
+        } else {
+          absent++;
+        }
+
+      }
+
+      return {
+        present,
+        absent,
+        holiday,
+      };
+
+    }, [
+      records,
+      holidays,
+      month,
+      year,
+      selectedStaff,
+    ]);
+      return (
+
+    <div className="space-y-5">
+
+      <div className="grid gap-4 md:grid-cols-3">
+
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+
+          <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            Present Days
+          </div>
+
+          <div className="mt-2 text-3xl font-black text-emerald-700">
+            {attendanceSummary.present}
+          </div>
 
         </div>
 
-        <div className="flex flex-wrap gap-4 text-xs font-semibold">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4">
 
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-emerald-500"></span>
-            Present
+          <div className="text-xs font-semibold uppercase tracking-wide text-red-700">
+            Absent Days
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-slate-300"></span>
-            Absent
+          <div className="mt-2 text-3xl font-black text-red-700">
+            {attendanceSummary.absent}
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-amber-500"></span>
-            Holiday
+        </div>
+
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+
+          <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+            Holiday Days
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-blue-500"></span>
-            Today
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-slate-100 border"></span>
-            Future
+          <div className="mt-2 text-3xl font-black text-amber-700">
+            {attendanceSummary.holiday}
           </div>
 
         </div>
 
       </div>
 
-      <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-        {[
-          "Sun",
-          "Mon",
-          "Tue",
-          "Wed",
-          "Thu",
-          "Fri",
-          "Sat",
-        ].map((day) => (
-                    <div
-            key={day}
-            className="border-r border-slate-200 py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500 last:border-r-0"
-          >
-            {day}
+        <div className="flex flex-col gap-4 border-b border-slate-200 p-6 lg:flex-row lg:items-center lg:justify-between">
+
+          <div className="flex items-center gap-2">
+
+            <button
+              onClick={previousMonth}
+              className="rounded-lg border border-slate-200 p-2 transition hover:bg-slate-100"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <select
+              value={month}
+              onChange={(e) =>
+                onMonthChange(
+                  new Date(
+                    year,
+                    Number(e.target.value),
+                    1
+                  )
+                )
+              }
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
+            >
+              {monthNames.map(
+                (name, index) => (
+                  <option
+                    key={index}
+                    value={index}
+                  >
+                    {name}
+                  </option>
+                )
+              )}
+            </select>
+
+            <select
+              value={year}
+              onChange={(e) =>
+                onMonthChange(
+                  new Date(
+                    Number(
+                      e.target.value
+                    ),
+                    month,
+                    1
+                  )
+                )
+              }
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
+            >
+              {years.map((yr) => (
+                <option
+                  key={yr}
+                  value={yr}
+                >
+                  {yr}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={nextMonth}
+              className="rounded-lg border border-slate-200 p-2 transition hover:bg-slate-100"
+            >
+              <ChevronRight size={18} />
+            </button>
+
           </div>
-        ))}
 
-      </div>
+          <div className="flex flex-wrap gap-4 text-xs font-semibold">
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-emerald-500"></span>
+              Present
+            </div>
 
-      <div className="grid grid-cols-7">
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-slate-300"></span>
+              Absent
+            </div>
 
-        {calendarDays.map((date, index) => {
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-amber-500"></span>
+              Holiday
+            </div>
 
-          if (!date) {
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-blue-500"></span>
+              Today
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full border bg-slate-100"></span>
+              Future
+            </div>
+
+          </div>
+
+        </div>
+
+        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+
+          {[
+            "Sun",
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+          ].map((day) => (
+            <div
+              key={day}
+              className="border-r border-slate-200 py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500 last:border-r-0"
+            >
+              {day}
+            </div>
+          ))}
+
+        </div>
+
+        <div className="grid grid-cols-7">
+
+          {calendarDays.map((date, index) => {
+
+            if (!date) {
+              return (
+                <div
+                  key={index}
+                  className="h-28 border border-slate-100 bg-slate-50"
+                />
+              );
+            }
+
+            const attendance =
+              hasAttendance(date);
+
+            const holiday =
+              isHoliday(date);
+
+            const isSunday =
+              date.getDay() === 0;
+
+            const isToday =
+              today.toDateString() ===
+              date.toDateString();
+
+            const isFuture =
+              date > today;
+
+            let bgClass =
+              "bg-white hover:bg-slate-50";
+
+            if (attendance) {
+              bgClass =
+                "bg-emerald-50 hover:bg-emerald-100";
+            }
+
+            if (holiday) {
+              bgClass =
+                "bg-amber-50 hover:bg-amber-100";
+            }
+
+            if (isSunday) {
+              bgClass =
+                "bg-red-50 hover:bg-red-100";
+            }
+
+            if (isFuture) {
+              bgClass =
+                "bg-slate-50";
+            }
+
             return (
               <div
-                key={index}
-                className="h-28 border border-slate-100 bg-slate-50"
-              />
-            );
-          }
+                key={date.toISOString()}
+                onClick={() =>
+                  onDateClick(date)
+                }
+                className={`h-28 cursor-pointer border border-slate-100 p-2 transition ${bgClass}`}
+              >
+                <div className="mb-2 flex items-center justify-between">
 
-          const attendance =
-            hasAttendance(date);
-
-          const holiday =
-            isHoliday(date);
-
-          const isSunday =
-            date.getDay() === 0;
-
-          const isToday =
-            today.toDateString() ===
-            date.toDateString();
-
-          const isFuture =
-            date > today;
-
-          let bgClass =
-            "bg-white hover:bg-slate-50";
-
-          if (attendance) {
-            bgClass =
-              "bg-emerald-50 hover:bg-emerald-100";
-          }
-
-          if (holiday) {
-            bgClass =
-              "bg-amber-50 hover:bg-amber-100";
-          }
-
-          if (isSunday) {
-            bgClass =
-              "bg-red-50 hover:bg-red-100";
-          }
-
-          if (isFuture) {
-            bgClass =
-              "bg-slate-50";
-          }
-
-          return (
-
-            <div
-              key={date.toISOString()}
-              onClick={() =>
-                onDateClick(date)
-              }
-              className={`h-28 cursor-pointer border border-slate-100 p-2 transition ${bgClass}`}
-            >
-
-              <div className="mb-2 flex items-center justify-between">
-
-                <span
-                  className={`text-sm font-bold ${
-                    isToday
-                      ? "text-blue-600"
-                      : "text-slate-700"
-                  }`}
-                >
-                  {date.getDate()}
-                </span>
-
-                {isToday && (
-                  <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">
-                    Today
+                  <span
+                    className={`text-sm font-bold ${
+                      isToday
+                        ? "text-blue-600"
+                        : "text-slate-700"
+                    }`}
+                  >
+                    {date.getDate()}
                   </span>
+
+                  {isToday && (
+                    <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                      Today
+                    </span>
+                  )}
+
+                </div>
+                                {holiday ? (
+
+                  <div className="space-y-1">
+
+                    <div className="text-[10px] font-bold uppercase text-amber-700">
+                      Holiday
+                    </div>
+
+                    <div className="text-[11px] font-medium leading-tight text-amber-800">
+                      {holiday.name}
+                    </div>
+
+                  </div>
+
+                ) : attendance ? (
+
+                  <div className="space-y-1">
+
+                    <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                      Present
+                    </div>
+
+                    <div className="text-[10px] text-slate-500">
+                      Login
+                    </div>
+
+                    <div className="text-[11px] font-semibold text-slate-700">
+                      {attendance.loginTime || "--"}
+                    </div>
+
+                    <div className="text-[10px] text-slate-500">
+                      Logout
+                    </div>
+
+                    <div className="text-[11px] font-semibold text-slate-700">
+                      {attendance.logoutTime || "--"}
+                    </div>
+
+                  </div>
+
+                ) : isSunday ? (
+
+                  <div className="flex h-16 items-center justify-center">
+
+                    <span className="rounded-full bg-red-100 px-2 py-1 text-[10px] font-bold text-red-600">
+                      Sunday
+                    </span>
+
+                  </div>
+
+                ) : isFuture ? (
+
+                  <div className="flex h-16 items-center justify-center">
+
+                    <span className="rounded-full bg-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-500">
+                      Future
+                    </span>
+
+                  </div>
+
+                ) : (
+
+                  <div className="flex h-16 items-center justify-center">
+
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-400">
+                      Absent
+                    </span>
+
+                  </div>
+
                 )}
 
               </div>
 
-              {holiday ? (
+            );
 
-                <div className="space-y-1">
+          })}
 
-                  <div className="text-[10px] font-bold uppercase text-amber-700">
-                    Holiday
-                  </div>
-
-                  <div className="text-[11px] font-medium leading-tight text-amber-800">
-                    {holiday.name}
-                  </div>
-
-                </div>
-
-              ) : attendance ? (
-                                <div className="space-y-1">
-
-                  <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                    Present
-                  </div>
-
-                  <div className="text-[10px] text-slate-500">
-                    Login
-                  </div>
-
-                  <div className="text-[11px] font-semibold text-slate-700">
-                    {attendance.loginTime || "--"}
-                  </div>
-
-                  <div className="text-[10px] text-slate-500">
-                    Logout
-                  </div>
-
-                  <div className="text-[11px] font-semibold text-slate-700">
-                    {attendance.logoutTime || "--"}
-                  </div>
-
-                </div>
-
-              ) : isSunday ? (
-
-                <div className="flex h-16 items-center justify-center">
-
-                  <span className="rounded-full bg-red-100 px-2 py-1 text-[10px] font-bold text-red-600">
-                    Sunday
-                  </span>
-
-                </div>
-
-              ) : isFuture ? (
-
-                <div className="flex h-16 items-center justify-center">
-
-                  <span className="rounded-full bg-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-500">
-                    Future
-                  </span>
-
-                </div>
-
-              ) : (
-
-                <div className="flex h-16 items-center justify-center">
-
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-400">
-                    Absent
-                  </span>
-
-                </div>
-
-              )}
-
-            </div>
-
-          );
-
-        })}
+        </div>
 
       </div>
 

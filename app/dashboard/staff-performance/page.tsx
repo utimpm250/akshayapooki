@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import SummaryCards from "./components/SummaryCards";
 import PendingBills from "./components/PendingBills";
@@ -27,16 +27,38 @@ import {
 } from "./utils";
 
 export default function StaffPerformancePage() {
-  const [records, setRecords] = useState<PerformanceRecord[]>([]);
-  const [pendingBills, setPendingBills] = useState<PendingBill[]>([]);
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [salaryHistory, setSalaryHistory] = useState<SalaryHistory[]>([]);
+  const [records, setRecords] =
+    useState<PerformanceRecord[]>([]);
+
+  const [pendingBills, setPendingBills] =
+    useState<PendingBill[]>([]);
+
+  const [holidays, setHolidays] =
+    useState<Holiday[]>([]);
+
+  const [salaryHistory, setSalaryHistory] =
+    useState<SalaryHistory[]>([]);
+
+  /* ---------------- CURRENT USER ---------------- */
+
+  const [currentUser, setCurrentUser] =
+    useState<any>(null);
+
+  /* ---------------- STAFF LIST ---------------- */
+
+  const [staffList, setStaffList] = useState<string[]>([
+    "All",
+  ]);
 
   const [selectedStaff, setSelectedStaff] =
     useState("All");
 
+  /* ---------------- SEARCH ---------------- */
+
   const [searchQuery, setSearchQuery] =
     useState("");
+
+  /* ---------------- ATTENDANCE ---------------- */
 
   const [selectedDate, setSelectedDate] =
     useState<Date | null>(null);
@@ -50,8 +72,12 @@ export default function StaffPerformancePage() {
   const [attendanceModalOpen, setAttendanceModalOpen] =
     useState(false);
 
+  /* ---------------- SALARY ---------------- */
+
   const [salaryHistoryOpen, setSalaryHistoryOpen] =
     useState(false);
+
+  /* ---------------- CALENDAR ---------------- */
 
   const [currentMonth, setCurrentMonth] =
     useState(new Date());
@@ -65,26 +91,197 @@ export default function StaffPerformancePage() {
   const [summaryYear, setSummaryYear] =
     useState(new Date().getFullYear());
 
+  /* ---------------- TAB ---------------- */
+
   const [activeTab, setActiveTab] = useState<
     "pending" | "billed" | "attendance" | "salary"
   >("pending");
 
+  /* ---------------- INITIAL LOAD ---------------- */
+
   useEffect(() => {
     setRecords(loadPerformanceRecords());
+
     setPendingBills(loadPendingBills());
+
     setHolidays(loadHolidays());
+
     setSalaryHistory(loadSalaryHistory());
+
+    if (typeof window === "undefined") return;
+
+    const storedUser =
+      localStorage.getItem("loggedInUser");
+
+    const parsedUser = storedUser
+      ? JSON.parse(storedUser)
+      : {
+          username: "Admin User",
+          role: "admin",
+        };
+
+    setCurrentUser(parsedUser);
+
+    if (
+      parsedUser.role?.toLowerCase() !== "admin"
+    ) {
+      setSelectedStaff(parsedUser.username);
+
+      setStaffList([
+        parsedUser.username,
+      ]);
+    } else {
+      loadStaffMembers();
+    }
   }, []);
+    /* ---------------- LOAD STAFF MEMBERS ---------------- */
+
+  const loadStaffMembers = () => {
+    if (typeof window === "undefined") return;
+
+    const loadedNames: string[] = [];
+
+    const possibleKeys = [
+      "staff_members",
+      "users",
+      "akshaya_staffs",
+      "smart_akshaya_staff",
+    ];
+
+    for (const key of possibleKeys) {
+      const data = localStorage.getItem(key);
+
+      if (!data) continue;
+
+      try {
+        const parsed = JSON.parse(data);
+
+        if (!Array.isArray(parsed)) continue;
+
+        const names = parsed
+          .map(
+            (staff: any) =>
+              staff.name ||
+              staff.staffName ||
+              staff.username
+          )
+          .filter(Boolean);
+
+        loadedNames.push(...names);
+      } catch (error) {
+        console.error(
+          "Error loading staff:",
+          key,
+          error
+        );
+      }
+    }
+
+    /* fallback from performance records */
+
+    records.forEach((record) => {
+      if (record.staffName) {
+        loadedNames.push(record.staffName);
+      }
+    });
+
+    const uniqueStaff = Array.from(
+      new Set(loadedNames)
+    ).sort();
+
+    if (uniqueStaff.length > 0) {
+      setStaffList([
+        "All",
+        ...uniqueStaff,
+      ]);
+    } else {
+      setStaffList([
+        "All",
+        "FASNIL",
+        "SAHAL",
+        "SHEEJA",
+        "SUMAYYA",
+      ]);
+    }
+  };
+
+  /* ---------------- FILTERED RECORDS ---------------- */
+
+  const filteredRecords = useMemo(() => {
+    return records.filter((record) => {
+      const staffMatch =
+        selectedStaff === "All" ||
+        record.staffName?.toLowerCase() ===
+          selectedStaff.toLowerCase();
+
+      const searchMatch =
+        searchQuery.trim() === "" ||
+        record.customerName
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        record.staffName
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase());
+
+      return staffMatch && searchMatch;
+    });
+  }, [
+    records,
+    selectedStaff,
+    searchQuery,
+  ]);
+
+  const filteredPendingBills =
+    useMemo(() => {
+      return pendingBills.filter((bill) => {
+        const staffMatch =
+          selectedStaff === "All" ||
+          bill.staffName?.toLowerCase() ===
+            selectedStaff.toLowerCase();
+
+        const searchMatch =
+          searchQuery.trim() === "" ||
+          bill.customerName
+            ?.toLowerCase()
+            .includes(
+              searchQuery.toLowerCase()
+            ) ||
+          bill.phone
+            ?.toLowerCase()
+            .includes(
+              searchQuery.toLowerCase()
+            );
+
+        return (
+          staffMatch && searchMatch
+        );
+      });
+    }, [
+      pendingBills,
+      selectedStaff,
+      searchQuery,
+    ]);
+      /* ---------------- DATE CLICK ---------------- */
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
 
+    const attendance = getAttendanceRecord(
+      filteredRecords,
+      date
+    );
+
+    const holiday = getHoliday(
+      holidays,
+      date
+    );
+
     setSelectedRecord(
-      getAttendanceRecord(records, date) || null
+      attendance || null
     );
 
     setSelectedHoliday(
-      getHoliday(holidays, date) || null
+      holiday || null
     );
 
     setAttendanceModalOpen(true);
@@ -100,17 +297,83 @@ export default function StaffPerformancePage() {
     setSelectedHoliday(null);
   };
 
-  const staffList = [
-        "All",
+  /* ---------------- FILTERED STAFF RECORDS ---------------- */
 
-    ...Array.from(
-      new Set(
-        records
-          .map((record) => record.staffName)
-          .filter(Boolean)
-      )
-    ),
-  ];
+  const staffRecords = useMemo(() => {
+    if (selectedStaff === "All") {
+      return records;
+    }
+
+    return records.filter(
+      (record) =>
+        record.staffName
+          ?.toLowerCase()
+          .trim() ===
+        selectedStaff
+          .toLowerCase()
+          .trim()
+    );
+  }, [records, selectedStaff]);
+
+  const staffPendingBills =
+    useMemo(() => {
+      if (selectedStaff === "All") {
+        return pendingBills;
+      }
+
+      return pendingBills.filter(
+        (bill) =>
+          bill.staffName
+            ?.toLowerCase()
+            .trim() ===
+          selectedStaff
+            .toLowerCase()
+            .trim()
+      );
+    }, [
+      pendingBills,
+      selectedStaff,
+    ]);
+
+  const attendanceRecords =
+    useMemo(() => {
+      if (selectedStaff === "All") {
+        return records;
+      }
+
+      return records.filter(
+        (record) =>
+          record.staffName
+            ?.toLowerCase()
+            .trim() ===
+          selectedStaff
+            .toLowerCase()
+            .trim()
+      );
+    }, [
+      records,
+      selectedStaff,
+    ]);
+
+  const selectedSalaryHistory =
+    useMemo(() => {
+      if (selectedStaff === "All") {
+        return salaryHistory;
+      }
+
+      return salaryHistory.filter(
+        (item) =>
+          item.staffName
+            ?.toLowerCase()
+            .trim() ===
+          selectedStaff
+            .toLowerCase()
+            .trim()
+      );
+    }, [
+      salaryHistory,
+      selectedStaff,
+    ]);
 
   return (
     <div className="space-y-6">
@@ -123,25 +386,32 @@ export default function StaffPerformancePage() {
           </h1>
 
           <p className="mt-1 text-sm text-slate-500">
-            Monitor attendance, performance, billing and salary.
+            Monitor attendance, performance,
+            billing and salary.
           </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
-
           <select
             value={selectedStaff}
             onChange={(e) =>
               setSelectedStaff(e.target.value)
             }
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium outline-none focus:border-indigo-500"
+            disabled={
+              currentUser &&
+              currentUser.role?.toLowerCase() !==
+                "admin"
+            }
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium outline-none focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500"
           >
             {staffList.map((staff) => (
               <option
                 key={staff}
                 value={staff}
               >
-                {staff}
+                {staff === "All"
+                  ? "All Staff Members"
+                  : staff}
               </option>
             ))}
           </select>
@@ -152,17 +422,15 @@ export default function StaffPerformancePage() {
             onChange={(e) =>
               setSearchQuery(e.target.value)
             }
-            placeholder="Search staff or customer..."
+            placeholder="Search customer or staff..."
             className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500"
           />
-
         </div>
-
       </div>
 
       <SummaryCards
-        records={records}
-        attendanceLogs={records}
+        records={staffRecords}
+        attendanceLogs={attendanceRecords}
         selectedStaff={selectedStaff}
         dailyDate={summaryDate}
         setDailyDate={setSummaryDate}
@@ -175,11 +443,12 @@ export default function StaffPerformancePage() {
       />
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
         <div className="flex flex-wrap border-b border-slate-200">
 
           <button
-            onClick={() => setActiveTab("pending")}
+            onClick={() =>
+              setActiveTab("pending")
+            }
             className={`px-6 py-4 text-sm font-semibold transition ${
               activeTab === "pending"
                 ? "border-b-2 border-indigo-600 text-indigo-600"
@@ -190,7 +459,9 @@ export default function StaffPerformancePage() {
           </button>
 
           <button
-            onClick={() => setActiveTab("billed")}
+            onClick={() =>
+              setActiveTab("billed")
+            }
             className={`px-6 py-4 text-sm font-semibold transition ${
               activeTab === "billed"
                 ? "border-b-2 border-indigo-600 text-indigo-600"
@@ -201,7 +472,9 @@ export default function StaffPerformancePage() {
           </button>
 
           <button
-            onClick={() => setActiveTab("attendance")}
+            onClick={() =>
+              setActiveTab("attendance")
+            }
             className={`px-6 py-4 text-sm font-semibold transition ${
               activeTab === "attendance"
                 ? "border-b-2 border-indigo-600 text-indigo-600"
@@ -210,8 +483,11 @@ export default function StaffPerformancePage() {
           >
             Attendance
           </button>
-                    <button
-            onClick={() => setActiveTab("salary")}
+
+          <button
+            onClick={() =>
+              setActiveTab("salary")
+            }
             className={`px-6 py-4 text-sm font-semibold transition ${
               activeTab === "salary"
                 ? "border-b-2 border-indigo-600 text-indigo-600"
@@ -224,66 +500,63 @@ export default function StaffPerformancePage() {
         </div>
 
         <div className="p-6">
-
-          {activeTab === "pending" && (
-            <PendingBills
-              bills={pendingBills}
-              selectedStaff={selectedStaff}
-              searchQuery={searchQuery}
-            />
+                    {activeTab === "pending" && (
+<PendingBills
+  bills={staffPendingBills}
+  selectedStaff={selectedStaff}
+  searchQuery={searchQuery}
+/>
           )}
 
           {activeTab === "billed" && (
-            <BilledServices
-              records={records}
-              selectedStaff={selectedStaff}
-              searchQuery={searchQuery}
-            />
+<BilledServices
+  records={filteredRecords}
+  selectedStaff={selectedStaff}
+  searchQuery={searchQuery}
+/>
           )}
 
           {activeTab === "attendance" && (
             <AttendanceCalendar
-              records={records}
-              holidays={holidays}
               currentMonth={currentMonth}
-              setCurrentMonth={setCurrentMonth}
+              onMonthChange={setCurrentMonth}
+              records={attendanceRecords}
+              holidays={holidays}
+              selectedStaff={selectedStaff}
               onDateClick={handleDateClick}
             />
           )}
 
           {activeTab === "salary" && (
-            <SalarySection
-              records={records}
-              salaryHistory={salaryHistory}
-              selectedStaff={selectedStaff}
-              selectedMonth={summaryMonth}
-              selectedYear={summaryYear}
-              onOpenHistory={() =>
-                setSalaryHistoryOpen(true)
-              }
-            />
+<SalarySection
+  records={attendanceRecords}
+  salaryHistory={selectedSalaryHistory}
+  selectedStaff={selectedStaff}
+  selectedMonth={summaryMonth}
+  selectedYear={summaryYear}
+  onOpenHistory={() =>
+    setSalaryHistoryOpen(true)
+  }
+/>
           )}
-
         </div>
-
       </div>
 
       <AttendanceModal
-        isOpen={attendanceModalOpen}
-        selectedDate={selectedDate}
-        selectedRecord={selectedRecord}
-        selectedHoliday={selectedHoliday}
+        open={attendanceModalOpen}
         onClose={closeAttendanceModal}
+        date={selectedDate}
+        record={selectedRecord}
+        holiday={selectedHoliday}
       />
 
-      <SalaryHistoryModal
-        isOpen={salaryHistoryOpen}
-        salaryHistory={salaryHistory}
-        onClose={() =>
-          setSalaryHistoryOpen(false)
-        }
-      />
-
+<SalaryHistoryModal
+  isOpen={salaryHistoryOpen}
+  salaryHistory={selectedSalaryHistory}
+  onClose={() =>
+    setSalaryHistoryOpen(false)
+  }
+/>
     </div>
   );
 }
