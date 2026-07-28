@@ -11,18 +11,96 @@ interface PermissionItem {
 }
 
 const initialPermissions: PermissionItem[] = [
-  { id: '1', featureName: 'Dashboard', accountantAccess: true, staffAccess: true },
-  { id: '2', featureName: 'Application Forms', accountantAccess: true, staffAccess: true },
-  { id: '3', featureName: 'Service Entry', accountantAccess: true, staffAccess: true },
-  { id: '4', featureName: 'Saved Bills', accountantAccess: true, staffAccess: true },
-  { id: '5', featureName: 'Service Management', accountantAccess: true, staffAccess: true },
-  { id: '6', featureName: 'Wallets Balance', accountantAccess: true, staffAccess: false },
-  { id: '7', featureName: 'Service Reports', accountantAccess: true, staffAccess: true },
-  { id: '8', featureName: 'Expenses', accountantAccess: true, staffAccess: true },
-  { id: '9', featureName: 'Staff Performance', accountantAccess: false, staffAccess: false },
-  { id: '10', featureName: 'Staff Management', accountantAccess: false, staffAccess: false },
-  { id: '11', featureName: 'Customer Details', accountantAccess: true, staffAccess: true },
-  { id: '12', featureName: 'Dashboard Wallet Balance', accountantAccess: false, staffAccess: true },
+{
+  id: "1",
+  featureName: "Dashboard",
+  accountantAccess: true,
+  staffAccess: true,
+},
+{
+  id: "2",
+  featureName: "Application Forms",
+  accountantAccess: true,
+  staffAccess: true,
+},
+{
+  id: "3",
+  featureName: "Service Entry",
+  accountantAccess: true,
+  staffAccess: true,
+},
+{
+  id: "4",
+  featureName: "Saved Bills",
+  accountantAccess: true,
+  staffAccess: true,
+},
+{
+  id: "5",
+  featureName: "Service Management",
+  accountantAccess: false,
+  staffAccess: false,
+},
+{
+  id: "6",
+  featureName: "Wallet Management",
+  accountantAccess: true,
+  staffAccess:false,
+},
+{
+  id: "7",
+  featureName: "Billed Services",
+  accountantAccess: true,
+  staffAccess:false,
+},
+{
+  id: "8",
+  featureName: "Transaction History",
+  accountantAccess: true,
+  staffAccess:false,
+},
+{
+  id: "9",
+  featureName: "Expenses",
+  accountantAccess: true,
+  staffAccess:false,
+},
+{
+  id: "10",
+  featureName: "Credit Details",
+  accountantAccess: true,
+  staffAccess:false,
+},
+{
+  id: "11",
+  featureName: "Staff Management",
+  accountantAccess: false,
+  staffAccess:false,
+},
+{
+  id: "12",
+  featureName: "Staff Performance",
+  accountantAccess: false,
+  staffAccess:false,
+},
+{
+  id: "13",
+  featureName: "Customer Details",
+  accountantAccess: true,
+  staffAccess:true,
+},
+{
+  id: "14",
+  featureName: "Quick Hub",
+  accountantAccess: true,
+  staffAccess:true,
+},
+{
+  id: "15",
+  featureName: "Feature Permissions",
+  accountantAccess: false,
+  staffAccess:false,
+},
 ];
 
 export default function FeaturePermissionsPage() {

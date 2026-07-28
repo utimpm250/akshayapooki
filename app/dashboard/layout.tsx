@@ -67,26 +67,26 @@ const allMenuItems: MenuItem[] = [
     permissionKey: "Service Management",
   },
   {
-    name: "Wallet Management",
-    path: "/dashboard/wallet-management",
-    icon: Wallet,
-    section: "Wallets",
-    permissionKey: "Wallets Balance",
-  },
+  name: "Wallet Management",
+  path: "/dashboard/wallet-management",
+  icon: Wallet,
+  section: "Wallets",
+  permissionKey: "Wallet Management",
+},
   {
-    name: "Billed Services",
-    path: "/dashboard/billed-services",
-    icon: FileSpreadsheet,
-    section: "Finance",
-    permissionKey: "Service Reports",
-  },
-  {
-    name: "Transaction History",
-    path: "/dashboard/transaction-history",
-    icon: History,
-    section: "Finance",
-    permissionKey: "Service Reports",
-  },
+  name: "Billed Services",
+  path: "/dashboard/billed-services",
+  icon: FileSpreadsheet,
+  section: "Finance",
+  permissionKey: "Billed Services",
+},
+ {
+  name: "Transaction History",
+  path: "/dashboard/transaction-history",
+  icon: History,
+  section: "Finance",
+  permissionKey: "Transaction History",
+},
   {
     name: "Expenses",
     path: "/dashboard/expenses",
@@ -94,13 +94,13 @@ const allMenuItems: MenuItem[] = [
     section: "Finance",
     permissionKey: "Expenses",
   },
-  {
-    name: "Credit Details",
-    path: "/dashboard/credit-details",
-    icon: CreditCard,
-    section: "Finance",
-    permissionKey: "Expenses",
-  },
+{
+  name: "Credit Details",
+  path: "/dashboard/credit-details",
+  icon: CreditCard,
+  section: "Finance",
+  permissionKey: "Credit Details",
+},
   {
     name: "Staff Management",
     path: "/dashboard/staff-management",
@@ -122,13 +122,13 @@ const allMenuItems: MenuItem[] = [
     section: "System",
     permissionKey: "Customer Details",
   },
-  {
-    name: "Quick Hub",
-    path: "/dashboard/quick-hub",
-    icon: Share2,
-    section: "System",
-    permissionKey: "Dashboard Wallet Balance",
-  },
+{
+  name: "Quick Hub",
+  path: "/dashboard/quick-hub",
+  icon: Share2,
+  section: "System",
+  permissionKey: "Quick Hub",
+},
   {
     name: "Feature Permissions",
     path: "/dashboard/feature-permissions",
@@ -174,130 +174,68 @@ const closeSidebar = () => {
     setSidebarOpen(false);
   }, 150);
 };
-  useEffect(() => {
-    const storedUser = localStorage.getItem("loggedInUser");
+useEffect(() => {
+  const storedUser = JSON.parse(
+    localStorage.getItem("loggedInUser") || "{}"
+  );
 
-    let userRole = "admin";
-    let username = "";
+  const username = (storedUser.username || "User").trim();
+  const role = (storedUser.role || "staff").toLowerCase();
 
-    if (storedUser) {
-      try {
-const parsed = JSON.parse(storedUser);
+  setCurrentUser({
+    username,
+    role,
+  });
 
-username = parsed.username || "";
-userRole = (parsed.role || "staff").toLowerCase();
+  const pinKey = `sidebar_pinned_${username.toLowerCase()}`;
+  const savedPin = localStorage.getItem(pinKey);
 
-setCurrentUser({
-  username: parsed.username || "User",
-  role: (parsed.role || "staff").toLowerCase(),
-});
+  if (savedPin !== null) {
+    const pinned = savedPin === "true";
+    setSidebarPinned(pinned);
+    setSidebarOpen(pinned);
+  }
 
-const pinKey = `sidebar_pinned_${username.toLowerCase()}`;
+  // Admin -> എല്ലാം കാണും
+  if (role === "admin") {
+    setAllowedMenus(allMenuItems);
+    return;
+  }
 
-const savedPin = localStorage.getItem(pinKey);
+  const permissions = JSON.parse(
+    localStorage.getItem("role_feature_permissions") || "[]"
+  );
 
-if (savedPin !== null) {
-  const pinned = savedPin === "true";
-  setSidebarPinned(pinned);
-  setSidebarOpen(pinned);
-}
-
-      } catch (err) {
-        console.error("Error reading loggedInUser", err);
-      }
+  const filteredMenus = allMenuItems.filter((menu) => {
+    if (menu.permissionKey === "Feature Permissions") {
+      return false;
     }
 
-    if (userRole === "admin" && username.toLowerCase() === "admin") {
-      setAllowedMenus(allMenuItems);
-      return;
-    }
-        let actualRole = userRole;
-
-    const savedStaffData = localStorage.getItem("smart_akshaya_staff");
-
-    if (savedStaffData) {
-      try {
-        const staffArray = JSON.parse(savedStaffData);
-
-        const matched = staffArray.find((s: any) => {
-          const sName = (
-            s.name ||
-            s.staffName ||
-            s.username ||
-            ""
-          )
-            .trim()
-            .toLowerCase();
-
-          return sName === username.toLowerCase();
-        });
-
-        if (matched && matched.role) {
-          actualRole = matched.role.trim().toLowerCase();
-        }
-        setCurrentUser({
-  username,
-  role: actualRole,
-});
-      } catch (e) {
-        console.error("Error checking staff role", e);
-      }
-    }
-
-    if (actualRole === "admin") {
-      setAllowedMenus(allMenuItems);
-      return;
-    }
-
-    const savedPermissions = localStorage.getItem(
-      "role_feature_permissions"
+    const permission = permissions.find(
+      (p: any) => p.featureName === menu.permissionKey
     );
 
-    if (savedPermissions) {
-      try {
-        const permissionsList = JSON.parse(savedPermissions);
-
-        const filtered = allMenuItems.filter((item) => {
-          if (
-            item.path ===
-            "/dashboard/feature-permissions"
-          )
-            return false;
-
-          const found = permissionsList.find(
-            (p: any) =>
-              p.featureName === item.permissionKey
-          );
-
-          if (!found) return true;
-
-          if (actualRole === "accountant") {
-            return found.accountantAccess;
-          }
-
-          return found.staffAccess;
-        });
-
-        setAllowedMenus(filtered);
-
-        const isCurrentAllowed =
-          filtered.some(
-            (item) => item.path === pathname
-          ) || pathname === "/dashboard";
-
-        if (!isCurrentAllowed) {
-          router.push("/dashboard");
-        }
-      } catch (e) {
-        console.error(
-          "Error parsing permissions",
-          e
-        );
-      }
-    } else {
-      setAllowedMenus(allMenuItems);
+    if (!permission) {
+      return false;
     }
-  }, [pathname, router]);
+
+    if (role === "accountant") {
+      return permission.accountantAccess;
+    }
+
+    return permission.staffAccess;
+  });
+
+  setAllowedMenus(filteredMenus);
+
+  const allowed =
+    pathname === "/dashboard" ||
+    filteredMenus.some((m) => m.path === pathname);
+
+  if (!allowed) {
+    router.replace("/dashboard");
+  }
+}, [pathname, router]);
 
 const togglePinSidebar = () => {
   const newValue = !sidebarPinned;
