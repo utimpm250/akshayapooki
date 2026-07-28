@@ -26,7 +26,7 @@ const INITIAL_STAFF: Staff[] = [
   role: 'Admin',
   salary: 10000,
   password: 'admin123'
-}
+},
 { 
   id: '2',
   staffId: '#2',
@@ -101,11 +101,12 @@ export default function StaffManagementPage() {
   const [newPassword, setNewPassword] = useState('');
 
   // Edit Staff Form State
-  const [editName, setEditName] = useState('');
-  const [editEmail, setEditEmail] = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [editRole, setEditRole] = useState('');
-  const [editPassword, setEditPassword] = useState("");
+const [editName, setEditName] = useState('');
+const [editEmail, setEditEmail] = useState('');
+const [editPhone, setEditPhone] = useState('');
+const [editRole, setEditRole] = useState('');
+const [editSalary, setEditSalary] = useState(0);
+const [editPassword, setEditPassword] = useState('');
 
   useEffect(() => {
     const saved = localStorage.getItem('smart_akshaya_staff');
