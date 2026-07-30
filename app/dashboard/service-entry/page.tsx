@@ -80,15 +80,29 @@ function ServiceEntryForm() {
   const [previousBalance, setPreviousBalance] = useState<number>(0);
 
   // Balance Calculator State
-  const [showCalculator, setShowCalculator] = useState(false);
-  const [customerPaidInput, setCustomerPaidInput] = useState<string>('');
+const [showCalculator, setShowCalculator] = useState(false);
+const [customerPaidInput, setCustomerPaidInput] = useState<string>("");
+
+const [showQRModal, setShowQRModal] = useState(false);
+const [qrMode, setQrMode] = useState<"gpay" | "whatsapp">("gpay");
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const gpayInputRef = useRef<HTMLInputElement>(null);
   const cashInputRef = useRef<HTMLInputElement>(null);
 
   const hasInProgressItems = items.some(item => item.status === 'In Progress');
-  const hasCompletedItems = items.some(item => item.status === 'Completed');
+  const hasCompletedItems = items.some(item => item.status === "Completed");
+
+const GPAY_QR = "/payment-qr.jpeg";
+const UPI_ID = "aksmpm250@oksbi"; // നിങ്ങളുടെ യഥാർത്ഥ UPI ID
+const PAYEE_NAME = "Akshaya Centre";
+const WHATSAPP_QR = "/whatsapp-qr.jpeg";
+
+const GPAY_COPY_TEXT =
+  "Scan this QR using any UPI app to make payment.";
+
+const WHATSAPP_COPY_TEXT =
+  "Scan this QR to open WhatsApp chat.";
 
   const loadWallets = () => {
     const savedWallets = localStorage.getItem('managedWallets');
@@ -243,6 +257,12 @@ function ServiceEntryForm() {
   
   const totalPaid = Number(gpay) + Number(cash);
   const balance = totalAmount - totalPaid;
+  
+  const dynamicUPIQR = `https://quickchart.io/qr?size=500&text=${encodeURIComponent(
+  `upi://pay?pa=${UPI_ID}&pn=${PAYEE_NAME}&am=${totalAmount.toFixed(
+    2
+  )}&cu=INR`
+)}`;
 
   const handleSettleCash = () => {
     const remainingToPay = totalAmount - Number(gpay);
@@ -267,7 +287,85 @@ function ServiceEntryForm() {
     }
   };
 
-  const handlePrint = () => { window.print(); };
+  const handlePrint = () => {
+  window.print();
+};
+
+const handleOpenQR = (mode: "gpay" | "whatsapp") => {
+  setQrMode(mode);
+  setShowQRModal(true);
+};
+
+const handleCopyQR = async () => {
+  const text =
+    qrMode === "gpay"
+      ? GPAY_COPY_TEXT
+      : WHATSAPP_COPY_TEXT;
+
+  await navigator.clipboard.writeText(text);
+
+  alert("Copied.");
+};
+
+const handleShareQR = async () => {
+  const text =
+    qrMode === "gpay"
+      ? GPAY_COPY_TEXT
+      : WHATSAPP_COPY_TEXT;
+
+  if (navigator.share) {
+    await navigator.share({
+      title: "QR Code",
+      text,
+    });
+
+    return;
+  }
+
+  await navigator.clipboard.writeText(text);
+
+  alert("Copied.");
+};
+
+const handleDownloadQR = () => {
+  const link = document.createElement("a");
+
+link.href =
+  qrMode === "gpay"
+    ? dynamicUPIQR
+    : WHATSAPP_QR;
+
+  link.download =
+    qrMode === "gpay"
+      ? "gpay-qr.jpeg"
+      : "whatsapp-qr.jpeg";
+
+  link.click();
+};
+
+const handlePrintQR = () => {
+const image =
+  qrMode === "gpay"
+    ? dynamicUPIQR
+    : WHATSAPP_QR;
+
+  const win = window.open("", "_blank");
+
+  if (!win) return;
+
+  win.document.write(`
+    <html>
+      <head>
+        <title>QR Code</title>
+      </head>
+      <body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;">
+        <img src="${image}" style="max-width:90%;max-height:90%;" onload="window.print();window.close();" />
+      </body>
+    </html>
+  `);
+
+  win.document.close();
+};
   
   const handleShare = () => {
     if (navigator.share) {
@@ -580,7 +678,64 @@ localStorage.setItem(
           </div>
         </div>
       )}
+{showQRModal && (
+  <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
 
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="font-bold text-lg">
+          {qrMode === "gpay" ? "GPay QR" : "WhatsApp QR"}
+        </h3>
+
+        <button
+          onClick={() => setShowQRModal(false)}
+          className="text-slate-500 hover:text-black"
+        >
+          ✕
+        </button>
+      </div>
+
+      <img
+        src={qrMode === "gpay" ? dynamicUPIQR : WHATSAPP_QR}
+        alt="QR"
+        className="w-72 h-72 mx-auto rounded-xl border"
+      />
+
+      <div className="grid grid-cols-2 gap-3 mt-6">
+
+        <button
+          onClick={handleCopyQR}
+          className="rounded-xl bg-slate-900 text-white py-3 font-semibold"
+        >
+          Copy
+        </button>
+
+        <button
+          onClick={handleShareQR}
+          className="rounded-xl bg-blue-600 text-white py-3 font-semibold"
+        >
+          Share
+        </button>
+
+        <button
+          onClick={handleDownloadQR}
+          className="rounded-xl bg-emerald-600 text-white py-3 font-semibold"
+        >
+          Download
+        </button>
+
+        <button
+          onClick={handlePrintQR}
+          className="rounded-xl bg-violet-600 text-white py-3 font-semibold"
+        >
+          Print
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+)}
       {/* Balance Calculator Modal */}
       {showCalculator && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -909,6 +1064,13 @@ localStorage.setItem(
             <div className="border border-slate-200 rounded-2xl p-3 bg-white">
               <div className="flex justify-between items-center mb-1">
                 <label className="text-[10px] font-bold uppercase tracking-wide text-slate-400">GPAY/UPI</label>
+                <button
+  type="button"
+  onClick={() => handleOpenQR("gpay")}
+  className="text-[10px] px-2 py-1 rounded bg-blue-600 text-white font-bold"
+>
+  QR
+</button>
                 <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-bold">Alt+G</span>
               </div>
               <input
@@ -1032,6 +1194,12 @@ localStorage.setItem(
             className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-5 py-3.5 rounded-2xl transition flex items-center justify-center gap-2 shadow-sm"
           >
             <Printer size={16} /> Print <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[9px]">Alt+P</span>
+          <button
+  onClick={() => handleOpenQR("whatsapp")}
+  className="border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 font-bold text-xs px-5 py-3.5 rounded-2xl transition"
+>
+  WhatsApp QR
+</button>
           </button>
           <button 
             onClick={handleShare}
