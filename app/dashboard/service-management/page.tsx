@@ -15,7 +15,6 @@ interface ServiceItem {
   isPinned?: boolean;
 }
 
-// മുഴുവൻ 121 സർവീസുകളും ഉൾപ്പെടുത്തിയ ലിസ്റ്റ്
 const initialServices: ServiceItem[] = [
   { id: "1", name: "Aadhaar 125", wallet: "CASH", deptFee: 0, srvCharge: 125, commission: 5, portalUrl: "" },
   { id: "2", name: "Aadhaar 50", wallet: "CASH", deptFee: 0, srvCharge: 50, commission: 5, portalUrl: "" },
@@ -144,6 +143,7 @@ export default function ServiceManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [services, setServices] = useState<ServiceItem[]>(initialServices);
+  const [walletOptions, setWalletOptions] = useState<string[]>(['CASH', 'BANK', 'Edistrict', 'CSC']);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
@@ -156,7 +156,26 @@ export default function ServiceManagementPage() {
   const [newFollowupDays, setNewFollowupDays] = useState(0);
   const [newPortalUrl, setNewPortalUrl] = useState('');
 
-  const walletOptions = ['CASH', 'BANK', 'Edistrict', 'CSC'];
+  // വാലറ്റ് മാനേജ്മെൻ്റിൽ നിന്ന് വാലറ്റുകൾ ഫെച്ച് ചെയ്യുക
+  const fetchWallets = () => {
+    if (typeof window !== 'undefined') {
+      const savedWallets = localStorage.getItem('wallets'); // നിങ്ങളുടെ വാലറ്റ് മാനേജ്മെൻ്റ് കീ (ആവശ്യമെങ്കിൽ മാറ്റാം) അല്ലെങ്കിൽ 'managedWallets'
+      if (savedWallets) {
+        try {
+          const parsed = JSON.parse(savedWallets);
+          // അഡ്മിൻ പാനലിൽ വാലറ്റ് ഒബ്ജക്റ്റ് ആണോ അല്ലെങ്കിൽ പേരുകളുടെ അറേ ആണോ എന്ന് നോക്കി പേരുകൾ മാത്രം എടുക്കുന്നു
+          const names = parsed.map((w: any) => typeof w === 'string' ? w : (w.name || w.walletName || 'CASH'));
+          if (names.length > 0) {
+            // ഡ്യൂപ്ലിക്കേറ്റ് ഒഴിവാക്കാൻ Set ഉപയോഗിക്കുന്നു
+            const uniqueWallets = Array.from(new Set(['CASH', 'BANK', ...names]));
+            setWalletOptions(uniqueWallets as string[]);
+          }
+        } catch (e) {
+          console.error("Error parsing wallets", e);
+        }
+      }
+    }
+  };
 
   const fetchServices = () => {
     if (typeof window !== 'undefined') {
@@ -171,11 +190,13 @@ export default function ServiceManagementPage() {
 
   useEffect(() => {
     fetchServices();
+    fetchWallets();
   }, []);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchServices();
+    fetchWallets();
     setTimeout(() => setIsRefreshing(false), 600);
   };
 
@@ -227,9 +248,10 @@ export default function ServiceManagementPage() {
   };
 
   const handleOpenAddModal = () => {
+    fetchWallets(); // മോഡൽ തുറക്കുമ്പോൾ പുതിയ വാലറ്റ് ലിസ്റ്റ് അപ്ഡേറ്റ് ചെയ്യും
     setEditingServiceId(null);
     setNewName('');
-    setNewWallet('CASH');
+    setNewWallet(walletOptions[0] || 'CASH');
     setNewDeptFee(0);
     setNewSrvCharge(0);
     setNewCommission(0);
@@ -239,6 +261,7 @@ export default function ServiceManagementPage() {
   };
 
   const handleOpenEditModal = (service: ServiceItem) => {
+    fetchWallets(); // മോഡൽ തുറക്കുമ്പോൾ പുതിയ വാലറ്റ് ലിസ്റ്റ് അപ്ഡേറ്റ് ചെയ്യും
     setEditingServiceId(service.id);
     setNewName(service.name);
     setNewWallet(service.wallet);
@@ -364,12 +387,7 @@ export default function ServiceManagementPage() {
                       )}
                     </td>
                     <td className="py-4 px-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-black tracking-wide ${
-                        service.wallet === 'CASH' ? 'bg-slate-100 text-slate-600' :
-                        service.wallet === 'BANK' ? 'bg-blue-50 text-blue-600' :
-                        service.wallet === 'Edistrict' ? 'bg-purple-50 text-purple-600' :
-                        'bg-amber-50 text-amber-600'
-                      }`}>
+                      <span className="px-2.5 py-1 rounded-md text-[10px] font-black tracking-wide bg-slate-100 text-slate-700">
                         {service.wallet}
                       </span>
                     </td>
