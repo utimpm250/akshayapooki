@@ -32,7 +32,9 @@ export default function AttendanceCalendar({
   const month = currentMonth.getMonth();
   const year = currentMonth.getFullYear();
 
+  // ടൈം സോൺ പ്രശ്നങ്ങൾ ഒഴിവാക്കാൻ ഇന്നത്തെ തീയതി കൃത്യമായി സെറ്റ് ചെയ്യുന്നു
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -77,21 +79,27 @@ export default function AttendanceCalendar({
     years.push(y);
   }
 
+  // തിരഞ്ഞെടുത്ത സ്റ്റാഫിന്റെയും തീയതിയുടെയും റെക്കോർഡ് കണ്ടെത്താൻ (ടൈം സോൺ ഒഴിവാക്കി)
   const hasAttendance = (date: Date) => {
-    const day =
-      date.toISOString().split("T")[0];
+    const yearStr = date.getFullYear();
+    const monthStr = String(date.getMonth() + 1).padStart(2, "0");
+    const dayStr = String(date.getDate()).padStart(2, "0");
+    const formattedDate = `${yearStr}-${monthStr}-${dayStr}`;
 
     return records.find(
-      (record) => record.date === day
+      (record) => record.date === formattedDate
     );
   };
 
+  // ഹോളിഡേ പരിശോധിക്കാൻ
   const isHoliday = (date: Date) => {
-    const day =
-      date.toISOString().split("T")[0];
+    const yearStr = date.getFullYear();
+    const monthStr = String(date.getMonth() + 1).padStart(2, "0");
+    const dayStr = String(date.getDate()).padStart(2, "0");
+    const formattedDate = `${yearStr}-${monthStr}-${dayStr}`;
 
     return holidays.find(
-      (holiday) => holiday.date === day
+      (holiday) => holiday.date === formattedDate
     );
   };
 
@@ -111,6 +119,7 @@ export default function AttendanceCalendar({
     );
   }
 
+  // മുകളിലെ കാർഡുകളിലെ കണക്കുകൾ കൃത്യമാക്കാൻ (സൺഡേകളും അഡീഷണൽ ഹോളിഡേകളും ഉൾപ്പെടുത്തി)
   const attendanceSummary =
     useMemo(() => {
 
@@ -124,24 +133,27 @@ export default function AttendanceCalendar({
         day++
       ) {
 
-        const date = new Date(
-          year,
-          month,
-          day
-        );
+        const date = new Date(year, month, day);
+        date.setHours(0, 0, 0, 0);
 
+        // നാളത്തെ അല്ലെങ്കിൽ വരാനിരിക്കുന്ന ദിവസങ്ങൾ കണക്കിൽ കൂട്ടേണ്ടതില്ല
         if (date > today) continue;
 
-        if (date.getDay() === 0) continue;
+        const isSun = date.getDay() === 0;
+        const holidayMatch = isHoliday(date);
+        const attendanceMatch = hasAttendance(date);
 
-        if (isHoliday(date)) {
+        // സൺഡേയോ അല്ലെങ്കിൽ മറ്റ് ഹോളിഡേയോ ആണെങ്കിൽ അത് ഹോളിഡേ ആയി കണക്കാക്കും
+        if (isSun || holidayMatch) {
           holiday++;
           continue;
         }
 
-        if (hasAttendance(date)) {
+        // പ്രസന്റ് ആണെങ്കിൽ
+        if (attendanceMatch) {
           present++;
         } else {
+          // അല്ലാത്തപക്ഷം (പ്രവർ്ത്തന ദിവസങ്ങളിൽ മാത്രം) ആബ്സെൻ്റ് ആയി കണക്കാക്കും
           absent++;
         }
 
@@ -159,8 +171,10 @@ export default function AttendanceCalendar({
       month,
       year,
       selectedStaff,
+      today,
     ]);
-      return (
+
+  return (
 
     <div className="space-y-5">
 
@@ -364,14 +378,9 @@ export default function AttendanceCalendar({
                 "bg-emerald-50 hover:bg-emerald-100";
             }
 
-            if (holiday) {
+            if (holiday || isSunday) {
               bgClass =
                 "bg-amber-50 hover:bg-amber-100";
-            }
-
-            if (isSunday) {
-              bgClass =
-                "bg-red-50 hover:bg-red-100";
             }
 
             if (isFuture) {
@@ -406,7 +415,8 @@ export default function AttendanceCalendar({
                   )}
 
                 </div>
-                                {holiday ? (
+
+                {holiday ? (
 
                   <div className="space-y-1">
 
@@ -417,6 +427,16 @@ export default function AttendanceCalendar({
                     <div className="text-[11px] font-medium leading-tight text-amber-800">
                       {holiday.name}
                     </div>
+
+                  </div>
+
+                ) : isSunday ? (
+
+                  <div className="flex h-16 items-center justify-center">
+
+                    <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">
+                      Sunday
+                    </span>
 
                   </div>
 
@@ -443,16 +463,6 @@ export default function AttendanceCalendar({
                     <div className="text-[11px] font-semibold text-slate-700">
                       {attendance.logoutTime || "--"}
                     </div>
-
-                  </div>
-
-                ) : isSunday ? (
-
-                  <div className="flex h-16 items-center justify-center">
-
-                    <span className="rounded-full bg-red-100 px-2 py-1 text-[10px] font-bold text-red-600">
-                      Sunday
-                    </span>
 
                   </div>
 
