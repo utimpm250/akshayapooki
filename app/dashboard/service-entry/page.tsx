@@ -1,10 +1,10 @@
 "use client";
-
+import html2canvas from "html2canvas";
 import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Calendar, User, Phone, Search, Plus, Trash2, 
-  ReceiptText, CreditCard, Calculator, Printer, Share2, Lock, ShieldCheck, X
+  ReceiptText, CreditCard, Calculator, Printer, Share2, QrCode, Lock, ShieldCheck, X
 } from "lucide-react";
 
 interface ServiceItem {
@@ -80,29 +80,23 @@ function ServiceEntryForm() {
   const [previousBalance, setPreviousBalance] = useState<number>(0);
 
   // Balance Calculator State
-const [showCalculator, setShowCalculator] = useState(false);
-const [customerPaidInput, setCustomerPaidInput] = useState<string>("");
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
-const [showQRModal, setShowQRModal] = useState(false);
-const [qrMode, setQrMode] = useState<"gpay" | "whatsapp">("gpay");
+const [lastCompletedBill, setLastCompletedBill] = useState<any>(null);
+const [showSuccessToast, setShowSuccessToast] = useState(false);
+const [showShareToast, setShowShareToast] = useState(false);
+
+const serviceInputRef = useRef<HTMLInputElement>(null);
+  const [billCompleted, setBillCompleted] = useState(false);
+  const [customerPaidInput, setCustomerPaidInput] = useState<string>('');
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const gpayInputRef = useRef<HTMLInputElement>(null);
   const cashInputRef = useRef<HTMLInputElement>(null);
 
   const hasInProgressItems = items.some(item => item.status === 'In Progress');
-  const hasCompletedItems = items.some(item => item.status === "Completed");
-
-const GPAY_QR = "/payment-qr.jpeg";
-const UPI_ID = "aksmpm250@oksbi"; // നിങ്ങളുടെ യഥാർത്ഥ UPI ID
-const PAYEE_NAME = "Akshaya Centre";
-const WHATSAPP_QR = "/whatsapp-qr.jpeg";
-
-const GPAY_COPY_TEXT =
-  "Scan this QR using any UPI app to make payment.";
-
-const WHATSAPP_COPY_TEXT =
-  "Scan this QR to open WhatsApp chat.";
+  const hasCompletedItems = items.some(item => item.status === 'Completed');
 
   const loadWallets = () => {
     const savedWallets = localStorage.getItem('managedWallets');
@@ -148,7 +142,8 @@ const WHATSAPP_COPY_TEXT =
       } else if (e.altKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         handlePrint();
-      } else if (e.altKey && e.key.toLowerCase() === 'w') {
+
+} else if (e.altKey && e.key.toLowerCase() === 'w') {
         e.preventDefault();
         handleShare();
       } else if (e.key === 'F7') {
@@ -257,12 +252,6 @@ const WHATSAPP_COPY_TEXT =
   
   const totalPaid = Number(gpay) + Number(cash);
   const balance = totalAmount - totalPaid;
-  
-  const dynamicUPIQR = `https://quickchart.io/qr?size=500&text=${encodeURIComponent(
-  `upi://pay?pa=${UPI_ID}&pn=${PAYEE_NAME}&am=${totalAmount.toFixed(
-    2
-  )}&cu=INR`
-)}`;
 
   const handleSettleCash = () => {
     const remainingToPay = totalAmount - Number(gpay);
@@ -285,145 +274,554 @@ const WHATSAPP_COPY_TEXT =
     if (resumeId) {
       router.push('/dashboard/service-entry');
     }
+    setTimeout(() => {
+  serviceInputRef.current?.focus();
+}, 100);
+setBillCompleted(false);
   };
-
-  const handlePrint = () => {
-  window.print();
-};
-
-const handleOpenQR = (mode: "gpay" | "whatsapp") => {
-  setQrMode(mode);
-  setShowQRModal(true);
-};
-
-const handleCopyQR = async () => {
-  const text =
-    qrMode === "gpay"
-      ? GPAY_COPY_TEXT
-      : WHATSAPP_COPY_TEXT;
-
-  await navigator.clipboard.writeText(text);
-
-  alert("Copied.");
-};
-
-const handleShareQR = async () => {
-  const text =
-    qrMode === "gpay"
-      ? GPAY_COPY_TEXT
-      : WHATSAPP_COPY_TEXT;
-
-  if (navigator.share) {
-    await navigator.share({
-      title: "QR Code",
-      text,
-    });
-
+  
+const handlePrint = () => {
+  if (!lastCompletedBill) {
+    alert("No completed bill available.");
     return;
   }
 
-  await navigator.clipboard.writeText(text);
+  const printWindow = window.open("", "_blank", "width=800,height=900");
 
-  alert("Copied.");
-};
+  if (!printWindow) return;
 
-const handleDownloadQR = () => {
-  const link = document.createElement("a");
+const itemRows = lastCompletedBill.items
+  .map(
+    (item: any, index: number) => `
+<tr>
+<td>${index + 1}</td>
+<td>${item.name}</td>
+<td>₹${Number(item.walletChg).toFixed(2)}</td>
+<td>₹${Number(item.srvChg).toFixed(2)}</td>
+<td>${item.qty}</td>
+<td>${item.status ?? "Completed"}</td>
+<td style="text-align:right">
+₹${(
+  (Number(item.walletChg) + Number(item.srvChg)) *
+  Number(item.qty)
+).toFixed(2)}
+</td>
+</tr>
+`
+  )
+  .join("");
 
-link.href =
-  qrMode === "gpay"
-    ? dynamicUPIQR
-    : WHATSAPP_QR;
+printWindow.document.write(`
+<!DOCTYPE html>
+<html>
 
-  link.download =
-    qrMode === "gpay"
-      ? "gpay-qr.jpeg"
-      : "whatsapp-qr.jpeg";
+<head>
 
-  link.click();
-};
+<meta charset="UTF-8">
 
-const handlePrintQR = () => {
-const image =
-  qrMode === "gpay"
-    ? dynamicUPIQR
-    : WHATSAPP_QR;
+<title>Invoice</title>
 
-  const win = window.open("", "_blank");
+<style>
 
-  if (!win) return;
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,Helvetica,sans-serif;
+}
 
-  win.document.write(`
-    <html>
-      <head>
-        <title>QR Code</title>
-      </head>
-      <body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;">
-        <img src="${image}" style="max-width:90%;max-height:90%;" onload="window.print();window.close();" />
-      </body>
-    </html>
-  `);
+body{
+padding:25px;
+font-size:12px;
+color:#000;
+}
 
-  win.document.close();
+.invoice{
+width:100%;
+border:2px solid #222;
+padding:12px;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:flex-start;
+margin-bottom:10px;
+}
+
+.left{
+width:35%;
+}
+
+.center{
+width:30%;
+text-align:center;
+}
+
+.right{
+width:35%;
+}
+
+.title{
+display:inline-block;
+background:#fff48a;
+border:1px solid #888;
+padding:4px 18px;
+font-size:22px;
+font-weight:bold;
+margin-bottom:10px;
+}
+
+.company{
+font-size:22px;
+font-weight:bold;
+line-height:30px;
+}
+
+.small{
+font-size:12px;
+line-height:18px;
+}
+
+.blue{
+background:#8eaaf8;
+color:white;
+padding:4px 8px;
+font-weight:bold;
+margin-bottom:6px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+th{
+background:#8eaaf8;
+color:white;
+padding:6px;
+border:1px solid #777;
+font-size:12px;
+}
+
+td{
+border:1px solid #777;
+padding:6px;
+font-size:12px;
+}
+
+tfoot td{
+font-weight:bold;
+}
+
+.footer{
+margin-top:18px;
+text-align:center;
+font-size:11px;
+color:#555;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="invoice">
+
+<div class="header">
+
+<div class="left">
+
+<div class="company">
+
+AKSHAYA CENTRE<br>
+POOKIPARAMBA
+
+</div>
+
+<div class="small">
+
+MPM250<br>
+
+Ph : 9037298582<br>
+
+Email : akshayapkp@gmail.com
+
+</div>
+
+</div>
+
+<div class="center">
+
+<div class="title">
+
+INVOICE
+
+</div>
+
+<div style="text-align:left">
+
+<b>Bill # :</b>
+MPM${Date.now()}<br>
+
+<b>Date :</b>
+${lastCompletedBill.date}<br>
+
+<b>Created By :</b>
+${currentStaff}
+
+</div>
+
+</div>
+
+<div class="right">
+
+<div class="blue">
+
+Customer
+
+</div>
+
+<div class="small">
+
+<b>Name :</b>
+${lastCompletedBill.customerName || "Walk-in"}<br>
+
+<b>Phone :</b>
+${lastCompletedBill.mobile || "-"}
+
+</div>
+
+</div>
+
+</div>
+
+<div class="blue">
+
+Service Details
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Sl</th>
+
+<th>Service</th>
+
+<th>Dept Fee</th>
+
+<th>Svc Charge</th>
+
+<th>Qty</th>
+
+<th>Status</th>
+
+<th>Total</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+${itemRows}
+
+</tbody>
+
+</table>
+
+<br>
+
+<div class="blue">
+Payment Summary
+</div>
+
+<table>
+
+<tr>
+<td><b>Total Dept Fee</b></td>
+<td style="text-align:right">
+₹${lastCompletedBill.items.reduce(
+(s:any,i:any)=>s+(Number(i.walletChg)*Number(i.qty)),0
+).toFixed(2)}
+</td>
+
+<td><b>GPay</b></td>
+<td style="text-align:right">
+₹${Number(lastCompletedBill.gpay).toFixed(2)}
+</td>
+</tr>
+
+<tr>
+<td><b>Total Service Charge</b></td>
+<td style="text-align:right">
+₹${lastCompletedBill.items.reduce(
+(s:any,i:any)=>s+(Number(i.srvChg)*Number(i.qty)),0
+).toFixed(2)}
+</td>
+
+<td><b>Cash</b></td>
+<td style="text-align:right">
+₹${Number(lastCompletedBill.cash).toFixed(2)}
+</td>
+</tr>
+
+<tr>
+<td><b>Gross Total</b></td>
+<td style="text-align:right">
+₹${Number(lastCompletedBill.totalAmount).toFixed(2)}
+</td>
+
+<td><b>Total Paid</b></td>
+<td style="text-align:right">
+₹${Number(lastCompletedBill.totalPaid).toFixed(2)}
+</td>
+</tr>
+
+<tr>
+<td colspan="2"></td>
+
+<td><b>Balance</b></td>
+
+<td style="text-align:right">
+₹${Number(lastCompletedBill.balance).toFixed(2)}
+</td>
+</tr>
+
+</table>
+
+<div class="footer">
+
+<hr style="margin:20px 0;">
+
+<h3 style="margin-bottom:8px;">
+Thank You!
+</h3>
+
+<p>
+We appreciate your visit to
+<b>Akshaya e Centre Pookiparamba</b>.
+</p>
+
+<p style="margin-top:8px;">
+This is a computer generated invoice.
+</p>
+
+<p style="margin-top:6px;">
+Generated on :
+${new Date().toLocaleString()}
+</p>
+
+</div>
+
+</div>
+
+</body>
+
+</html>
+`);
+
+printWindow.document.close();
+
+printWindow.focus();
+
+setTimeout(() => {
+  printWindow.print();
+  printWindow.close();
+}, 300);
 };
   
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Service Bill',
-        text: `Bill Total: ₹${totalAmount.toFixed(2)}, Paid: ₹${totalPaid.toFixed(2)}, Balance: ₹${balance.toFixed(2)}`,
-        url: window.location.href,
-      }).catch(console.error);
-    } else {
-      alert("Sharing is not supported on this browser.");
-    }
-  };
+const handleShare = async () => {
+  if (!lastCompletedBill) {
+    alert("No completed bill available.");
+    return;
+  }
 
-  // Helper function to save customer to Customer Details storage automatically
-  const saveCustomerToDirectory = () => {
-    const name = customerName ? customerName.trim() : '';
-    const mob = mobile ? mobile.trim() : '';
+  try {
+    const container = document.createElement("div");
 
-    if (name && mob && name.toLowerCase() !== 'walk-in') {
-      const storedCustomers = localStorage.getItem('managedCustomers');
-      let managedList = [];
+    container.style.width = "600px";
+    container.style.background = "#ffffff";
+    container.style.padding = "20px";
+    container.style.fontFamily = "Arial";
+    container.style.color = "#000";
+
+    const rows = lastCompletedBill.items
+      .map(
+        (item: any) => `
+<tr>
+<td style="border:1px solid #999;padding:6px;">${item.name}</td>
+<td style="border:1px solid #999;padding:6px;text-align:center;">${item.qty}</td>
+<td style="border:1px solid #999;padding:6px;text-align:right;">₹${(
+          Number(item.walletChg) + Number(item.srvChg)
+        ).toFixed(2)}</td>
+<td style="border:1px solid #999;padding:6px;text-align:right;">₹${(
+          (Number(item.walletChg) + Number(item.srvChg)) *
+          Number(item.qty)
+        ).toFixed(2)}</td>
+</tr>
+`
+      )
+      .join("");
+
+    container.innerHTML = `
+<div style="text-align:center;">
+<h2 style="margin:0;">Akshaya e Centre</h2>
+<h3 style="margin:4px 0;">MPM250</h3>
+<div>POOKIPARAMBA</div>
+<div>Ph : 9037296582</div>
+<hr>
+<h2>INVOICE</h2>
+</div>
+
+<p><b>Customer :</b> ${lastCompletedBill.customerName || "Walk-in"}</p>
+<p><b>Phone :</b> ${lastCompletedBill.mobile || "-"}</p>
+<p><b>Date :</b> ${lastCompletedBill.date}</p>
+
+<table style="width:100%;border-collapse:collapse;margin-top:15px;">
+<tr style="background:#7e9cff;color:white;">
+<th style="border:1px solid #999;padding:6px;">Item</th>
+<th style="border:1px solid #999;padding:6px;">Qty</th>
+<th style="border:1px solid #999;padding:6px;">Rate</th>
+<th style="border:1px solid #999;padding:6px;">Total</th>
+</tr>
+
+${rows}
+
+</table>
+
+<table style="width:100%;margin-top:15px;border-collapse:collapse;">
+<tr>
+<td style="border:1px solid #999;padding:6px;"><b>Gross Total</b></td>
+<td style="border:1px solid #999;padding:6px;text-align:right;"><b>₹${Number(
+      lastCompletedBill.totalAmount
+    ).toFixed(2)}</b></td>
+</tr>
+
+<tr>
+<td style="border:1px solid #999;padding:6px;">GPay / UPI</td>
+<td style="border:1px solid #999;padding:6px;text-align:right;">₹${Number(
+      lastCompletedBill.gpay
+    ).toFixed(2)}</td>
+</tr>
+
+<tr>
+<td style="border:1px solid #999;padding:6px;">Cash</td>
+<td style="border:1px solid #999;padding:6px;text-align:right;">₹${Number(
+      lastCompletedBill.cash
+    ).toFixed(2)}</td>
+</tr>
+
+<tr>
+<td style="border:1px solid #999;padding:6px;"><b>Balance</b></td>
+<td style="border:1px solid #999;padding:6px;text-align:right;"><b>₹${Number(
+      lastCompletedBill.balance
+    ).toFixed(2)}</b></td>
+</tr>
+
+</table>
+
+<div style="margin-top:20px;text-align:center;font-size:13px;color:#555;">
+Thank you for choosing
+<br>
+<b>Akshaya e Centre POOKIPARAMBA</b>
+</div>
+`;
+
+    document.body.appendChild(container);
+
+    // @ts-ignore
+    const canvas = await html2canvas(container, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+    });
+
+    document.body.removeChild(container);
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+
       try {
-        managedList = storedCustomers ? JSON.parse(storedCustomers) : [];
-      } catch (e) {
-        managedList = [];
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "image/png": blob,
+          }),
+        ]);
+
+        setShowShareToast(true);
+
+setTimeout(() => {
+  setShowShareToast(false);
+}, 3000);
+      } catch (err) {
+        alert("Clipboard copy failed.");
       }
+    });
 
-      // Check if customer already exists by mobile & name
-      const existingIndex = managedList.findIndex(
-        (c: any) => c.mobile === mob && c.name.toLowerCase() === name.toLowerCase()
-      );
+ } catch (err) {
+    console.error(err);
+    alert("Unable to prepare invoice.");
+  }
+};
+    const saveCustomerToDirectory = () => {
+  const name = customerName ? customerName.trim() : "";
+  const mob = mobile ? mobile.trim() : "";
 
-      if (existingIndex !== -1) {
-        // Update financial stats if needed
-        managedList[existingIndex].totalPaid = (Number(managedList[existingIndex].totalPaid) || 0) + totalPaid;
-        managedList[existingIndex].gpayPaid = (Number(managedList[existingIndex].gpayPaid) || 0) + Number(gpay);
-        managedList[existingIndex].cashPaid = (Number(managedList[existingIndex].cashPaid) || 0) + Number(cash);
-        managedList[existingIndex].balance = (Number(managedList[existingIndex].balance) || 0) + balance;
-      } else {
-        // Add new customer record
-        const newCustRecord = {
-          id: 'CUST-' + Date.now(),
-          name: name,
-          mobile: mob,
-          email: 'Not provided',
-          address: 'Not provided',
-          remarks: 'Added via Service Entry',
-          totalPaid: totalPaid,
-          gpayPaid: Number(gpay),
-          cashPaid: Number(cash),
-          balance: balance
-        };
-        managedList.push(newCustRecord);
-      }
+  if (name && mob && name.toLowerCase() !== "walk-in") {
+    const storedCustomers = localStorage.getItem("managedCustomers");
+    let managedList = [];
 
-      localStorage.setItem('managedCustomers', JSON.stringify(managedList));
+    try {
+      managedList = storedCustomers ? JSON.parse(storedCustomers) : [];
+    } catch {
+      managedList = [];
     }
-  };
+
+    const existingIndex = managedList.findIndex(
+      (c: any) =>
+        c.mobile === mob &&
+        c.name.toLowerCase() === name.toLowerCase()
+    );
+
+    if (existingIndex !== -1) {
+      managedList[existingIndex].totalPaid =
+        (Number(managedList[existingIndex].totalPaid) || 0) + totalPaid;
+
+      managedList[existingIndex].gpayPaid =
+        (Number(managedList[existingIndex].gpayPaid) || 0) + Number(gpay);
+
+      managedList[existingIndex].cashPaid =
+        (Number(managedList[existingIndex].cashPaid) || 0) + Number(cash);
+
+      managedList[existingIndex].balance =
+        (Number(managedList[existingIndex].balance) || 0) + balance;
+    } else {
+      managedList.push({
+        id: "CUST-" + Date.now(),
+        name,
+        mobile: mob,
+        email: "Not provided",
+        address: "Not provided",
+        remarks: "Added via Service Entry",
+        totalPaid,
+        gpayPaid: Number(gpay),
+        cashPaid: Number(cash),
+        balance,
+      });
+    }
+
+    localStorage.setItem(
+      "managedCustomers",
+      JSON.stringify(managedList)
+    );
+  }
+};
 
   const processWalletUpdates = () => {
     const savedWallets = localStorage.getItem('managedWallets');
@@ -624,9 +1022,27 @@ localStorage.setItem(
   "performanceRecords",
   JSON.stringify(existingRecords)
 );
-    alert("Bill Completed Successfully & Customer Details Saved!");
-    handleClearForm();
-    router.push('/dashboard/service-entry');
+setLastCompletedBill({
+  customerName,
+  mobile,
+  items: [...items],
+  totalAmount,
+  totalPaid,
+  balance,
+  gpay,
+  cash,
+  date: new Date().toLocaleString(),
+});
+
+setShowSuccessToast(true);
+
+setTimeout(() => {
+  setShowSuccessToast(false);
+}, 3000);
+
+handleClearForm();
+
+setBillCompleted(true);
   };
 
   const handleVerifyStaffPin = () => {
@@ -647,8 +1063,20 @@ localStorage.setItem(
   const customerPaidNum = Number(customerPaidInput) || 0;
   const balanceReturnAmount = customerPaidNum > totalAmount ? customerPaidNum - totalAmount : 0;
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 relative text-slate-800 bg-[#f8fafc] min-h-screen">
+return (
+  <>
+    {showSuccessToast && (
+      <div className="fixed top-5 right-5 z-[9999] bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl font-bold">
+        ✅ Bill Completed Successfully
+      </div>
+    )}
+{showShareToast && (
+  <div className="fixed top-20 right-5 z-[9999] bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl font-bold">
+    📋 Invoice copied to clipboard
+  </div>
+)}
+
+<div className="p-6 max-w-7xl mx-auto space-y-6 relative text-slate-800 bg-[#f8fafc] min-h-screen">
       {/* Staff Switch / Login Modal */}
       {showStaffModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -678,64 +1106,7 @@ localStorage.setItem(
           </div>
         </div>
       )}
-{showQRModal && (
-  <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
 
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="font-bold text-lg">
-          {qrMode === "gpay" ? "GPay QR" : "WhatsApp QR"}
-        </h3>
-
-        <button
-          onClick={() => setShowQRModal(false)}
-          className="text-slate-500 hover:text-black"
-        >
-          ✕
-        </button>
-      </div>
-
-      <img
-        src={qrMode === "gpay" ? dynamicUPIQR : WHATSAPP_QR}
-        alt="QR"
-        className="w-72 h-72 mx-auto rounded-xl border"
-      />
-
-      <div className="grid grid-cols-2 gap-3 mt-6">
-
-        <button
-          onClick={handleCopyQR}
-          className="rounded-xl bg-slate-900 text-white py-3 font-semibold"
-        >
-          Copy
-        </button>
-
-        <button
-          onClick={handleShareQR}
-          className="rounded-xl bg-blue-600 text-white py-3 font-semibold"
-        >
-          Share
-        </button>
-
-        <button
-          onClick={handleDownloadQR}
-          className="rounded-xl bg-emerald-600 text-white py-3 font-semibold"
-        >
-          Download
-        </button>
-
-        <button
-          onClick={handlePrintQR}
-          className="rounded-xl bg-violet-600 text-white py-3 font-semibold"
-        >
-          Print
-        </button>
-
-      </div>
-
-    </div>
-  </div>
-)}
       {/* Balance Calculator Modal */}
       {showCalculator && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -867,9 +1238,10 @@ localStorage.setItem(
           <div className="lg:col-span-4 relative">
             <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">Services</label>
             <div className="border border-slate-200 rounded-2xl p-2.5 bg-white">
-              <input
-                type="text"
-                placeholder="Search service..."
+<input
+ref={serviceInputRef}
+type="text"
+placeholder="Search service..."
                 className="w-full bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-300 font-medium"
                 value={searchService}
                 onChange={(e) => {
@@ -988,7 +1360,8 @@ localStorage.setItem(
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {items.map((item, index) => (
-                    <tr key={item.id} className="text-slate-700 font-medium">
+
+ <tr key={item.id} className="text-slate-700 font-medium">
                       <td className="py-3 px-2 text-xs text-slate-400">{index + 1}</td>
                       <td className="py-3 px-2">{item.name}</td>
                       <td className="py-3 px-2">
@@ -1019,7 +1392,8 @@ localStorage.setItem(
                           {availableWallets.map(w => (
                             <option key={w.id} value={w.name}>{w.name} (₹{w.currentBalance})</option>
                           ))}
-                        </select>
+
+  </select>
                       </td>
                       <td className="py-3 px-2">
                         <input
@@ -1064,13 +1438,6 @@ localStorage.setItem(
             <div className="border border-slate-200 rounded-2xl p-3 bg-white">
               <div className="flex justify-between items-center mb-1">
                 <label className="text-[10px] font-bold uppercase tracking-wide text-slate-400">GPAY/UPI</label>
-                <button
-  type="button"
-  onClick={() => handleOpenQR("gpay")}
-  className="text-[10px] px-2 py-1 rounded bg-blue-600 text-white font-bold"
->
-  QR
-</button>
                 <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-bold">Alt+G</span>
               </div>
               <input
@@ -1121,7 +1488,8 @@ localStorage.setItem(
               <span className="bg-emerald-700 px-1.5 py-0.5 rounded text-[9px] font-mono">F7</span>
             </button>
             <button 
-              onClick={() => { setCustomerPaidInput(''); setShowCalculator(true); }}
+
+onClick={() => { setCustomerPaidInput(''); setShowCalculator(true); }}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-3.5 rounded-2xl shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-1"
             >
               <Calculator size={14} />
@@ -1178,6 +1546,74 @@ localStorage.setItem(
       </div>
 
       {/* Footer Buttons */}
+      {showQRModal && (
+  <div
+    className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+    onClick={() => setShowQRModal(false)}
+  >
+    <div
+      className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">
+          Scan & Pay
+        </h2>
+
+        <button
+          onClick={() => setShowQRModal(false)}
+          className="text-2xl font-bold"
+        >
+          ×
+        </button>
+      </div>
+
+      <img
+        src="/payment-qr.jpeg"
+        alt="Payment QR"
+        className="w-full rounded-2xl border"
+      />
+
+      <p className="mt-4 text-center text-sm text-slate-600">
+        UPI ID: <strong>aksmpm250@oksbi</strong>
+      </p>
+
+      <p className="mt-2 text-center text-sm text-slate-500">
+        Scan this QR using any UPI App.
+      </p>
+
+      <button
+        onClick={() => setShowQRModal(false)}
+        className="mt-5 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold"
+      >
+        <button
+
+onClick={async () => {
+    const shareUrl = `${window.location.origin}/payment-qr.jpeg`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Akshaya Pookiparamba Payment QR",
+          text: "Scan this QR code to make the payment.",
+          url: shareUrl,
+        });
+      } catch {}
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      alert("QR image link copied.");
+    }
+  }}
+  className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
+>
+  <Share2 size={18} />
+  Share QR
+</button>
+        Close
+      </button>
+    </div>
+  </div>
+)}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4">
         <div className="flex gap-2 w-full sm:w-auto">
           <button 
@@ -1190,19 +1626,23 @@ localStorage.setItem(
 
         <div className="flex gap-3 w-full sm:w-auto flex-wrap">
           <button 
-            onClick={handlePrint}
+          onClick={handlePrint}
+            disabled={!billCompleted}
             className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-5 py-3.5 rounded-2xl transition flex items-center justify-center gap-2 shadow-sm"
           >
             <Printer size={16} /> Print <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[9px]">Alt+P</span>
-          <button
-  onClick={() => handleOpenQR("whatsapp")}
-  className="border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 font-bold text-xs px-5 py-3.5 rounded-2xl transition"
->
-  WhatsApp QR
-</button>
           </button>
-          <button 
-            onClick={handleShare}
+          <button
+disabled={!billCompleted}
+onClick={() => setShowQRModal(true)}
+  className="border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-5 py-3.5 rounded-2xl transition flex items-center justify-center gap-2 shadow-sm"
+>
+  <QrCode size={16} />
+  QR Code
+</button>
+          <button
+disabled={!billCompleted}
+onClick={handleShare}
             className="border border-emerald-200 bg-emerald-50/30 hover:bg-emerald-50 text-emerald-700 font-bold text-xs px-5 py-3.5 rounded-2xl transition flex items-center justify-center gap-2 shadow-sm"
           >
             <Share2 size={16} /> Share <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[9px]">Alt+W</span>
@@ -1219,7 +1659,8 @@ localStorage.setItem(
         </div>
       </div>
 
-    </div>
+      </div>
+    </>
   );
 }
 
