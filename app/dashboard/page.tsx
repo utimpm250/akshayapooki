@@ -1,120 +1,276 @@
 "use client";
 
+import CashCounterTool from "./tools/CashCounterTool";
+import CropResizeTool from "./tools/CropResizeTool";
+import SignatureTool from "./tools/SignatureTool";
+import PSCPhotoTool from "./tools/PSCPhotoTool";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   FileText,
   Wallet,
-  FileSpreadsheet,
   Search,
-  Calculator,
-  Percent,
-  Image,
-  User,
   CheckCircle2,
   DollarSign,
   ArrowUpRight,
-  Share2,
   Bell,
   Megaphone,
-  X,
-  Globe,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
+  Settings,
+  GripHorizontal,
+  Save,
+  RotateCcw,
+  X,
+  Banknote,
+  Calculator,
+  Award,
+  AlertCircle,
+  Crop,
+  Upload,
+  Move,
+  ZoomIn,
+  ZoomOut
 } from "lucide-react";
+
+interface WalletItem {
+  id: string;
+  name: string;
+  openingBalance: number;
+  currentBalance: number;
+  lastUpdated: string;
+}
+
+interface ServiceItem {
+  id?: string;
+  title?: string;
+  name?: string;
+  serviceName?: string;
+  url?: string;
+  webUrl?: string;
+  link?: string;
+  note?: string;
+}
+
+interface QuickLinkItem {
+  id: number | string;
+  name: string;
+  url: string;
+  bgColor: string;
+  isInternal: boolean;
+}
+
+interface GradesState {
+  Aplus: string;
+  A: string;
+  Bplus: string;
+  B: string;
+  Cplus: string;
+  C: string;
+  Dplus: string;
+  D: string;
+  E: string;
+}
 
 export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
-
   const [currentUser, setCurrentUser] = useState({
     username: "Admin User",
     role: "admin",
   });
 
-  // Attendance Popup States
+  const [wallets, setWallets] = useState<WalletItem[]>([]);
+  const [showWalletDetails, setShowWalletDetails] = useState(false);
+  const [todayEntriesCount, setTodayEntriesCount] = useState(0);
+  const [completedTodayCount, setCompletedTodayCount] = useState(0);
+  const [totalCashCollection, setTotalCashCollection] = useState(0);
+
   const [showAttendancePopup, setShowAttendancePopup] = useState(false);
   const [attendanceSaved, setAttendanceSaved] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [todayDate, setTodayDate] = useState("");
   const [showUpdateBubble, setShowUpdateBubble] = useState(false);
 
+  // Popup States for Tools
+  const [showCashCounterModal, setShowCashCounterModal] = useState(false);
+  const [showSslcModal, setShowSslcModal] = useState(false);
+  const [showCropResizeModal, setShowCropResizeModal] = useState(false);
+  const [showPscModal, setShowPscModal] = useState(false);
+
+  // SSLC Calculator State
+  const [grades, setGrades] = useState<GradesState>({
+    Aplus: "", A: "", Bplus: "", B: "", Cplus: "", C: "", Dplus: "", D: "", E: "",
+  });
+  const [sslcResultObj, setSslcResultObj] = useState<{
+    totalSubjects: number;
+    totalPoints: number;
+    percentage: number;
+    overallGrade: string;
+  } | null>(null);
+
+  const gradePointsMap: Record<keyof GradesState, number> = {
+    Aplus: 9, A: 8, Bplus: 7, B: 6, Cplus: 5, C: 4, Dplus: 3, D: 2, E: 1,
+  };
+
+  const [showServiceDirectory, setShowServiceDirectory] = useState(false);
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const draggedItemIndex = useRef<number | null>(null);
+  const draggedOverItemIndex = useRef<number | null>(null);
+
   const currentVersion = "1.0.0";
-
-  // Notification dropdown state
-  const [isNotificationsOpen, setIsNotificationsOpen] =
-    useState(false);
-
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  // Quick Launch Tools state (can sync with Quick Hub)
-  const [quickLinks, setQuickLinks] = useState([
+  const [quickLinks, setQuickLinks] = useState<QuickLinkItem[]>([
     {
       id: 1,
       name: "Resume Studio",
-      url: "#",
+      url: "/dashboard/Tools/resume-studio",
       bgColor: "from-blue-500 to-blue-600",
-      icon: "FileText",
+      isInternal: true,
     },
     {
       id: 2,
       name: "SSLC Percentage",
-      url: "#",
+      url: "sslc-modal",
       bgColor: "from-purple-500 to-purple-600",
-      icon: "Percent",
+      isInternal: true,
     },
     {
       id: 3,
       name: "Crop & Resize",
-      url: "#",
+      url: "crop-resize-modal",
       bgColor: "from-pink-500 to-pink-600",
-      icon: "Image",
+      isInternal: true,
     },
     {
       id: 4,
-      name: "Passport Size",
-      url: "#",
-      bgColor: "from-red-500 to-red-600",
-      icon: "User",
+      name: "PSC Creator",
+      url: "psc-modal",
+      bgColor: "from-teal-500 to-teal-700",
+      isInternal: true,
     },
     {
       id: 5,
       name: "Calculator",
-      url: "#",
+      url: "/dashboard/Tools/calculator",
       bgColor: "from-amber-500 to-amber-600",
-      icon: "Calculator",
+      isInternal: true,
     },
     {
       id: 6,
       name: "Cash Counter",
-      url: "#",
+      url: "cash-counter-modal",
       bgColor: "from-emerald-500 to-emerald-600",
-      icon: "Wallet",
-    },
-    {
-      id: 7,
-      name: "SSLC",
-      url: "https://sslcexam.kerala.gov.in",
-      bgColor: "from-teal-500 to-teal-600",
-      icon: "FileText",
-    },
-    {
-      id: 8,
-      name: "ChatGPT",
-      url: "https://chatgpt.com",
-      bgColor: "from-fuchsia-500 to-fuchsia-600",
-      icon: "Share2",
+      isInternal: true,
     },
   ]);
 
-  // Announcements / Notifications state
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [serviceDirectory, setServiceDirectory] = useState<ServiceItem[]>([]);
 
   const router = useRouter();
 
   useEffect(() => {
-    // Live Date & Time
+    const loadDashboardData = () => {
+      const savedWallets = localStorage.getItem("managedWallets");
+      if (savedWallets) {
+        try {
+          setWallets(JSON.parse(savedWallets));
+        } catch (e) {
+          setWallets([]);
+        }
+      }
+
+      const savedBills = localStorage.getItem("savedBills");
+      if (savedBills) {
+        try {
+          const bills = JSON.parse(savedBills);
+          setTodayEntriesCount(bills.length);
+          setCompletedTodayCount(bills.length);
+          const totalCash = bills.reduce(
+            (acc: number, curr: any) =>
+              acc + (Number(curr.totalAmount) || Number(curr.amount) || 0),
+            0
+          );
+          setTotalCashCollection(totalCash);
+        } catch (e) {
+          console.error("Error loading bills", e);
+        }
+      }
+
+      const savedQuickLinksOrder = localStorage.getItem("dashboard_quick_links_order");
+      let baseTools = quickLinks;
+      if (savedQuickLinksOrder) {
+        try {
+          const parsedOrder = JSON.parse(savedQuickLinksOrder);
+          if (Array.isArray(parsedOrder) && parsedOrder.length > 0) {
+            baseTools = parsedOrder;
+          }
+        } catch (e) {
+          console.error("Error loading quick links order", e);
+        }
+      }
+
+      const customHubLinks = localStorage.getItem("hub_quick_links");
+      if (customHubLinks) {
+        try {
+          const parsedCustom = JSON.parse(customHubLinks);
+          const formattedCustom = parsedCustom.map((item: any) => ({
+            id: item.id || Date.now() + Math.random(),
+            name: item.name || "External Tool",
+            url: item.url || "#",
+            bgColor: "from-indigo-500 to-violet-600",
+            isInternal: false,
+          }));
+
+          setQuickLinks([...baseTools, ...formattedCustom]);
+        } catch (e) {
+          console.error("Error loading custom hub links", e);
+          setQuickLinks(baseTools);
+        }
+      } else {
+        setQuickLinks(baseTools);
+      }
+
+      let loadedServices: any[] = [];
+      const possibleKeys = ["managedServices", "services", "service_management", "serviceList", "managed_services"];
+      for (const key of possibleKeys) {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              loadedServices = parsed;
+              break;
+            }
+          } catch (err) {
+            console.error(`Error parsing key ${key}`, err);
+          }
+        }
+      }
+
+      const filteredWithUrls = loadedServices
+        .map((s: any) => {
+          const sTitle = s.title || s.name || s.serviceName || "Untitled Service";
+          const sUrl = s.portalUrl || s.url || s.webUrl || s.link || "";
+          const sNote = sUrl ? sUrl.replace(/^https?:\/\//, "") : "No URL Provided";
+          return {
+            title: sTitle,
+            url: sUrl,
+            note: sNote,
+          };
+        })
+        .filter((s) => s.url && s.url.trim() !== "");
+
+      setServiceDirectory(filteredWithUrls);
+    };
+
+    loadDashboardData();
+
     const updateDateTime = () => {
       const now = new Date();
-
       setCurrentTime(
         now.toLocaleTimeString([], {
           hour: "2-digit",
@@ -122,7 +278,6 @@ export default function DashboardPage() {
           second: "2-digit",
         })
       );
-
       setTodayDate(
         now.toLocaleDateString([], {
           weekday: "long",
@@ -134,125 +289,60 @@ export default function DashboardPage() {
     };
 
     updateDateTime();
-
     const timer = setInterval(updateDateTime, 1000);
 
-    // Read logged-in user
     const storedUser = localStorage.getItem("loggedInUser");
-
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
-
         setCurrentUser({
           username: parsed.username || "Admin User",
           role: parsed.role || "staff",
         });
 
-        // Check today's attendance
-        try {
-          const logs = JSON.parse(
-            localStorage.getItem("staff_attendance_logs") || "[]"
+        const logs = JSON.parse(
+          localStorage.getItem("staff_attendance_logs") || "[]"
+        );
+        const today = new Date().toISOString().split("T")[0];
+        const alreadyMarked = logs.some((log: any) => {
+          return (
+            log.staffName?.toLowerCase() ===
+              (parsed.username || "").toLowerCase() &&
+            new Date(log.timestamp || log.date)
+              .toISOString()
+              .split("T")[0] === today
           );
-
-          const today = new Date().toISOString().split("T")[0];
-
-          const alreadyMarked = logs.some((log: any) => {
-            return (
-              log.staffName?.toLowerCase() ===
-                (parsed.username || "").toLowerCase() &&
-              new Date(log.timestamp || log.date)
-                .toISOString()
-                .split("T")[0] ===
-                today
-            );
-          });
-          if (!alreadyMarked) {
-            setShowAttendancePopup(true);
-          }
-
-          // Check for new version
-          const savedVersion =
-            localStorage.getItem("smart_akshaya_app_version") || "1.0.0";
-
-          if (savedVersion !== currentVersion) {
-            setShowUpdateBubble(true);
-          }
-        } catch (err) {
-          console.error("Attendance check failed", err);
-        }
-      } catch (err) {
-        console.error("Error reading loggedInUser", err);
-      }
-    }
-
-    // Auto logout if a new day has started
-    const today = new Date().toISOString().split("T")[0];
-    const loginDate = localStorage.getItem("loginSessionDate");
-
-    if (loginDate && loginDate !== today) {
-      localStorage.removeItem("loggedInUser");
-      localStorage.removeItem("loginSessionDate");
-
-      window.location.href = "/login";
-      return;
-    }
-
-    // Load announcements
-    const storedUserData = localStorage.getItem("loggedInUser");
-
-    if (storedUserData) {
-      try {
-        const parsed = JSON.parse(storedUserData);
-
-        setCurrentUser({
-          username: parsed.username || "Admin User",
-          role: parsed.role || "staff",
         });
+        if (!alreadyMarked) {
+          setShowAttendancePopup(true);
+        }
 
-        const savedAnnouncements =
-          localStorage.getItem("hub_announcements");
+        const savedVersion =
+          localStorage.getItem("smart_akshaya_app_version") || "1.0.0";
+        if (savedVersion !== currentVersion) {
+          setShowUpdateBubble(true);
+        }
 
+        const savedAnnouncements = localStorage.getItem("hub_announcements");
         if (savedAnnouncements) {
-          try {
-            const parsedAnnouncements = JSON.parse(savedAnnouncements);
-
-            const username = parsed.username || "Admin User";
-
-            // ഈ user hide ചെയ്ത notification ids
-            const hiddenKey = `hidden_notifications_${username}`;
-
-            const hiddenIds = JSON.parse(
-              localStorage.getItem(hiddenKey) || "[]"
-            );
-
-            const filtered = parsedAnnouncements.filter(
-              (item: any) => {
-                // Hidden notification
-                if (hiddenIds.includes(item.id)) return false;
-
-                // For all users
-                if (item.targetAll) return true;
-
-                // Specific staff
-                return item.selectedStaff?.includes(username);
-              }
-            );
-
-            setAnnouncements(filtered);
-          } catch (err) {
-            console.error(
-              "Error loading announcements",
-              err
-            );
-          }
+          const parsedAnnouncements = JSON.parse(savedAnnouncements);
+          const username = parsed.username || "Admin User";
+          const hiddenKey = `hidden_notifications_${username}`;
+          const hiddenIds = JSON.parse(
+            localStorage.getItem(hiddenKey) || "[]"
+          );
+          const filtered = parsedAnnouncements.filter((item: any) => {
+            if (hiddenIds.includes(item.id)) return false;
+            if (item.targetAll) return true;
+            return item.selectedStaff?.includes(username);
+          });
+          setAnnouncements(filtered);
         }
       } catch (err) {
-        console.error("Error reading loggedInUser", err);
+        console.error("Error reading storage", err);
       }
     }
 
-    // Close notification dropdown when clicked outside
     const handleClickOutside = (event: MouseEvent) => {
       if (
         notificationRef.current &&
@@ -261,81 +351,269 @@ export default function DashboardPage() {
         setIsNotificationsOpen(false);
       }
     };
-
-    document.addEventListener(
-      "mousedown",
-      handleClickOutside
-    );
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside
-      );
-
+      document.removeEventListener("mousedown", handleClickOutside);
       clearInterval(timer);
     };
   }, []);
+
   const handleClearAllNotifications = () => {
     const username = currentUser.username;
-
     const hiddenKey = `hidden_notifications_${username}`;
-
     const hiddenIds = announcements.map((item) => item.id);
-
     localStorage.setItem(hiddenKey, JSON.stringify(hiddenIds));
-
     setAnnouncements([]);
   };
 
-  // Determine display role title badge
-  const isAdmin = currentUser.role.toLowerCase() === "admin";
+  const handleDragSort = () => {
+    if (
+      draggedItemIndex.current !== null &&
+      draggedOverItemIndex.current !== null
+    ) {
+      const newQuickLinks = [...quickLinks];
+      const draggedItemContent = newQuickLinks[draggedItemIndex.current];
+      newQuickLinks.splice(draggedItemIndex.current, 1);
+      newQuickLinks.splice(draggedOverItemIndex.current, 0, draggedItemContent);
 
+      draggedItemIndex.current = null;
+      draggedOverItemIndex.current = null;
+      setQuickLinks(newQuickLinks);
+    }
+  };
+
+  const handleSaveLayout = () => {
+    localStorage.setItem("dashboard_quick_links_order", JSON.stringify(quickLinks));
+    setIsCustomizing(false);
+  };
+  const handleSslcInputChange = (key: keyof GradesState, value: string) => {
+    if (value !== "" && !/^\d+$/.test(value)) return;
+    setGrades((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const totalSubjectsSelected = Object.values(grades).reduce((a, b) => {
+    const num = parseInt(b, 10);
+    return a + (isNaN(num) ? 0 : num);
+  }, 0);
+
+  const calculateSslcResults = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (totalSubjectsSelected !== 10) {
+      alert("ദയവായി കൃത്യം 10 വിഷയങ്ങളുടെ ഗ്രേഡുകൾ നൽകുക.");
+      return;
+    }
+
+    let totalPts = 0;
+    (Object.keys(grades) as Array<keyof GradesState>).forEach((key) => {
+      const count = parseInt(grades[key], 10) || 0;
+      totalPts += count * gradePointsMap[key];
+    });
+
+    const maxPossiblePoints = 90;
+    const calcPercentage = (totalPts / maxPossiblePoints) * 100;
+
+    let overall = "C";
+    if (calcPercentage >= 90) overall = "A+";
+    else if (calcPercentage >= 80) overall = "A";
+    else if (calcPercentage >= 70) overall = "B+";
+    else if (calcPercentage >= 60) overall = "B";
+    else if (calcPercentage >= 50) overall = "C+";
+    else if (calcPercentage >= 40) overall = "C";
+    else overall = "D / E";
+
+    setSslcResultObj({
+      totalSubjects: totalSubjectsSelected,
+      totalPoints: totalPts,
+      percentage: Number(calcPercentage.toFixed(2)),
+      overallGrade: overall,
+    });
+  };
+
+  const handleSslcReset = () => {
+    setGrades({ Aplus: "", A: "", Bplus: "", B: "", Cplus: "", C: "", Dplus: "", D: "", E: "" });
+    setSslcResultObj(null);
+  };
+
+  const gradeCards = [
+    { key: "Aplus" as keyof GradesState, label: "A+", points: "9 Grade Points", color: "text-purple-600" },
+    { key: "A" as keyof GradesState, label: "A", points: "8 Grade Points", color: "text-indigo-600" },
+    { key: "Bplus" as keyof GradesState, label: "B+", points: "7 Grade Points", color: "text-blue-600" },
+    { key: "B" as keyof GradesState, label: "B", points: "6 Grade Points", color: "text-cyan-600" },
+    { key: "Cplus" as keyof GradesState, label: "C+", points: "5 Grade Points", color: "text-emerald-600" },
+    { key: "C" as keyof GradesState, label: "C", points: "4 Grade Points", color: "text-amber-600" },
+    { key: "Dplus" as keyof GradesState, label: "D+", points: "3 Grade Points", color: "text-orange-600" },
+    { key: "D" as keyof GradesState, label: "D", points: "2 Grade Points", color: "text-rose-600" },
+    { key: "E" as keyof GradesState, label: "E", points: "1 Grade Point", color: "text-red-600" },
+  ];
+  const netWalletBalance = wallets.reduce(
+    (acc, curr) => acc + curr.currentBalance,
+    0
+  );
+  const isAdmin = currentUser.role.toLowerCase() === "admin";
   const displayRoleTitle = isAdmin
     ? "Admin User"
     : `${currentUser.username} User`;
 
+  const filteredServices = serviceDirectory.filter(
+    (s) =>
+      (s.title && s.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (s.note && s.note.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
   return (
-    <>
+    <div className="min-h-screen bg-slate-100/55 p-4 md:p-8">
+{showCashCounterModal && (
+  <CashCounterTool
+    onClose={() => setShowCashCounterModal(false)}
+  />
+)}
+      {/* Kerala SSLC Grade Calculator Modal */}
+      {showSslcModal && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 overflow-y-auto animate-in fade-in">
+          <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-100 flex flex-col my-4 max-h-[95vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-purple-50 text-purple-600 rounded-lg">
+                  <Calculator size={18} />
+                </div>
+                <h3 className="font-bold text-slate-800 text-base">Kerala SSLC Grade Calculator</h3>
+              </div>
+              <button
+                onClick={() => setShowSslcModal(false)}
+                className="p-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-lg shadow-2xs transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-4 md:p-5 space-y-4">
+              {totalSubjectsSelected !== 10 && (
+                <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-lg flex items-center gap-2 text-rose-600 text-xs font-semibold">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span>
+                    Total Subjects Selected: {totalSubjectsSelected} / 10.{" "}
+                    {totalSubjectsSelected < 10
+                      ? `Need ${10 - totalSubjectsSelected} more.`
+                      : "You have exceeded 10 subjects!"}
+                  </span>
+                </div>
+              )}
+
+              <form onSubmit={calculateSslcResults} className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {gradeCards.map((item) => (
+                    <div
+                      key={item.key}
+                      className="bg-slate-50/60 p-3 rounded-xl border border-slate-200/80 flex flex-col items-center text-center justify-between space-y-2"
+                    >
+                      <div>
+                        <span className={`text-xl font-black ${item.color}`}>{item.label}</span>
+                        <span className="block text-[10px] font-semibold text-slate-400 mt-0.5 leading-tight">
+                          {item.points}
+                        </span>
+                      </div>
+
+                      <div className="w-full">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={grades[item.key]}
+                          onChange={(e) => handleSslcInputChange(item.key, e.target.value)}
+                          className="w-full h-10 text-center bg-white border border-slate-200 rounded-lg font-bold text-slate-800 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-xs transition"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3 pt-3 border-t border-slate-100">
+                  <button
+                    type="submit"
+                    disabled={totalSubjectsSelected !== 10}
+                    className={`w-full sm:flex-1 py-2.5 rounded-lg font-bold text-sm text-white shadow-md transition flex items-center justify-center gap-2 ${
+                      totalSubjectsSelected === 10
+                        ? "bg-purple-600 hover:bg-purple-700 shadow-purple-600/20"
+                        : "bg-slate-300 cursor-not-allowed"
+                    }`}
+                  >
+                    <Calculator size={16} />
+                    Calculate Percentage
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSslcReset}
+                    className="w-full sm:w-auto px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-lg transition flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw size={16} />
+                    Reset
+                  </button>
+                </div>
+              </form>
+
+              {sslcResultObj !== null && (
+                <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-purple-600 text-white rounded-xl shadow-sm">
+                      <Award size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
+                        Computed Percentage
+                      </p>
+                      <h3 className="text-2xl font-black text-slate-800 mt-0.5">
+                        {sslcResultObj.percentage}%
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                    <div className="bg-white px-4 py-2 rounded-lg border border-purple-100 shadow-xs text-center">
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase">Total Points</p>
+                      <p className="text-base font-bold text-slate-800 mt-0.5">{sslcResultObj.totalPoints} / 90</p>
+                    </div>
+                    <div className="bg-white px-4 py-2 rounded-lg border border-purple-100 shadow-xs text-center">
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase">Grade</p>
+                      <p className="text-base font-bold text-purple-700 mt-0.5 flex items-center justify-center gap-1">
+                        <CheckCircle2 size={14} className="text-emerald-500" />
+                        {sslcResultObj.overallGrade}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+{showCropResizeModal && (
+  <CropResizeTool
+    onClose={() => setShowCropResizeModal(false)}
+  />
+)}
+
+{/* PSC Creator Tool Modal */}
+{showPscModal && (
+  <PSCPhotoTool onClose={() => setShowPscModal(false)} />
+)}
       {showAttendancePopup && (
         <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8 text-center">
-            <h2 className="text-3xl font-bold text-slate-800 mb-2">
-              Good Day 👋
-            </h2>
-
-            <p className="text-slate-500 mb-6">
-              Please mark your attendance to continue.
-            </p>
-
+            <h2 className="text-3xl font-bold text-slate-800 mb-2">Good Day 👋</h2>
+            <p className="text-slate-500 mb-6">Please mark your attendance to continue.</p>
             <div className="space-y-4">
               <div className="bg-slate-100 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase">
-                  Staff
-                </p>
-
-                <p className="text-xl font-bold text-slate-800">
-                  {currentUser.username}
-                </p>
+                <p className="text-xs text-slate-500 uppercase">Staff</p>
+                <p className="text-xl font-bold text-slate-800">{currentUser.username}</p>
               </div>
-               <div className="bg-slate-100 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase">
-                  Today
-                </p>
-
-                <p className="font-semibold">
-                  {todayDate}
-                </p>
-              </div>
-
               <div className="bg-slate-100 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase">
-                  Current Time
-                </p>
-
-                <p className="text-2xl font-bold text-blue-600">
-                  {currentTime}
-                </p>
+                <p className="text-xs text-slate-500 uppercase">Today</p>
+                <p className="font-semibold">{todayDate}</p>
+              </div>
+              <div className="bg-slate-100 rounded-xl p-4">
+                <p className="text-xs text-slate-500 uppercase">Current Time</p>
+                <p className="text-2xl font-bold text-blue-600">{currentTime}</p>
               </div>
             </div>
 
@@ -344,40 +622,22 @@ export default function DashboardPage() {
                 <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center animate-bounce">
                   <span className="text-5xl text-green-600">✓</span>
                 </div>
-
-                <h3 className="mt-5 text-2xl font-bold text-green-600">
-                  Attendance Marked Successfully
-                </h3>
-
-                <p className="mt-2 text-slate-500">
-                  Welcome! Have a wonderful day.
-                </p>
+                <h3 className="mt-5 text-2xl font-bold text-green-600">Attendance Marked Successfully</h3>
               </div>
             ) : (
               <button
                 onClick={() => {
                   try {
-                    const logs = JSON.parse(
-                      localStorage.getItem("staff_attendance_logs") || "[]"
-                    );
-
+                    const logs = JSON.parse(localStorage.getItem("staff_attendance_logs") || "[]");
                     logs.push({
                       id: Date.now().toString(),
                       staffName: currentUser.username,
                       role: currentUser.role,
                       timestamp: new Date().toISOString(),
-                      loginTime: new Date().toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }),
+                      loginTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                     });
-
-                    localStorage.setItem(
-                      "staff_attendance_logs",
-                      JSON.stringify(logs)
-                    );
+                    localStorage.setItem("staff_attendance_logs", JSON.stringify(logs));
                     setAttendanceSaved(true);
-
                     setTimeout(() => {
                       setShowAttendancePopup(false);
                       setAttendanceSaved(false);
@@ -397,21 +657,11 @@ export default function DashboardPage() {
 
       {showUpdateBubble && (
         <div className="fixed bottom-6 right-6 z-[9999] bg-blue-600 text-white rounded-2xl shadow-xl p-4 w-72">
-          <h3 className="font-bold text-lg">
-            🚀 New Version Available
-          </h3>
-
-          <p className="text-sm mt-2">
-            Click below to update your application.
-          </p>
-
+          <h3 className="font-bold text-lg">🚀 New Version Available</h3>
+          <p className="text-sm mt-2">Click below to update your application.</p>
           <button
             onClick={() => {
-              localStorage.setItem(
-                "smart_akshaya_app_version",
-                currentVersion
-              );
-
+              localStorage.setItem("smart_akshaya_app_version", currentVersion);
               setShowUpdateBubble(false);
               window.location.reload();
             }}
@@ -422,43 +672,30 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="w-full max-w-7xl mx-auto space-y-6">
-        {/* Top Header Row with Bell Notification Icon */}
+      <div className="w-full max-w-7xl mx-auto space-y-6 pb-12">
         <div className="flex justify-between items-center bg-white px-6 py-4 rounded-xl shadow-sm border border-slate-100 mb-2">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">
-              Dashboard
-            </h2>
+            <h2 className="text-xl font-bold text-slate-800">Dashboard</h2>
           </div>
 
           <div className="relative" ref={notificationRef}>
             <button
-              onClick={() =>
-                setIsNotificationsOpen(!isNotificationsOpen)
-              }
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className="relative p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full text-slate-700 transition"
             >
               <Bell size={20} />
-
               {announcements.length > 0 && (
                 <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white"></span>
               )}
             </button>
 
-            {/* Notification Popup Dropdown */}
             {isNotificationsOpen && (
               <div className="absolute right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                   <div>
-                    <h4 className="font-bold text-slate-800 text-sm">
-                      Notifications
-                    </h4>
-
-                    <p className="text-xs text-slate-500">
-                      {announcements.length} unread message(s)
-                    </p>
+                    <h4 className="font-bold text-slate-800 text-sm">Notifications</h4>
+                    <p className="text-xs text-slate-500">{announcements.length} unread message(s)</p>
                   </div>
-
                   {announcements.length > 0 && (
                     <button
                       onClick={handleClearAllNotifications}
@@ -468,265 +705,262 @@ export default function DashboardPage() {
                     </button>
                   )}
                 </div>
-               <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
-                {announcements.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400 text-sm">
-                    No new notifications.
-                  </div>
-                ) : (
-                  announcements.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-4 hover:bg-slate-50/80 transition flex items-start gap-3 relative"
-                    >
-                      <span className="absolute top-4 left-3 w-2 h-2 bg-emerald-500 rounded-full mt-1"></span>
-
-                      <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shrink-0 ml-2">
-                        <Megaphone size={18} />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-baseline">
-                          <p className="text-sm font-bold text-slate-800 truncate">
-                            {item.title}
-                          </p>
-
-                          <span className="text-[10px] text-slate-400 shrink-0">
-                            {item.date}
-                          </span>
+                <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
+                  {announcements.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 text-sm">No new notifications.</div>
+                  ) : (
+                    announcements.map((item) => (
+                      <div key={item.id} className="p-4 hover:bg-slate-50/80 transition flex items-start gap-3 relative">
+                        <span className="absolute top-4 left-3 w-2 h-2 bg-emerald-500 rounded-full mt-1"></span>
+                        <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shrink-0 ml-2">
+                          <Megaphone size={18} />
                         </div>
-
-                        {item.subtitle && (
-                          <p className="text-xs font-semibold text-slate-600 mt-0.5">
-                            {item.subtitle}
-                          </p>
-                        )}
-
-                        <p className="text-xs text-slate-500 mt-1">
-                          {item.content}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-baseline">
+                            <p className="text-sm font-bold text-slate-800 truncate">{item.title}</p>
+                            <span className="text-[10px] text-slate-400 shrink-0">{item.date}</span>
+                          </div>
+                          {item.subtitle && <p className="text-xs font-semibold text-slate-600 mt-0.5">{item.subtitle}</p>}
+                          <p className="text-xs text-slate-500 mt-1">{item.content}</p>
+                        </div>
                       </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white rounded-2xl p-8 shadow-md flex justify-between items-center">
+          <div>
+            <p className="text-xs font-semibold tracking-wider uppercase opacity-85 mb-1">{todayDate}</p>
+            <h3 className="text-3xl font-extrabold">Welcome back, {currentUser.username}!</h3>
+          </div>
+          <div className="hidden sm:block text-right bg-white/15 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20">
+            <p className="text-xs opacity-80 uppercase font-semibold">Logged in as</p>
+            <p className="text-sm font-bold">{displayRoleTitle}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Today's Entries</p>
+              <p className="text-2xl font-bold mt-1">{todayEntriesCount}</p>
+            </div>
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+              <FileText size={22} />
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Completed Today</p>
+              <p className="text-2xl font-bold mt-1">{completedTodayCount}</p>
+            </div>
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+              <CheckCircle2 size={22} />
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Total Cash Collection</p>
+              <p className="text-2xl font-bold mt-1">₹{totalCashCollection.toFixed(2)}</p>
+            </div>
+            <div className="p-3 bg-rose-50 text-rose-600 rounded-lg">
+              <DollarSign size={22} />
+            </div>
+          </div>
+
+          <div
+            onClick={() => setShowWalletDetails(!showWalletDetails)}
+            className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:border-fuchsia-300 transition"
+          >
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider flex items-center gap-1">
+                Net Wallet Balance {showWalletDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </p>
+              <p className={`text-2xl font-bold mt-1 ${netWalletBalance < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                ₹{netWalletBalance.toFixed(2)}
+              </p>
+            </div>
+            <div className="p-3 bg-fuchsia-50 text-fuchsia-600 rounded-lg">
+              <Wallet size={22} />
+            </div>
+          </div>
+        </div>
+
+        {showWalletDetails && (
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-2">
+            <h4 className="font-bold text-slate-800 text-sm mb-4 flex items-center gap-2">
+              <Wallet size={16} className="text-fuchsia-600" /> Individual Wallet Balances
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {wallets.map((w) => (
+                <div key={w.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between">
+                  <span className="text-xs font-bold text-slate-500 uppercase">{w.name}</span>
+                  <span className={`text-lg font-black mt-2 ${w.currentBalance < 0 ? "text-rose-500" : "text-emerald-600"}`}>
+                    ₹{w.currentBalance.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h4 className="font-bold text-slate-800">Quick Launch Tools</h4>
+              <p className="text-xs text-slate-400">
+                {isCustomizing ? "Drag and drop cards using your mouse to rearrange" : "Frequently used utilities"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {!isCustomizing ? (
+                <button
+                  onClick={() => setIsCustomizing(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+                >
+                  <Settings size={14} />
+                  Customize Layout
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveLayout}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md transition"
+                >
+                  <Save size={14} />
+                  Save Layout
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+            {quickLinks.map((tool, index) => {
+              const isCashCounter = tool.name.toLowerCase().includes("cash") || (tool.url && tool.url.toLowerCase().includes("cash"));
+              const isSslc = tool.name.toLowerCase().includes("sslc") || (tool.url && tool.url.toLowerCase().includes("sslc"));
+              const isCropResize = tool.name.toLowerCase().includes("crop") || (tool.url && tool.url.toLowerCase().includes("crop"));
+              const isPsc = tool.name.toLowerCase().includes("psc") || (tool.url && tool.url.toLowerCase().includes("psc"));
+              
+              return (
+                <div
+                  key={`${tool.id}-${index}`}
+                  draggable={isCustomizing}
+                  onDragStart={() => (draggedItemIndex.current = index)}
+                  onDragEnter={() => (draggedOverItemIndex.current = index)}
+                  onDragEnd={handleDragSort}
+                  onDragOver={(e) => e.preventDefault()}
+                  className={`relative flex flex-col transition-transform ${isCustomizing ? "cursor-grab active:cursor-grabbing" : ""}`}
+                >
+                  <a
+                    href={isCustomizing || isCashCounter || isSslc || isCropResize || isPsc ? "#" : tool.url}
+                    onClick={(e) => {
+                      if (isCustomizing) {
+                        e.preventDefault();
+                        return;
+                      }
+                      
+                      if (isCashCounter) {
+                        e.preventDefault();
+                        setShowCashCounterModal(true);
+                      } else if (isSslc) {
+                        e.preventDefault();
+                        setShowSslcModal(true);
+                      } else if (isCropResize) {
+    e.preventDefault();
+    setShowCropResizeModal(true);
+                      } else if (isPsc) {
+                        e.preventDefault();
+                        setShowPscModal(true);
+                      }
+                    }}
+                    target={tool.isInternal ? "_self" : "_blank"}
+                    rel="noopener noreferrer"
+                    className={`flex flex-col justify-between p-5 bg-gradient-to-br ${
+                      tool.bgColor || "from-indigo-500 to-violet-600"
+                    } text-white rounded-2xl shadow-sm hover:opacity-95 transition h-28 ${
+                      isCustomizing ? "ring-2 ring-blue-400 ring-offset-2 opacity-95" : ""
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <FileText size={22} />
+                      {isCustomizing ? (
+                        <GripHorizontal size={20} className="text-white/80" />
+                      ) : (
+                        !tool.isInternal && <ExternalLink size={16} className="opacity-75" />
+                      )}
                     </div>
-                  ))
-                )}
+                    <div>
+                      <span className="text-base font-bold block truncate">{tool.name}</span>
+                      <span className="text-xs opacity-80">
+                        {tool.isInternal || isCashCounter || isSslc || isCropResize || isPsc ? "Internal Tool" : "External Link"}
+                      </span>
+                    </div>
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <div 
+            onClick={() => setShowServiceDirectory(!showServiceDirectory)}
+            className="flex items-center justify-between cursor-pointer select-none"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">
+                Service Directory
+              </span>
+              <h4 className="text-lg font-bold text-slate-800">Quickly Access Any Service</h4>
+            </div>
+            <button className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-600 transition">
+              {showServiceDirectory ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
+          </div>
+
+          {showServiceDirectory && (
+            <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col items-center text-center animate-in fade-in slide-in-from-top-2">
+              <div className="relative w-full max-w-lg mb-6">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search for a service..."
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
 
-              <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
-                <span className="text-[11px] text-slate-400 font-medium">
-                  Smart Akshaya Hub
-                </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
+                {filteredServices.length === 0 ? (
+                  <div className="col-span-full py-8 text-slate-400 text-sm">No services with URLs found matching your search.</div>
+                ) : (
+                  filteredServices.map((service, index) => (
+                    <a
+                      key={index}
+                      href={service.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between hover:border-blue-300 hover:bg-blue-50/30 transition text-left group"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <p className="text-sm font-semibold text-slate-700 truncate group-hover:text-blue-600 transition">{service.title}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5 truncate">{service.note}</p>
+                      </div>
+                      <ArrowUpRight size={16} className="text-slate-400 shrink-0 group-hover:text-blue-600 transition" />
+                    </a>
+                  ))
+                )}
               </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* Top Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white rounded-2xl p-8 shadow-md flex justify-between items-center">
-        <div>
-          <p className="text-xs font-semibold tracking-wider uppercase opacity-85 mb-1">
-            Wednesday, 22 July 2026
-          </p>
-
-          <h3 className="text-3xl font-extrabold">
-            Welcome back, {currentUser.username}!
-          </h3>
-        </div>
-
-        <div className="hidden sm:block text-right bg-white/15 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20">
-          <p className="text-xs opacity-80 uppercase font-semibold">
-            Logged in as
-          </p>
-
-          <p className="text-sm font-bold">
-            {displayRoleTitle}
-          </p>
-        </div>
-      </div>
-
-      {/* Stats Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
-              Today's Entries
-            </p>
-
-            <p className="text-2xl font-bold mt-1">0</p>
-          </div>
-
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-            <FileText size={22} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
-              Completed Today
-            </p>
-
-            <p className="text-2xl font-bold mt-1">0</p>
-          </div>
-
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-            <CheckCircle2 size={22} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
-              Total Cash Collection
-            </p>
-
-            <p className="text-2xl font-bold mt-1">
-              ₹0.00
-            </p>
-          </div>
-
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-lg">
-            <DollarSign size={22} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
-              Net Wallet Balance
-            </p>
-
-            <p className="text-2xl font-bold text-rose-600 mt-1">
-              ₹-1,600.00
-            </p>
-          </div>
-
-          <div className="p-3 bg-fuchsia-50 text-fuchsia-600 rounded-lg">
-            <Wallet size={22} />
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Launch Tools Grid */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-bold text-slate-800">
-            Quick Launch Tools
-          </h4>
-
-          <button className="text-xs font-semibold px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition">
-            Customize Layout
-          </button>
-        </div>
-         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
-          {quickLinks.map((tool) => (
-            <a
-              key={tool.id}
-              href={tool.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`flex flex-col justify-between p-5 bg-gradient-to-br ${tool.bgColor} text-white rounded-2xl shadow-sm hover:opacity-95 transition h-28`}
-            >
-              <div className="flex justify-between items-start">
-                <FileText size={22} />
-
-                {tool.url !== "#" && (
-                  <ExternalLink
-                    size={16}
-                    className="opacity-75"
-                  />
-                )}
-              </div>
-
-              <div>
-                <span className="text-base font-bold block">
-                  {tool.name}
-                </span>
-
-                <span className="text-xs opacity-80">
-                  External Tool
-                </span>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick Access Services with Search */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center text-center">
-        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full mb-3">
-          Service Directory
-        </span>
-
-        <h4 className="text-xl font-bold text-slate-800 mb-4">
-          Quickly Access Any Service
-        </h4>
-
-        <div className="relative w-full max-w-lg mb-6">
-          <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-            size={18}
-          />
-
-          <input
-            type="text"
-            placeholder="Search for a service..."
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        {/* List of Services */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
-          {[
-            { title: "Service Card 1", note: "No URL Provided" },
-            { title: "Service Card 2", note: "No URL Provided" },
-            { title: "Service Card 3", note: "No URL Provided" },
-            {
-              title: "Service Online Demo",
-              note: "external.gov.in",
-            },
-            {
-              title: "Online Document",
-              note: "No URL Provided",
-            },
-            {
-              title: "Service Printout",
-              note: "No URL Provided",
-            },
-            {
-              title: "Service PVC",
-              note: "No URL Provided",
-            },
-            {
-              title: "Agnipath/Agniveer",
-              note: "No URL Provided",
-            },
-          ].map((service, index) => (
-            <div
-              key={index}
-              className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between hover:border-blue-200 transition text-left"
-            >
-              <div>
-                <p className="text-sm font-semibold text-slate-700">
-                  {service.title}
-                </p>
-
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  {service.note}
-                </p>
-              </div>
-
-              <ArrowUpRight
-                size={16}
-                className="text-slate-400 shrink-0"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
-  </>
-);
+  );
 }

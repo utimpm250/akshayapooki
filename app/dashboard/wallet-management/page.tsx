@@ -11,6 +11,8 @@ import {
   Trash2,
   X,
   RotateCcw,
+  TrendingUp,
+  ShieldCheck,
 } from "lucide-react";
 
 interface WalletItem {
@@ -228,92 +230,182 @@ export default function WalletManagementPage() {
   if (!isMounted) return null;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 select-none font-sans">
-      <div className="flex justify-between items-center border-b pb-4">
+    <div className="p-8 max-w-7xl mx-auto space-y-8 select-none font-sans bg-slate-50/50 min-h-screen">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
         <div>
-          <h1 className="text-2xl font-black text-slate-800">Wallet Management</h1>
-          <p className="text-sm text-slate-500 font-medium">Manage and Track Your Wallets & Balances</p>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Wallet Management</h1>
+          <p className="text-sm text-slate-500 font-medium mt-0.5">Track, transfer, and manage all your digital & physical balances seamlessly.</p>
+        </div>
+        <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-100">
+          <ShieldCheck size={16} /> Secure Ledger System
         </div>
       </div>
 
-      <div className="bg-emerald-600 rounded-2xl p-6 text-white shadow-lg flex justify-between items-center">
+      {/* Hero Banner / Net Balance Card */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 rounded-3xl p-8 text-white shadow-xl shadow-emerald-900/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
         <div>
-          <p className="text-[11px] uppercase tracking-widest text-emerald-100 font-bold">NET WALLET BALANCE</p>
-          <h2 className="text-4xl font-black mt-1">₹{netWalletBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</h2>
-        </div>
-        <div className="bg-emerald-700/60 backdrop-blur-md rounded-xl px-6 py-3 flex items-center gap-3 border border-emerald-500/30">
-          <Wallet size={28} className="text-emerald-200" />
-          <div>
-            <p className="text-xl font-extrabold">{wallets.length}</p>
-            <p className="text-[10px] uppercase font-bold text-emerald-200">ACTIVE WALLETS</p>
+          <div className="flex items-center gap-2 text-emerald-200 text-xs font-bold tracking-widest uppercase">
+            <TrendingUp size={14} /> NET WALLET BALANCE
           </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border p-6 shadow-sm space-y-6">
-        <div className="flex flex-col md:flex-row justify-between gap-4">
-          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            Wallet Balances <button onClick={loadWalletsAndTransactions} className="text-slate-400 hover:text-slate-600"><RotateCcw size={14} /></button>
+          <h2 className="text-4xl sm:text-5xl font-black mt-2 tracking-tight">
+            ₹{netWalletBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
           </h2>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center border rounded-xl px-3 py-2 bg-slate-50 w-64">
+          <p className="text-emerald-100/80 text-xs mt-2 font-medium">Combined balance across all active accounts & cash drawers.</p>
+        </div>
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl px-6 py-4 flex items-center gap-4 border border-white/20 shadow-inner">
+          <div className="p-3 bg-white/20 rounded-xl">
+            <Wallet size={28} className="text-white" />
+          </div>
+          <div>
+            <p className="text-2xl font-black">{wallets.length}</p>
+            <p className="text-[10px] uppercase font-bold tracking-wider text-emerald-200">ACTIVE WALLETS</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Card */}
+      <div className="bg-white rounded-3xl border border-slate-100 p-6 sm:p-8 shadow-xs space-y-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-black text-slate-800">Wallet Balances</h2>
+            <button 
+              onClick={loadWalletsAndTransactions} 
+              className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" 
+              title="Refresh Data"
+            >
+              <RotateCcw size={16} />
+            </button>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            <div className="flex items-center border border-slate-200 rounded-2xl px-4 py-2.5 bg-slate-50/50 focus-within:bg-white focus-within:border-emerald-500 transition-all w-full sm:w-72">
               <Search size={16} className="text-slate-400 mr-2" />
-              <input type="text" placeholder="Search wallets..." className="bg-transparent outline-none text-xs w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <input 
+                type="text" 
+                placeholder="Search wallets..." 
+                className="bg-transparent outline-none text-xs w-full text-slate-700 font-medium placeholder:text-slate-400" 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+              />
             </div>
-            <button onClick={() => setShowTransferModal(true)} className="border border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5"><ArrowRightLeft size={14} /> Transfer</button>
-            <button onClick={() => setShowHistoryModal(true)} className="border text-slate-600 hover:bg-slate-50 font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5"><History size={14} /> History</button>
+            <button 
+              onClick={() => setShowTransferModal(true)} 
+              className="bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-xs px-4 py-3 rounded-2xl flex items-center gap-2 transition-all shadow-xs"
+            >
+              <ArrowRightLeft size={14} /> Transfer Funds
+            </button>
+            <button 
+              onClick={() => setShowHistoryModal(true)} 
+              className="bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold text-xs px-4 py-3 rounded-2xl flex items-center gap-2 transition-all shadow-xs"
+            >
+              <History size={14} /> History
+            </button>
           </div>
         </div>
 
-        <div className="overflow-x-auto border rounded-xl">
+        {/* Table Section */}
+        <div className="overflow-x-auto rounded-2xl border border-slate-100">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-slate-50 border-b text-[11px] font-bold text-slate-400 uppercase">
-                <th className="py-3 px-4">WALLET NAME</th><th className="py-3 px-4 text-right">OPENING BALANCE</th><th className="py-3 px-4 text-right">CURRENT BALANCE</th><th className="py-3 px-4 text-center">LAST UPDATED</th><th className="py-3 px-4 text-center">ACTIONS</th>
+              <tr className="bg-slate-50/75 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <th className="py-4 px-6">WALLET NAME</th>
+                <th className="py-4 px-6 text-right">OPENING BALANCE</th>
+                <th className="py-4 px-6 text-right">CURRENT BALANCE</th>
+                <th className="py-4 px-6 text-center">LAST UPDATED</th>
+                <th className="py-4 px-6 text-center">ACTIONS</th>
               </tr>
             </thead>
-            <tbody className="divide-y font-medium text-slate-700">
-              {filteredWallets.map((w) => (
-                <tr key={w.id} className="hover:bg-slate-50">
-                  <td className="py-4 px-4 flex items-center gap-3"><Wallet size={16} className="text-slate-500" /><span className="font-bold text-slate-800">{w.name}</span></td>
-                  <td className="py-4 px-4 text-right text-slate-500">₹{w.openingBalance.toFixed(2)}</td>
-                  <td className="py-4 px-4 text-right font-bold"><span className={w.currentBalance < 0 ? "text-rose-500" : "text-emerald-600"}>₹{w.currentBalance.toFixed(2)}</span></td>
-                  <td className="py-4 px-4 text-center text-xs text-slate-400">{w.lastUpdated}</td>
-                  <td className="py-4 px-4 text-center flex justify-center gap-2">
-                    <button onClick={() => { setSelectedWallet(w); setShowAdjustBalanceModal(true); }} className="bg-emerald-50 text-emerald-600 font-bold text-xs px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1"><Plus size={12} /> Add</button>
-                    <button onClick={() => { setSelectedWallet(w); setEditWalletName(w.name); setShowEditModal(true); }} className="text-slate-400 hover:text-blue-600 p-1.5"><Pencil size={15} /></button>
-                    <button onClick={() => handleDeleteWallet(w.id)} className="text-slate-400 hover:text-rose-600 p-1.5"><Trash2 size={15} /></button>
-                  </td>
+            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+              {filteredWallets.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-12 text-slate-400 text-xs">No wallets found matching your search.</td>
                 </tr>
-              ))}
+              ) : (
+                filteredWallets.map((w) => (
+                  <tr key={w.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-4 px-6 flex items-center gap-3.5">
+                      <div className="p-2.5 bg-slate-100 text-slate-600 rounded-xl">
+                        <Wallet size={16} />
+                      </div>
+                      <span className="font-bold text-slate-900">{w.name}</span>
+                    </td>
+                    <td className="py-4 px-6 text-right text-slate-500 font-semibold">₹{w.openingBalance.toFixed(2)}</td>
+                    <td className="py-4 px-6 text-right font-black">
+                      <span className={w.currentBalance < 0 ? "text-rose-500" : "text-emerald-600"}>
+                        ₹{w.currentBalance.toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-center text-xs text-slate-400 font-medium">{w.lastUpdated}</td>
+                    <td className="py-4 px-6 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => { setSelectedWallet(w); setShowAdjustBalanceModal(true); }} 
+                          className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold text-xs px-3 py-1.5 rounded-xl border border-emerald-200/60 flex items-center gap-1 transition-all"
+                        >
+                          <Plus size={12} /> Add
+                        </button>
+                        <button 
+                          onClick={() => { setSelectedWallet(w); setEditWalletName(w.name); setShowEditModal(true); }} 
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                          title="Edit Wallet"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteWallet(w.id)} 
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                          title="Delete Wallet"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      <button onClick={() => setShowAddWalletModal(true)} className="fixed bottom-6 right-6 bg-emerald-500 hover:bg-emerald-600 text-white p-4 rounded-full shadow-2xl z-40"><Plus size={24} /></button>
+      {/* Floating Action Button */}
+      <button 
+        onClick={() => setShowAddWalletModal(true)} 
+        className="fixed bottom-8 right-8 bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-full shadow-2xl shadow-emerald-600/40 z-40 transition-all hover:scale-105 flex items-center justify-center"
+        title="Add New Wallet"
+      >
+        <Plus size={26} />
+      </button>
 
       {/* History Modal */}
       {showHistoryModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2"><History size={18} /> Wallet Transaction History</h3>
-              <button onClick={closeAllModals} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl space-y-6 max-h-[85vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <h3 className="font-black text-slate-900 flex items-center gap-2.5 text-lg">
+                <History size={20} className="text-emerald-600" /> Wallet Transaction History
+              </h3>
+              <button onClick={closeAllModals} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"><X size={18} /></button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {transactions.length === 0 ? (
-                <p className="text-center py-6 text-slate-400">No transaction records found.</p>
+                <div className="text-center py-12 text-slate-400 text-sm font-medium bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  No transaction records found.
+                </div>
               ) : (
                 transactions.map((tx) => (
-                  <div key={tx.id} className="p-3 bg-slate-50 rounded-xl border flex justify-between items-center text-xs">
-                    <div>
-                      <p className="font-bold text-slate-800">{tx.walletName} - <span className={tx.type === 'IN' ? 'text-emerald-600' : 'text-rose-500'}>{tx.type} (₹{tx.amount})</span></p>
-                      <p className="text-slate-500">{tx.description} | Staff: {tx.staffName}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{tx.date}</p>
+                  <div key={tx.id} className="p-4 bg-slate-50/80 rounded-2xl border border-slate-100 flex justify-between items-center text-xs">
+                    <div className="space-y-1">
+                      <p className="font-bold text-slate-800 text-sm">
+                        {tx.walletName} - <span className={tx.type === 'IN' ? 'text-emerald-600 font-black' : 'text-rose-500 font-black'}>{tx.type} (₹{tx.amount})</span>
+                      </p>
+                      <p className="text-slate-500 font-medium">{tx.description} | Staff: <span className="text-slate-700 font-bold">{tx.staffName}</span></p>
+                      <p className="text-[10px] text-slate-400 font-semibold">{tx.date}</p>
                     </div>
-                    <div className="text-right font-bold text-slate-700">
-                      Balance: ₹{tx.balanceAfter !== undefined ? tx.balanceAfter.toFixed(2) : '-'}
+                    <div className="text-right font-black text-slate-800 text-sm bg-white px-3 py-2 rounded-xl border border-slate-200/60 shadow-xs">
+                      Bal: ₹{tx.balanceAfter !== undefined ? tx.balanceAfter.toFixed(2) : '-'}
                     </div>
                   </div>
                 ))
@@ -325,70 +417,151 @@ export default function WalletManagementPage() {
 
       {/* Adjust Balance Modal */}
       {showAdjustBalanceModal && selectedWallet && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <form onSubmit={handleUpdateBalance} className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
-            <div className="flex justify-between items-center"><h3 className="font-bold text-base">Adjust Balance</h3><button type="button" onClick={closeAllModals}><X size={18} /></button></div>
-            <div className="bg-emerald-50 rounded-xl p-3 text-sm font-medium flex justify-between"><span>{selectedWallet.name}</span><span className="font-bold">₹{selectedWallet.currentBalance}</span></div>
-            <div>
-              <label className="text-xs font-bold text-slate-700">Amount (+/-)</label>
-              <input type="number" step="any" required autoFocus className="w-full border rounded-xl p-2 mt-1 text-sm outline-none" value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value)} />
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <form onSubmit={handleUpdateBalance} className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="font-black text-slate-900 text-base">Adjust Balance</h3>
+              <button type="button" onClick={closeAllModals} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={18} /></button>
             </div>
-            <div>
-              <label className="text-xs font-bold text-slate-700">Note</label>
-              <input type="text" className="w-full border rounded-xl p-2 mt-1 text-sm outline-none" value={adjustNote} onChange={(e) => setAdjustNote(e.target.value)} />
+            <div className="bg-emerald-50 rounded-2xl p-4 text-sm font-medium flex justify-between items-center border border-emerald-100 text-emerald-900">
+              <span className="font-bold">{selectedWallet.name}</span>
+              <span className="font-black text-base">₹{selectedWallet.currentBalance.toFixed(2)}</span>
             </div>
-            <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={closeAllModals} className="px-4 py-2 text-xs font-bold">Cancel</button><button type="submit" className="px-4 py-2 text-xs font-bold bg-emerald-500 text-white rounded-xl">Update</button></div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Amount (+/-)</label>
+              <input 
+                type="number" 
+                step="any" 
+                required 
+                autoFocus 
+                placeholder="e.g. 500 or -200" 
+                className="w-full border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-emerald-500 bg-slate-50/50 font-medium" 
+                value={adjustAmount} 
+                onChange={(e) => setAdjustAmount(e.target.value)} 
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Note / Description</label>
+              <input 
+                type="text" 
+                placeholder="Reason for adjustment..." 
+                className="w-full border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-emerald-500 bg-slate-50/50 font-medium" 
+                value={adjustNote} 
+                onChange={(e) => setAdjustNote(e.target.value)} 
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-3">
+              <button type="button" onClick={closeAllModals} className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+              <button type="submit" className="px-5 py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-600/30 transition-all">Update Balance</button>
+            </div>
           </form>
         </div>
       )}
 
       {/* Transfer Modal */}
       {showTransferModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <form onSubmit={handleTransferMoney} className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
-            <div className="flex justify-between items-center"><h3 className="font-bold text-base">Transfer Funds</h3><button type="button" onClick={closeAllModals}><X size={18} /></button></div>
-            <div>
-              <label className="text-xs font-bold text-slate-700">From Wallet</label>
-              <select required className="w-full border rounded-xl p-2.5 mt-1 text-sm bg-white" value={fromWalletId} onChange={(e) => setFromWalletId(e.target.value)}>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <form onSubmit={handleTransferMoney} className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="font-black text-slate-900 text-base">Transfer Funds</h3>
+              <button type="button" onClick={closeAllModals} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">From Wallet</label>
+              <select required className="w-full border border-slate-200 rounded-2xl p-3 text-sm bg-slate-50/50 font-medium outline-none focus:border-emerald-500" value={fromWalletId} onChange={(e) => setFromWalletId(e.target.value)}>
                 <option value="">-- Select Source --</option>
-                {wallets.map(w => <option key={w.id} value={w.id}>{w.name} (₹{w.currentBalance})</option>)}
+                {wallets.map(w => <option key={w.id} value={w.id}>{w.name} (₹{w.currentBalance.toFixed(2)})</option>)}
               </select>
             </div>
-            <div>
-              <label className="text-xs font-bold text-slate-700">To Wallet</label>
-              <select required className="w-full border rounded-xl p-2.5 mt-1 text-sm bg-white" value={toWalletId} onChange={(e) => setToWalletId(e.target.value)}>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">To Wallet</label>
+              <select required className="w-full border border-slate-200 rounded-2xl p-3 text-sm bg-slate-50/50 font-medium outline-none focus:border-emerald-500" value={toWalletId} onChange={(e) => setToWalletId(e.target.value)}>
                 <option value="">-- Select Destination --</option>
-                {wallets.map(w => <option key={w.id} value={w.id}>{w.name} (₹{w.currentBalance})</option>)}
+                {wallets.map(w => <option key={w.id} value={w.id}>{w.name} (₹{w.currentBalance.toFixed(2)})</option>)}
               </select>
             </div>
-            <div>
-              <label className="text-xs font-bold text-slate-700">Amount (₹)</label>
-              <input type="number" step="any" required className="w-full border rounded-xl p-2.5 mt-1 text-sm" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} />
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Amount (₹)</label>
+              <input 
+                type="number" 
+                step="any" 
+                required 
+                placeholder="Enter amount" 
+                className="w-full border border-slate-200 rounded-2xl p-3 text-sm bg-slate-50/50 font-medium outline-none focus:border-emerald-500" 
+                value={transferAmount} 
+                onChange={(e) => setTransferAmount(e.target.value)} 
+              />
             </div>
-            <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={closeAllModals} className="px-4 py-2 text-xs font-bold">Cancel</button><button type="submit" className="px-4 py-2 text-xs font-bold bg-emerald-500 text-white rounded-xl">Transfer</button></div>
+            <div className="flex justify-end gap-3 pt-3">
+              <button type="button" onClick={closeAllModals} className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+              <button type="submit" className="px-5 py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-600/30 transition-all">Transfer Now</button>
+            </div>
           </form>
         </div>
       )}
 
       {/* Add Wallet Modal */}
       {showAddWalletModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <form onSubmit={handleCreateWallet} className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
-            <div className="flex justify-between items-center border-b pb-3"><h3 className="font-bold text-slate-800">Add New Wallet</h3><button type="button" onClick={closeAllModals}><X size={18} /></button></div>
-            <div><label className="text-xs font-bold text-slate-500 uppercase">Wallet Name</label><input type="text" required autoFocus className="w-full border rounded-xl p-2.5 text-sm mt-1" value={newWalletName} onChange={(e) => setNewWalletName(e.target.value)} /></div>
-            <div><label className="text-xs font-bold text-slate-500 uppercase">Opening Balance (₹)</label><input type="number" step="any" className="w-full border rounded-xl p-2.5 text-sm mt-1" value={newOpeningBalance} onChange={(e) => setNewOpeningBalance(e.target.value)} /></div>
-            <div className="flex justify-end gap-2 pt-3"><button type="button" onClick={closeAllModals} className="px-4 py-2 text-xs font-bold">Cancel</button><button type="submit" className="px-5 py-2 text-xs font-bold bg-emerald-600 text-white rounded-xl">Save</button></div>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <form onSubmit={handleCreateWallet} className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="font-black text-slate-900 text-base">Add New Wallet</h3>
+              <button type="button" onClick={closeAllModals} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Wallet Name</label>
+              <input 
+                type="number" 
+                required 
+                autoFocus 
+                placeholder="e.g. PhonePe / GooglePay" 
+                className="w-full border border-slate-200 rounded-2xl p-3 text-sm mt-1 bg-slate-50/50 font-medium outline-none focus:border-emerald-500" 
+                value={newWalletName} 
+                onChange={(e) => setNewWalletName(e.target.value)} 
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Opening Balance (₹)</label>
+              <input 
+                type="number" 
+                step="any" 
+                placeholder="0.00" 
+                className="w-full border border-slate-200 rounded-2xl p-3 text-sm mt-1 bg-slate-50/50 font-medium outline-none focus:border-emerald-500" 
+                value={newOpeningBalance} 
+                onChange={(e) => setNewOpeningBalance(e.target.value)} 
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-3">
+              <button type="button" onClick={closeAllModals} className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+              <button type="submit" className="px-5 py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-600/30 transition-all">Save Wallet</button>
+            </div>
           </form>
         </div>
       )}
 
       {/* Edit Wallet Modal */}
       {showEditModal && selectedWallet && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <form onSubmit={handleUpdateWallet} className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
-            <div className="flex justify-between items-center border-b pb-3"><h3 className="font-bold text-slate-800">Edit Wallet Name</h3><button type="button" onClick={closeAllModals}><X size={18} /></button></div>
-            <div><label className="text-xs font-bold text-slate-500 uppercase">Wallet Name</label><input type="text" required autoFocus className="w-full border rounded-xl p-2.5 text-sm mt-1" value={editWalletName} onChange={(e) => setEditWalletName(e.target.value)} /></div>
-            <div className="flex justify-end gap-2 pt-3"><button type="button" onClick={closeAllModals} className="px-4 py-2 text-xs font-bold">Cancel</button><button type="submit" className="px-5 py-2 text-xs font-bold bg-blue-600 text-white rounded-xl">Update</button></div>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <form onSubmit={handleUpdateWallet} className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="font-black text-slate-900 text-base">Edit Wallet Name</h3>
+              <button type="button" onClick={closeAllModals} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Wallet Name</label>
+              <input 
+                type="text" 
+                required 
+                autoFocus 
+                className="w-full border border-slate-200 rounded-2xl p-3 text-sm mt-1 bg-slate-50/50 font-medium outline-none focus:border-blue-500" 
+                value={editWalletName} 
+                onChange={(e) => setEditWalletName(e.target.value)} 
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-3">
+              <button type="button" onClick={closeAllModals} className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+              <button type="submit" className="px-5 py-2.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-600/30 transition-all">Update Name</button>
+            </div>
           </form>
         </div>
       )}

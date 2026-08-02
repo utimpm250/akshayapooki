@@ -1,130 +1,323 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     let isValid = false;
-    let assignedRole = 'staff';
-    let displayName = '';
+    let assignedRole = "staff";
+    let displayName = "";
 
     const cleanUsername = username.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    // 1. Check for Super Admin Login
-    if (cleanUsername === 'admin' && cleanPassword === 'admin') {
+    // Admin Login
+    if (cleanUsername === "admin" && cleanPassword === "admin") {
       isValid = true;
-      assignedRole = 'admin';
-      displayName = 'Admin User';
+      assignedRole = "admin";
+      displayName = "Admin User";
     } else {
-      // 2. Check against stored staff list in LocalStorage (`smart_akshaya_staff`)
-      const savedStaffData = localStorage.getItem('smart_akshaya_staff');
+      // Staff Login
+      const savedStaffData = localStorage.getItem("smart_akshaya_staff");
+
       if (savedStaffData) {
         try {
           const staffArray = JSON.parse(savedStaffData);
+
           if (Array.isArray(staffArray)) {
             const matchedStaff = staffArray.find((s: any) => {
-              const sName = (s.name || s.staffName || s.username || '').trim().toLowerCase();
-              const sPass = (s.password || s.pass || '').trim();
-              
-              // Default fallback password generated for staff (e.g., fasnilakshaya)
-              const defaultPass = `${sName.split(' ')[0]}akshaya`.toLowerCase();
+              const sName = (
+                s.name ||
+                s.staffName ||
+                s.username ||
+                ""
+              )
+                .trim()
+                .toLowerCase();
 
-              const isNameMatch = sName === cleanUsername;
-              // Password must match either the stored password or the default auto-generated password
-              const isPassMatch = (sPass !== '' && sPass === cleanPassword) || (defaultPass === cleanPassword.toLowerCase());
+              const sPass = (
+                s.password ||
+                s.pass ||
+                ""
+              ).trim();
 
-              return isNameMatch && isPassMatch;
+              const defaultPass =
+                `${sName.split(" ")[0]}akshaya`.toLowerCase();
+
+              return (
+                sName === cleanUsername &&
+                (
+                  (sPass !== "" &&
+                    sPass === cleanPassword) ||
+                  defaultPass ===
+                    cleanPassword.toLowerCase()
+                )
+              );
             });
 
             if (matchedStaff) {
               isValid = true;
-              assignedRole = matchedStaff.role?.toLowerCase() === 'admin' ? 'admin' : 'staff';
-              displayName = matchedStaff.name || matchedStaff.staffName || matchedStaff.username;
+
+              assignedRole =
+                matchedStaff.role?.toLowerCase() ===
+                "admin"
+                  ? "admin"
+                  : "staff";
+
+              displayName =
+                matchedStaff.name ||
+                matchedStaff.staffName ||
+                matchedStaff.username;
             }
           }
         } catch (err) {
-          console.error("Error reading staff storage", err);
+          console.error(
+            "Error reading staff storage",
+            err
+          );
         }
       }
     }
 
     if (isValid) {
-      // Store current logged-in user details properly so dashboard displays the exact staff name
-      localStorage.setItem('loggedInUser', JSON.stringify({ username: displayName, role: assignedRole }));
-      // Save today's login session date
-localStorage.setItem(
-  "loginSessionDate",
-  new Date().toISOString().split("T")[0]
-);
+      localStorage.setItem(
+        "loggedInUser",
+        JSON.stringify({
+          username: displayName,
+          role: assignedRole,
+        })
+      );
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      localStorage.setItem(
+        "loginSessionDate",
+        new Date().toISOString().split("T")[0]
+      );
+
+      router.push("/dashboard");
     } else {
-      alert('Invalid Username or Password. Please check your credentials.');
+      alert(
+        "Invalid Username or Password. Please check your credentials."
+      );
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 p-4">
-      <div className="w-full max-w-md bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-white/20">
-        
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-indigo-50 text-indigo-600 font-bold text-xl mb-3">
-            SA
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-900 to-blue-700 p-4">
+
+      <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl animate-pulse" />
+
+      <div className="absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-violet-500/20 blur-3xl animate-pulse" />
+
+      <div className="absolute top-1/2 left-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-400/10 blur-3xl" />
+
+      <div className="relative w-full max-w-md overflow-hidden rounded-[30px] border border-white/20 bg-white/95 backdrop-blur-2xl p-8 shadow-[0_30px_80px_rgba(15,23,42,0.28)] transition-all duration-500">
+
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-indigo-500 to-violet-500" />
+
+        <div className="flex flex-col items-center justify-center mb-8">
+
+          <div className="flex items-center justify-center mb-5 animate-in fade-in zoom-in duration-700">
+
+            <div className="relative flex items-center justify-center">
+
+              <div className="absolute h-32 w-32 rounded-full bg-gradient-to-r from-cyan-400/20 via-indigo-500/20 to-violet-500/20 blur-3xl animate-pulse" />
+
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
+                className="relative h-28 md:h-32 lg:h-36 w-auto object-contain pointer-events-none select-none drop-shadow-[0_20px_45px_rgba(79,70,229,0.45)] transition-all duration-500 hover:scale-105"
+              >
+                <source
+                  src="/Animate_logo.webm"
+                  type="video/webm"
+                />
+              </video>
+
+            </div>
+
           </div>
-          <h2 className="text-2xl font-bold text-slate-800">Welcome Back</h2>
-          <p className="text-sm text-slate-500 mt-1">Sign in to your Smart Akshaya Account</p>
+
+          <h2 className="bg-gradient-to-r from-indigo-700 via-blue-600 to-violet-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent text-center">
+            Welcome Back
+          </h2>
+
+          <p className="mt-2 text-sm leading-6 text-slate-500 text-center max-w-xs">
+            Sign in to your Smart Akshaya Account
+          </p>
+
         </div>
+        "use client";
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          {/* Username Field */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-              Staff Name / Username
-            </label>
-            <input 
-              type="text" 
-              placeholder="Enter your name (e.g. FASNIL)"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required 
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition font-semibold text-slate-700"
-            />
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+
+export default function LoginPage() {
+  const router = useRouter();
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    let isValid = false;
+    let assignedRole = "staff";
+    let displayName = "";
+
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    // Admin Login
+    if (cleanUsername === "admin" && cleanPassword === "admin") {
+      isValid = true;
+      assignedRole = "admin";
+      displayName = "Admin User";
+    } else {
+      // Staff Login
+      const savedStaffData = localStorage.getItem("smart_akshaya_staff");
+
+      if (savedStaffData) {
+        try {
+          const staffArray = JSON.parse(savedStaffData);
+
+          if (Array.isArray(staffArray)) {
+            const matchedStaff = staffArray.find((s: any) => {
+              const sName = (
+                s.name ||
+                s.staffName ||
+                s.username ||
+                ""
+              )
+                .trim()
+                .toLowerCase();
+
+              const sPass = (
+                s.password ||
+                s.pass ||
+                ""
+              ).trim();
+
+              const defaultPass =
+                `${sName.split(" ")[0]}akshaya`.toLowerCase();
+
+              return (
+                sName === cleanUsername &&
+                (
+                  (sPass !== "" &&
+                    sPass === cleanPassword) ||
+                  defaultPass ===
+                    cleanPassword.toLowerCase()
+                )
+              );
+            });
+
+            if (matchedStaff) {
+              isValid = true;
+
+              assignedRole =
+                matchedStaff.role?.toLowerCase() ===
+                "admin"
+                  ? "admin"
+                  : "staff";
+
+              displayName =
+                matchedStaff.name ||
+                matchedStaff.staffName ||
+                matchedStaff.username;
+            }
+          }
+        } catch (err) {
+          console.error(
+            "Error reading staff storage",
+            err
+          );
+        }
+      }
+    }
+
+    if (isValid) {
+      localStorage.setItem(
+        "loggedInUser",
+        JSON.stringify({
+          username: displayName,
+          role: assignedRole,
+        })
+      );
+
+      localStorage.setItem(
+        "loginSessionDate",
+        new Date().toISOString().split("T")[0]
+      );
+
+      router.push("/dashboard");
+    } else {
+      alert(
+        "Invalid Username or Password. Please check your credentials."
+      );
+    }
+  };
+
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-900 to-blue-700 p-4">
+
+      <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl animate-pulse" />
+
+      <div className="absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-violet-500/20 blur-3xl animate-pulse" />
+
+      <div className="absolute top-1/2 left-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-400/10 blur-3xl" />
+
+      <div className="relative w-full max-w-md overflow-hidden rounded-[30px] border border-white/20 bg-white/95 backdrop-blur-2xl p-8 shadow-[0_30px_80px_rgba(15,23,42,0.28)] transition-all duration-500">
+
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-indigo-500 to-violet-500" />
+
+        <div className="flex flex-col items-center justify-center mb-8">
+
+          <div className="flex items-center justify-center mb-5 animate-in fade-in zoom-in duration-700">
+
+            <div className="relative flex items-center justify-center">
+
+              <div className="absolute h-32 w-32 rounded-full bg-gradient-to-r from-cyan-400/20 via-indigo-500/20 to-violet-500/20 blur-3xl animate-pulse" />
+
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
+                className="relative h-28 md:h-32 lg:h-36 w-auto object-contain pointer-events-none select-none drop-shadow-[0_20px_45px_rgba(79,70,229,0.45)] transition-all duration-500 hover:scale-105"
+              >
+                <source
+                  src="/Animate_logo.webm"
+                  type="video/webm"
+                />
+              </video>
+
+            </div>
+
           </div>
 
-          {/* Password Field */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-              Password
-            </label>
-            <input 
-              type="password" 
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required 
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition font-semibold text-slate-700"
-            />
-          </div>
+          <h2 className="bg-gradient-to-r from-indigo-700 via-blue-600 to-violet-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent text-center">
+            Welcome Back
+          </h2>
 
-          {/* Submit Button */}
-          <button 
-            type="submit" 
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all duration-150"
-          >
-            Sign In
-          </button>
-        </form>
+          <p className="mt-2 text-sm leading-6 text-slate-500 text-center max-w-xs">
+            Sign in to your Smart Akshaya Account
+          </p>
 
-      </div>
-    </div>
-  );
-}
+        </div>
+        

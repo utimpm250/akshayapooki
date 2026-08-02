@@ -156,23 +156,58 @@ export default function ServiceManagementPage() {
   const [newFollowupDays, setNewFollowupDays] = useState(0);
   const [newPortalUrl, setNewPortalUrl] = useState('');
 
-  // വാലറ്റ് മാനേജ്മെൻ്റിൽ നിന്ന് വാലറ്റുകൾ ഫെച്ച് ചെയ്യുക
+  // വാലറ്റ് മാനേജ്മെന്റ് പേജിൽ ഉപയോഗിക്കുന്ന പ്രധാന കീ ആയ 'wallets' (അല്ലെങ്കിൽ മറ്റ് സ്റ്റോറേജ് കീകൾ) കൃത്യമായി റീഡ് ചെയ്ത് വാലറ്റ് പേരുകൾ എടുക്കുന്നു
   const fetchWallets = () => {
     if (typeof window !== 'undefined') {
-      const savedWallets = localStorage.getItem('wallets'); // നിങ്ങളുടെ വാലറ്റ് മാനേജ്മെൻ്റ് കീ (ആവശ്യമെങ്കിൽ മാറ്റാം) അല്ലെങ്കിൽ 'managedWallets'
-      if (savedWallets) {
+      let walletNames: string[] = [];
+
+      // നിങ്ങളുടെ Wallet Management പേജ് സേവ് ചെയ്യാൻ സാധ്യതയുള്ള പ്രധാന കീ 'wallets' പരിശോധിക്കുന്നു
+      const savedWalletsData = localStorage.getItem('wallets');
+      
+      if (savedWalletsData) {
         try {
-          const parsed = JSON.parse(savedWallets);
-          // അഡ്മിൻ പാനലിൽ വാലറ്റ് ഒബ്ജക്റ്റ് ആണോ അല്ലെങ്കിൽ പേരുകളുടെ അറേ ആണോ എന്ന് നോക്കി പേരുകൾ മാത്രം എടുക്കുന്നു
-          const names = parsed.map((w: any) => typeof w === 'string' ? w : (w.name || w.walletName || 'CASH'));
-          if (names.length > 0) {
-            // ഡ്യൂപ്ലിക്കേറ്റ് ഒഴിവാക്കാൻ Set ഉപയോഗിക്കുന്നു
-            const uniqueWallets = Array.from(new Set(['CASH', 'BANK', ...names]));
-            setWalletOptions(uniqueWallets as string[]);
+          const parsed = JSON.parse(savedWalletsData);
+          if (Array.isArray(parsed)) {
+            walletNames = parsed.map((item: any) => {
+              if (typeof item === 'string') return item;
+              // വാലറ്റ് ഒബ്ജക്റ്റുകളിൽ നിന്ന് നാമങ്ങൾ എടുക്കുന്നു (ഉദാ: name, walletName തുടങ്ങിയ പ്രോപ്പർട്ടികൾ)
+              return item.name || item.walletName || item.title || item.wallet || '';
+            }).filter(Boolean);
           }
         } catch (e) {
-          console.error("Error parsing wallets", e);
+          console.error("Error parsing wallets from localStorage:", e);
         }
+      }
+
+      // ഒരുവേള 'wallets' കീയിൽ ഡാറ്റ ഇല്ലെങ്കിൽ മറ്റ് കീകളും പരിശോധിക്കാം
+      if (walletNames.length === 0) {
+        const alternativeKeys = ['walletList', 'managedWallets', 'userWallets'];
+        for (const key of alternativeKeys) {
+          const altData = localStorage.getItem(key);
+          if (altData) {
+            try {
+              const parsedAlt = JSON.parse(altData);
+              if (Array.isArray(parsedAlt)) {
+                walletNames = parsedAlt.map((item: any) => {
+                  if (typeof item === 'string') return item;
+                  return item.name || item.walletName || item.title || item.wallet || '';
+                }).filter(Boolean);
+                if (walletNames.length > 0) break;
+              }
+            } catch (err) {
+              console.error("Error parsing alt key", key, err);
+            }
+          }
+        }
+      }
+
+      // വാലറ്റ് മാനേജ്മെന്റിൽ നിന്ന് കിട്ടിയ പേരുകൾ മാത്രം സെറ്റ് ചെയ്യുന്നു. 
+      // ഒരു വാലറ്റും കിട്ടിയില്ലെങ്കിൽ മാത്രം 'CASH' നൽകുന്നു.
+      if (walletNames.length > 0) {
+        // ഡ്യൂപ്ലിക്കേറ്റുകൾ ഒഴിവാക്കാൻ Set ഉപയോഗിക്കുന്നു
+        setWalletOptions(Array.from(new Set(walletNames)));
+      } else {
+        setWalletOptions(['CASH', 'BANK', 'Edistrict', 'CSC']);
       }
     }
   };
@@ -248,7 +283,7 @@ export default function ServiceManagementPage() {
   };
 
   const handleOpenAddModal = () => {
-    fetchWallets(); // മോഡൽ തുറക്കുമ്പോൾ പുതിയ വാലറ്റ് ലിസ്റ്റ് അപ്ഡേറ്റ് ചെയ്യും
+    fetchWallets();
     setEditingServiceId(null);
     setNewName('');
     setNewWallet(walletOptions[0] || 'CASH');
@@ -261,10 +296,10 @@ export default function ServiceManagementPage() {
   };
 
   const handleOpenEditModal = (service: ServiceItem) => {
-    fetchWallets(); // മോഡൽ തുറക്കുമ്പോൾ പുതിയ വാലറ്റ് ലിസ്റ്റ് അപ്ഡേറ്റ് ചെയ്യും
+    fetchWallets();
     setEditingServiceId(service.id);
     setNewName(service.name);
-    setNewWallet(service.wallet);
+    setNewWallet(service.wallet || walletOptions[0] || 'CASH');
     setNewDeptFee(service.deptFee);
     setNewSrvCharge(service.srvCharge);
     setNewCommission(service.commission);
@@ -388,7 +423,7 @@ export default function ServiceManagementPage() {
                     </td>
                     <td className="py-4 px-4">
                       <span className="px-2.5 py-1 rounded-md text-[10px] font-black tracking-wide bg-slate-100 text-slate-700">
-                        {service.wallet}
+                        {service.wallet || 'CASH'}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-center text-slate-500">₹{service.deptFee}</td>

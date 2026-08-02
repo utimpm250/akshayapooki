@@ -50,39 +50,47 @@ export default function QuickHub() {
   const [staffList, setStaffList] = useState<string[]>(['Admin User', 'Fasnil', 'Sumayya', 'Sheeja']);
   const [selectedStaffList, setSelectedStaffList] = useState<string[]>([]);
 
-  // Load actual staff from localStorage if available
-useEffect(() => {
-  // Load staff
-  const savedStaff = localStorage.getItem("staff_members");
-  if (savedStaff) {
-    try {
-      const parsed = JSON.parse(savedStaff);
-
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const names = parsed
-          .map((s: any) => s.name || s.username || s.firstName)
-          .filter(Boolean);
-
-        if (names.length > 0) {
-          setStaffList(names);
-        }
+  // Load actual staff & saved quick links from localStorage on mount
+  useEffect(() => {
+    // Load Quick Links
+    const savedLinks = localStorage.getItem("hub_quick_links");
+    if (savedLinks) {
+      try {
+        setQuickLinks(JSON.parse(savedLinks));
+      } catch (e) {
+        console.error("Error loading quick links", e);
       }
-    } catch (e) {
-      console.error("Error parsing staff list", e);
     }
-  }
 
-  // Load announcements
-  const savedAnnouncements = localStorage.getItem("hub_announcements");
+    // Load staff
+    const savedStaff = localStorage.getItem("staff_members");
+    if (savedStaff) {
+      try {
+        const parsed = JSON.parse(savedStaff);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const names = parsed
+            .map((s: any) => s.name || s.username || s.firstName)
+            .filter(Boolean);
 
-  if (savedAnnouncements) {
-    try {
-      setAnnouncements(JSON.parse(savedAnnouncements));
-    } catch (e) {
-      console.error("Error loading announcements", e);
+          if (names.length > 0) {
+            setStaffList(names);
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing staff list", e);
+      }
     }
-  }
-}, []);
+
+    // Load announcements
+    const savedAnnouncements = localStorage.getItem("hub_announcements");
+    if (savedAnnouncements) {
+      try {
+        setAnnouncements(JSON.parse(savedAnnouncements));
+      } catch (e) {
+        console.error("Error loading announcements", e);
+      }
+    }
+  }, []);
 
   const colors = [
     'bg-blue-600', 'bg-teal-600', 'bg-emerald-600', 'bg-purple-600', 
@@ -123,7 +131,12 @@ useEffect(() => {
       bgColor: selectedBgColor,
       iconName: selectedIcon
     };
-    setQuickLinks([newTool, ...quickLinks]);
+    const updatedLinks = [newTool, ...quickLinks];
+    setQuickLinks(updatedLinks);
+    
+    // Save to localStorage so it persists when changing pages
+    localStorage.setItem('hub_quick_links', JSON.stringify(updatedLinks));
+
     setToolName('');
     setToolUrl('');
     setSelectedBgColor('bg-blue-600');
@@ -132,7 +145,9 @@ useEffect(() => {
   };
 
   const handleDeleteTool = (id: number) => {
-    setQuickLinks(quickLinks.filter(tool => tool.id !== id));
+    const updatedLinks = quickLinks.filter(tool => tool.id !== id);
+    setQuickLinks(updatedLinks);
+    localStorage.setItem('hub_quick_links', JSON.stringify(updatedLinks));
   };
 
   const handleStaffToggle = (staffName: string) => {
@@ -159,8 +174,6 @@ useEffect(() => {
     
     const updatedAnnouncements = [newAnn, ...announcements];
     setAnnouncements(updatedAnnouncements);
-    
-    // Save to localStorage so respective staff login can read it as notifications
     localStorage.setItem('hub_announcements', JSON.stringify(updatedAnnouncements));
 
     setAnnTitle('');
@@ -171,34 +184,23 @@ useEffect(() => {
     setIsAnnouncementModalOpen(false);
   };
 
-const handleDeleteAnnouncement = (id: number) => {
-  const updated = announcements.filter((ann) => ann.id !== id);
+  const handleDeleteAnnouncement = (id: number) => {
+    const updated = announcements.filter((ann) => ann.id !== id);
+    setAnnouncements(updated);
+    localStorage.setItem("hub_announcements", JSON.stringify(updated));
 
-  setAnnouncements(updated);
-
-  // Update master announcement list
-  localStorage.setItem(
-    "hub_announcements",
-    JSON.stringify(updated)
-  );
-
-  // Remove this announcement ID from every user's hidden list
-  Object.keys(localStorage).forEach((key) => {
-    if (key.startsWith("hidden_notifications_")) {
-      try {
-        const hidden = JSON.parse(localStorage.getItem(key) || "[]");
-
-        const cleaned = hidden.filter(
-          (notificationId: number) => notificationId !== id
-        );
-
-        localStorage.setItem(key, JSON.stringify(cleaned));
-      } catch (err) {
-        console.error("Error updating hidden notifications", err);
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("hidden_notifications_")) {
+        try {
+          const hidden = JSON.parse(localStorage.getItem(key) || "[]");
+          const cleaned = hidden.filter((notificationId: number) => notificationId !== id);
+          localStorage.setItem(key, JSON.stringify(cleaned));
+        } catch (err) {
+          console.error("Error updating hidden notifications", err);
+        }
       }
-    }
-  });
-};
+    });
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -480,11 +482,10 @@ const handleDeleteAnnouncement = (id: number) => {
                 />
               </div>
 
-              {/* Target Staff Section with Dynamic Staff List */}
+              {/* Target Staff Section */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">Target Staff</label>
                 
-                {/* All Staff Option */}
                 <div 
                   onClick={() => setTargetAllStaff(!targetAllStaff)}
                   className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between mb-2 transition ${
@@ -502,7 +503,6 @@ const handleDeleteAnnouncement = (id: number) => {
                   <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-semibold">Everyone</span>
                 </div>
 
-                {/* Individual Staff Selection List (Dynamic from Staff Management / localStorage) */}
                 {!targetAllStaff && (
                   <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto bg-gray-50/50 p-2 space-y-1">
                     <p className="text-[11px] font-semibold text-gray-500 px-2 py-1">Select Specific Staff Members:</p>
