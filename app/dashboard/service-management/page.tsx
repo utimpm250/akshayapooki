@@ -212,17 +212,33 @@ export default function ServiceManagementPage() {
     }
   };
 
-  const fetchServices = () => {
-    if (typeof window !== 'undefined') {
-      const data = localStorage.getItem('managedServices');
-      if (data) {
-        setServices(JSON.parse(data));
-      } else {
-        localStorage.setItem('managedServices', JSON.stringify(initialServices));
-      }
-    }
-  };
+const fetchServices = () => {
+  console.log("=== fetchServices START ===");
 
+  if (typeof window !== "undefined") {
+    const data = localStorage.getItem("managedServices");
+
+    console.log("Current data:", data);
+    console.log("Initial services count:", initialServices.length);
+
+    if (data) {
+      console.log("Loading from localStorage");
+      setServices(JSON.parse(data));
+    } else {
+      console.log("Creating managedServices...");
+
+      localStorage.setItem(
+        "managedServices",
+        JSON.stringify(initialServices)
+      );
+
+      const verify = localStorage.getItem("managedServices");
+      console.log("Saved successfully:", verify !== null);
+
+      setServices(initialServices);
+    }
+  }
+};
   useEffect(() => {
     fetchServices();
     fetchWallets();

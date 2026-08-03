@@ -1,8 +1,8 @@
 "use client";
 
+import SSLCCalculatorTool from "./tools/SSLCCalculatorTool";
 import CashCounterTool from "./tools/CashCounterTool";
 import CropResizeTool from "./tools/CropResizeTool";
-import SignatureTool from "./tools/SignatureTool";
 import PSCPhotoTool from "./tools/PSCPhotoTool";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -10,7 +10,6 @@ import {
   FileText,
   Wallet,
   Search,
-  CheckCircle2,
   DollarSign,
   ArrowUpRight,
   Bell,
@@ -21,17 +20,6 @@ import {
   Settings,
   GripHorizontal,
   Save,
-  RotateCcw,
-  X,
-  Banknote,
-  Calculator,
-  Award,
-  AlertCircle,
-  Crop,
-  Upload,
-  Move,
-  ZoomIn,
-  ZoomOut
 } from "lucide-react";
 
 interface WalletItem {
@@ -60,19 +48,6 @@ interface QuickLinkItem {
   bgColor: string;
   isInternal: boolean;
 }
-
-interface GradesState {
-  Aplus: string;
-  A: string;
-  Bplus: string;
-  B: string;
-  Cplus: string;
-  C: string;
-  Dplus: string;
-  D: string;
-  E: string;
-}
-
 export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUser, setCurrentUser] = useState({
@@ -97,22 +72,6 @@ export default function DashboardPage() {
   const [showSslcModal, setShowSslcModal] = useState(false);
   const [showCropResizeModal, setShowCropResizeModal] = useState(false);
   const [showPscModal, setShowPscModal] = useState(false);
-
-  // SSLC Calculator State
-  const [grades, setGrades] = useState<GradesState>({
-    Aplus: "", A: "", Bplus: "", B: "", Cplus: "", C: "", Dplus: "", D: "", E: "",
-  });
-  const [sslcResultObj, setSslcResultObj] = useState<{
-    totalSubjects: number;
-    totalPoints: number;
-    percentage: number;
-    overallGrade: string;
-  } | null>(null);
-
-  const gradePointsMap: Record<keyof GradesState, number> = {
-    Aplus: 9, A: 8, Bplus: 7, B: 6, Cplus: 5, C: 4, Dplus: 3, D: 2, E: 1,
-  };
-
   const [showServiceDirectory, setShowServiceDirectory] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const draggedItemIndex = useRef<number | null>(null);
@@ -387,65 +346,7 @@ export default function DashboardPage() {
     localStorage.setItem("dashboard_quick_links_order", JSON.stringify(quickLinks));
     setIsCustomizing(false);
   };
-  const handleSslcInputChange = (key: keyof GradesState, value: string) => {
-    if (value !== "" && !/^\d+$/.test(value)) return;
-    setGrades((prev) => ({ ...prev, [key]: value }));
-  };
 
-  const totalSubjectsSelected = Object.values(grades).reduce((a, b) => {
-    const num = parseInt(b, 10);
-    return a + (isNaN(num) ? 0 : num);
-  }, 0);
-
-  const calculateSslcResults = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (totalSubjectsSelected !== 10) {
-      alert("ദയവായി കൃത്യം 10 വിഷയങ്ങളുടെ ഗ്രേഡുകൾ നൽകുക.");
-      return;
-    }
-
-    let totalPts = 0;
-    (Object.keys(grades) as Array<keyof GradesState>).forEach((key) => {
-      const count = parseInt(grades[key], 10) || 0;
-      totalPts += count * gradePointsMap[key];
-    });
-
-    const maxPossiblePoints = 90;
-    const calcPercentage = (totalPts / maxPossiblePoints) * 100;
-
-    let overall = "C";
-    if (calcPercentage >= 90) overall = "A+";
-    else if (calcPercentage >= 80) overall = "A";
-    else if (calcPercentage >= 70) overall = "B+";
-    else if (calcPercentage >= 60) overall = "B";
-    else if (calcPercentage >= 50) overall = "C+";
-    else if (calcPercentage >= 40) overall = "C";
-    else overall = "D / E";
-
-    setSslcResultObj({
-      totalSubjects: totalSubjectsSelected,
-      totalPoints: totalPts,
-      percentage: Number(calcPercentage.toFixed(2)),
-      overallGrade: overall,
-    });
-  };
-
-  const handleSslcReset = () => {
-    setGrades({ Aplus: "", A: "", Bplus: "", B: "", Cplus: "", C: "", Dplus: "", D: "", E: "" });
-    setSslcResultObj(null);
-  };
-
-  const gradeCards = [
-    { key: "Aplus" as keyof GradesState, label: "A+", points: "9 Grade Points", color: "text-purple-600" },
-    { key: "A" as keyof GradesState, label: "A", points: "8 Grade Points", color: "text-indigo-600" },
-    { key: "Bplus" as keyof GradesState, label: "B+", points: "7 Grade Points", color: "text-blue-600" },
-    { key: "B" as keyof GradesState, label: "B", points: "6 Grade Points", color: "text-cyan-600" },
-    { key: "Cplus" as keyof GradesState, label: "C+", points: "5 Grade Points", color: "text-emerald-600" },
-    { key: "C" as keyof GradesState, label: "C", points: "4 Grade Points", color: "text-amber-600" },
-    { key: "Dplus" as keyof GradesState, label: "D+", points: "3 Grade Points", color: "text-orange-600" },
-    { key: "D" as keyof GradesState, label: "D", points: "2 Grade Points", color: "text-rose-600" },
-    { key: "E" as keyof GradesState, label: "E", points: "1 Grade Point", color: "text-red-600" },
-  ];
   const netWalletBalance = wallets.reduce(
     (acc, curr) => acc + curr.currentBalance,
     0
@@ -467,125 +368,11 @@ export default function DashboardPage() {
     onClose={() => setShowCashCounterModal(false)}
   />
 )}
-      {/* Kerala SSLC Grade Calculator Modal */}
-      {showSslcModal && (
-        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 overflow-y-auto animate-in fade-in">
-          <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-100 flex flex-col my-4 max-h-[95vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-purple-50 text-purple-600 rounded-lg">
-                  <Calculator size={18} />
-                </div>
-                <h3 className="font-bold text-slate-800 text-base">Kerala SSLC Grade Calculator</h3>
-              </div>
-              <button
-                onClick={() => setShowSslcModal(false)}
-                className="p-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-lg shadow-2xs transition"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="p-4 md:p-5 space-y-4">
-              {totalSubjectsSelected !== 10 && (
-                <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-lg flex items-center gap-2 text-rose-600 text-xs font-semibold">
-                  <AlertCircle size={16} className="shrink-0" />
-                  <span>
-                    Total Subjects Selected: {totalSubjectsSelected} / 10.{" "}
-                    {totalSubjectsSelected < 10
-                      ? `Need ${10 - totalSubjectsSelected} more.`
-                      : "You have exceeded 10 subjects!"}
-                  </span>
-                </div>
-              )}
-
-              <form onSubmit={calculateSslcResults} className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                  {gradeCards.map((item) => (
-                    <div
-                      key={item.key}
-                      className="bg-slate-50/60 p-3 rounded-xl border border-slate-200/80 flex flex-col items-center text-center justify-between space-y-2"
-                    >
-                      <div>
-                        <span className={`text-xl font-black ${item.color}`}>{item.label}</span>
-                        <span className="block text-[10px] font-semibold text-slate-400 mt-0.5 leading-tight">
-                          {item.points}
-                        </span>
-                      </div>
-
-                      <div className="w-full">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="0"
-                          value={grades[item.key]}
-                          onChange={(e) => handleSslcInputChange(item.key, e.target.value)}
-                          className="w-full h-10 text-center bg-white border border-slate-200 rounded-lg font-bold text-slate-800 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-xs transition"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center gap-3 pt-3 border-t border-slate-100">
-                  <button
-                    type="submit"
-                    disabled={totalSubjectsSelected !== 10}
-                    className={`w-full sm:flex-1 py-2.5 rounded-lg font-bold text-sm text-white shadow-md transition flex items-center justify-center gap-2 ${
-                      totalSubjectsSelected === 10
-                        ? "bg-purple-600 hover:bg-purple-700 shadow-purple-600/20"
-                        : "bg-slate-300 cursor-not-allowed"
-                    }`}
-                  >
-                    <Calculator size={16} />
-                    Calculate Percentage
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSslcReset}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-lg transition flex items-center justify-center gap-2"
-                  >
-                    <RotateCcw size={16} />
-                    Reset
-                  </button>
-                </div>
-              </form>
-
-              {sslcResultObj !== null && (
-                <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-purple-600 text-white rounded-xl shadow-sm">
-                      <Award size={24} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
-                        Computed Percentage
-                      </p>
-                      <h3 className="text-2xl font-black text-slate-800 mt-0.5">
-                        {sslcResultObj.percentage}%
-                      </h3>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                    <div className="bg-white px-4 py-2 rounded-lg border border-purple-100 shadow-xs text-center">
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase">Total Points</p>
-                      <p className="text-base font-bold text-slate-800 mt-0.5">{sslcResultObj.totalPoints} / 90</p>
-                    </div>
-                    <div className="bg-white px-4 py-2 rounded-lg border border-purple-100 shadow-xs text-center">
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase">Grade</p>
-                      <p className="text-base font-bold text-purple-700 mt-0.5 flex items-center justify-center gap-1">
-                        <CheckCircle2 size={14} className="text-emerald-500" />
-                        {sslcResultObj.overallGrade}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+{showSslcModal && (
+  <SSLCCalculatorTool
+    onClose={() => setShowSslcModal(false)}
+  />
+)}
 
 {showCropResizeModal && (
   <CropResizeTool
@@ -760,7 +547,7 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold mt-1">{completedTodayCount}</p>
             </div>
             <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-              <CheckCircle2 size={22} />
+              <Wallet size={22} />
             </div>
           </div>
 
