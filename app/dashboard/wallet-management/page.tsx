@@ -510,11 +510,11 @@ export default function WalletManagementPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Wallet Name</label>
-              <input 
-                type="number" 
-                required 
-                autoFocus 
-                placeholder="e.g. PhonePe / GooglePay" 
+              <input
+  type="text"
+  required
+  autoFocus
+  placeholder="e.g. PhonePe / GooglePay"
                 className="w-full border border-slate-200 rounded-2xl p-3 text-sm mt-1 bg-slate-50/50 font-medium outline-none focus:border-emerald-500" 
                 value={newWalletName} 
                 onChange={(e) => setNewWalletName(e.target.value)} 

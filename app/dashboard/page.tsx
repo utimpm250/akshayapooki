@@ -133,15 +133,22 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const loadDashboardData = () => {
-      const savedWallets = localStorage.getItem("managedWallets");
-      if (savedWallets) {
-        try {
-          setWallets(JSON.parse(savedWallets));
-        } catch (e) {
-          setWallets([]);
-        }
-      }
+const savedWallets = localStorage.getItem("managedWallets");
 
+console.log("Dashboard Wallets:", savedWallets);
+
+if (savedWallets) {
+  try {
+    const parsedWallets = JSON.parse(savedWallets);
+
+    console.log("Parsed Wallets:", parsedWallets);
+
+    setWallets(parsedWallets);
+  } catch (e) {
+    console.error("Wallet parse error:", e);
+    setWallets([]);
+  }
+}
       const savedBills = localStorage.getItem("savedBills");
       if (savedBills) {
         try {
@@ -210,20 +217,33 @@ export default function DashboardPage() {
         }
       }
 
-      const filteredWithUrls = loadedServices
-        .map((s: any) => {
-          const sTitle = s.title || s.name || s.serviceName || "Untitled Service";
-          const sUrl = s.portalUrl || s.url || s.webUrl || s.link || "";
-          const sNote = sUrl ? sUrl.replace(/^https?:\/\//, "") : "No URL Provided";
-          return {
-            title: sTitle,
-            url: sUrl,
-            note: sNote,
-          };
-        })
-        .filter((s) => s.url && s.url.trim() !== "");
+ console.log("Loaded Services:", loadedServices);
 
-      setServiceDirectory(filteredWithUrls);
+const filteredWithUrls = loadedServices
+  .map((s: any) => {
+    const sTitle =
+      s.title || s.name || s.serviceName || "Untitled Service";
+
+    const sUrl =
+      s.portalUrl ||
+      s.url ||
+      s.webUrl ||
+      s.link ||
+      "";
+
+    console.log("Service:", sTitle, "URL:", sUrl);
+
+    return {
+      title: sTitle,
+      url: sUrl,
+      note: sUrl ? sUrl.replace(/^https?:\/\//, "") : "",
+    };
+  })
+  .filter((s) => s.url && s.url.trim() !== "");
+
+console.log("Filtered Services:", filteredWithUrls);
+
+setServiceDirectory(filteredWithUrls);
     };
 
     loadDashboardData();

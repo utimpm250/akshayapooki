@@ -239,10 +239,17 @@ const fetchServices = () => {
     }
   }
 };
-  useEffect(() => {
-    fetchServices();
-    fetchWallets();
-  }, []);
+useEffect(() => {
+  console.log("Service Management Mounted");
+
+  fetchServices();
+  fetchWallets();
+
+  console.log(
+    "managedServices after fetch:",
+    localStorage.getItem("managedServices")
+  );
+}, []);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
