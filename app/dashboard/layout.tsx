@@ -22,6 +22,8 @@ import {
   Pin,
   Rocket,
   X,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 const APP_VERSION = "1.0.9";
@@ -159,11 +161,15 @@ export default function DashboardLayout({
   const [sidebarPinned, setSidebarPinned] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Theme State
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
   // Update Bubble
   const [showUpdate, setShowUpdate] = useState(false);
 
   const hideTimer = useRef<NodeJS.Timeout | null>(null);
-    const openSidebar = () => {
+  
+  const openSidebar = () => {
     if (hideTimer.current) {
       clearTimeout(hideTimer.current);
     }
@@ -179,6 +185,16 @@ export default function DashboardLayout({
   };
 
   useEffect(() => {
+    // Theme Loader from LocalStorage
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+      setIsDarkMode(true);
+      document.documentElement.classList.add("dark");
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove("dark");
+    }
+
     const storedUser = JSON.parse(
       localStorage.getItem("loggedInUser") || "{}"
     );
@@ -191,9 +207,6 @@ export default function DashboardLayout({
       role,
     });
 
-    // -----------------------------
-    // Update Bubble Logic
-    // -----------------------------
     const versionKey = `app_version_${username.toLowerCase()}`;
     const savedVersion = localStorage.getItem(versionKey);
 
@@ -203,9 +216,6 @@ export default function DashboardLayout({
       }, 500);
     }
 
-    // -----------------------------
-    // Sidebar Pin
-    // -----------------------------
     const pinKey = `sidebar_pinned_${username.toLowerCase()}`;
     const savedPin = localStorage.getItem(pinKey);
 
@@ -215,9 +225,6 @@ export default function DashboardLayout({
       setSidebarOpen(pinned);
     }
 
-    // -----------------------------
-    // Admin
-    // -----------------------------
     if (role === "admin") {
       setAllowedMenus(allMenuItems);
       return;
@@ -256,43 +263,48 @@ export default function DashboardLayout({
     }
   }, [pathname, router]);
 
+  // Theme Toggle Function
+  const toggleTheme = () => {
+    if (isDarkMode) {
+      setIsDarkMode(false);
+      localStorage.setItem("theme", "light");
+      document.documentElement.classList.remove("dark");
+    } else {
+      setIsDarkMode(true);
+      localStorage.setItem("theme", "dark");
+      document.documentElement.classList.add("dark");
+    }
+  };
+
   const updateApplication = () => {
     const key = `app_version_${currentUser.username.toLowerCase()}`;
-
     localStorage.setItem(key, APP_VERSION);
-
     setShowUpdate(false);
-
     window.location.reload();
   };
 
   const togglePinSidebar = () => {
     const newValue = !sidebarPinned;
-
     setSidebarPinned(newValue);
     setSidebarOpen(newValue);
-
     const pinKey = `sidebar_pinned_${currentUser.username.toLowerCase()}`;
-
     localStorage.setItem(pinKey, String(newValue));
   };
 
   const handleCloseUpdate = () => {
     setShowUpdate(false);
   };
-    const handleLogout = () => {
+
+  const handleLogout = () => {
     try {
       const logs = JSON.parse(
         localStorage.getItem("staff_attendance_logs") || "[]"
       );
-
       const today = new Date().toISOString().split("T")[0];
-
       const index = logs.findIndex((log: any) => {
         const logDate = new Date(log.timestamp)
           .toISOString()
           .split("T")[0];
-
         return (
           log.staffName?.toLowerCase() ===
             currentUser.username.toLowerCase() &&
@@ -305,7 +317,6 @@ export default function DashboardLayout({
           hour: "2-digit",
           minute: "2-digit",
         });
-
         localStorage.setItem(
           "staff_attendance_logs",
           JSON.stringify(logs)
@@ -317,7 +328,6 @@ export default function DashboardLayout({
 
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("loginSessionDate");
-
     router.push("/login");
   };
 
@@ -327,8 +337,7 @@ export default function DashboardLayout({
     currentUser.role.charAt(0).toUpperCase() +
     currentUser.role.slice(1);
 
-  const userInitial =
-    currentUser.username.charAt(0).toUpperCase();
+  const userInitial = currentUser.username.charAt(0).toUpperCase();
 
   const sections = [
     "Main",
@@ -343,11 +352,10 @@ export default function DashboardLayout({
       {/* Floating Update Bubble */}
       {showUpdate && (
         <div className="fixed bottom-6 right-6 z-[100] animate-[fadeIn_.4s_ease]">
-          <div className="group relative w-64 rounded-2xl border border-emerald-200/70 bg-white/80 backdrop-blur-xl shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-emerald-300/40 animate-[float_3s_ease-in-out_infinite]">
-
+          <div className="group relative w-64 rounded-2xl border border-emerald-200/70 bg-white/80 dark:bg-slate-800/90 backdrop-blur-xl shadow-2xl transition-all duration-300 hover:-translate-y-1">
             <button
               onClick={handleCloseUpdate}
-              className="absolute right-3 top-3 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              className="absolute right-3 top-3 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-white"
             >
               <X size={15} />
             </button>
@@ -357,25 +365,23 @@ export default function DashboardLayout({
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg">
                   <Rocket size={20} />
                 </div>
-
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-white">
                     Update Available
                   </h3>
-
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Version {APP_VERSION}
                   </p>
                 </div>
               </div>
 
-              <p className="mb-4 text-xs leading-5 text-slate-600">
+              <p className="mb-4 text-xs leading-5 text-slate-600 dark:text-slate-300">
                 A newer version of Smart Akshaya is ready.
               </p>
 
               <button
                 onClick={updateApplication}
-                className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.03] hover:shadow-emerald-500/40 active:scale-95"
+                className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.03] active:scale-95"
               >
                 Update Now
               </button>
@@ -384,36 +390,13 @@ export default function DashboardLayout({
         </div>
       )}
 
-      <style jsx global>{`
-        @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-5px);
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(24px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-
       <div
         className="fixed left-0 top-0 z-40 h-screen w-3"
         onMouseEnter={openSidebar}
       />
 
-      <div className="relative flex h-screen w-full overflow-hidden bg-slate-100 text-slate-800 font-sans">
-              <aside
+      <div className="relative flex h-screen w-full overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
+        <aside
           onMouseEnter={openSidebar}
           onMouseLeave={closeSidebar}
           className={`
@@ -445,27 +428,37 @@ export default function DashboardLayout({
                 <h1 className="text-xl font-bold tracking-wide text-white">
                   Smart Akshaya
                 </h1>
-
                 <p className="text-xs text-slate-400">
                   Akshaya Pookiparamba
                 </p>
               </div>
 
-              <button
-                onClick={togglePinSidebar}
-                title={
-                  sidebarPinned
-                    ? "Unpin Sidebar"
-                    : "Pin Sidebar"
-                }
-                className={`rounded p-1 transition ${
-                  sidebarPinned
-                    ? "text-emerald-400"
-                    : "text-slate-500 hover:text-white"
-                }`}
-              >
-                <Pin size={16} />
-              </button>
+              <div className="flex items-center gap-1">
+                {/* Theme Toggle Button Inside Sidebar Header */}
+                <button
+                  onClick={toggleTheme}
+                  title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                  className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                >
+                  {isDarkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
+                </button>
+
+                <button
+                  onClick={togglePinSidebar}
+                  title={
+                    sidebarPinned
+                      ? "Unpin Sidebar"
+                      : "Pin Sidebar"
+                  }
+                  className={`rounded p-1 transition ${
+                    sidebarPinned
+                      ? "text-emerald-400"
+                      : "text-slate-500 hover:text-white"
+                  }`}
+                >
+                  <Pin size={16} />
+                </button>
+              </div>
             </div>
 
             <nav className="flex-1 space-y-4 overflow-y-auto pr-1">
@@ -520,7 +513,6 @@ export default function DashboardLayout({
                 <p className="text-sm font-semibold text-white">
                   {currentUser.username}
                 </p>
-
                 <p className="text-xs text-slate-500">
                   {displayRole}
                 </p>
@@ -542,6 +534,7 @@ export default function DashboardLayout({
             min-h-screen
             overflow-y-auto
             bg-slate-100
+            dark:bg-slate-950
             p-6
             transition-all
             duration-300

@@ -2,10 +2,12 @@
 
 import SSLCCalculatorTool from "./tools/SSLCCalculatorTool";
 import CashCounterTool from "./tools/CashCounterTool";
+import PassportSize from "./tools/PassportSize";
 import CropResizeTool from "./tools/CropResizeTool";
 import PSCPhotoTool from "./tools/PSCPhotoTool";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { PDFDocument } from "pdf-lib";
 import {
   FileText,
   Wallet,
@@ -20,6 +22,16 @@ import {
   Settings,
   GripHorizontal,
   Save,
+  Upload,
+  FileCheck,
+  Download,
+  Trash2,
+  Sliders,
+  Layers,
+  Scissors,
+  Lock,
+  Unlock,
+  RotateCw,
 } from "lucide-react";
 
 interface WalletItem {
@@ -48,6 +60,7 @@ interface QuickLinkItem {
   bgColor: string;
   isInternal: boolean;
 }
+
 export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUser, setCurrentUser] = useState({
@@ -71,7 +84,23 @@ export default function DashboardPage() {
   const [showCashCounterModal, setShowCashCounterModal] = useState(false);
   const [showSslcModal, setShowSslcModal] = useState(false);
   const [showCropResizeModal, setShowCropResizeModal] = useState(false);
+  const [showPassportToolModal, setShowPassportToolModal] = useState(false);
   const [showPscModal, setShowPscModal] = useState(false);
+  const [showPdfToolkitModal, setShowPdfToolkitModal] = useState(false);
+
+  // Advanced Online2PDF Style Toolkit States
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [pdfAction, setPdfAction] = useState("convert"); 
+  const [compressMode, setCompressMode] = useState("balanced");
+  const [imageQuality, setImageQuality] = useState("8"); 
+  const [imageResolution, setImageResolution] = useState("150"); 
+  const [colorMode, setColorMode] = useState("keep"); 
+  const [convertFormat, setConvertFormat] = useState("docx"); 
+  const [pdfPassword, setPdfPassword] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadFileName, setDownloadFileName] = useState("processed-document.pdf");
+
   const [showServiceDirectory, setShowServiceDirectory] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const draggedItemIndex = useRef<number | null>(null);
@@ -124,6 +153,20 @@ export default function DashboardPage() {
       bgColor: "from-emerald-500 to-emerald-600",
       isInternal: true,
     },
+    {
+      id: 7,
+      name: "Passport Size",
+      url: "passport-size-modal",
+      bgColor: "from-rose-500 to-pink-600",
+      isInternal: true,
+    },
+    {
+      id: 8,
+      name: "Online2PDF Suite",
+      url: "pdf-toolkit-modal",
+      bgColor: "from-indigo-600 to-violet-700",
+      isInternal: true,
+    },
   ]);
 
   const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -133,22 +176,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const loadDashboardData = () => {
-const savedWallets = localStorage.getItem("managedWallets");
+      const savedWallets = localStorage.getItem("managedWallets");
+      if (savedWallets) {
+        try {
+          setWallets(JSON.parse(savedWallets));
+        } catch (e) {
+          setWallets([]);
+        }
+      }
 
-console.log("Dashboard Wallets:", savedWallets);
-
-if (savedWallets) {
-  try {
-    const parsedWallets = JSON.parse(savedWallets);
-
-    console.log("Parsed Wallets:", parsedWallets);
-
-    setWallets(parsedWallets);
-  } catch (e) {
-    console.error("Wallet parse error:", e);
-    setWallets([]);
-  }
-}
       const savedBills = localStorage.getItem("savedBills");
       if (savedBills) {
         try {
@@ -161,9 +197,7 @@ if (savedWallets) {
             0
           );
           setTotalCashCollection(totalCash);
-        } catch (e) {
-          console.error("Error loading bills", e);
-        }
+        } catch (e) {}
       }
 
       const savedQuickLinksOrder = localStorage.getItem("dashboard_quick_links_order");
@@ -174,9 +208,7 @@ if (savedWallets) {
           if (Array.isArray(parsedOrder) && parsedOrder.length > 0) {
             baseTools = parsedOrder;
           }
-        } catch (e) {
-          console.error("Error loading quick links order", e);
-        }
+        } catch (e) {}
       }
 
       const customHubLinks = localStorage.getItem("hub_quick_links");
@@ -190,10 +222,8 @@ if (savedWallets) {
             bgColor: "from-indigo-500 to-violet-600",
             isInternal: false,
           }));
-
           setQuickLinks([...baseTools, ...formattedCustom]);
         } catch (e) {
-          console.error("Error loading custom hub links", e);
           setQuickLinks(baseTools);
         }
       } else {
@@ -211,39 +241,19 @@ if (savedWallets) {
               loadedServices = parsed;
               break;
             }
-          } catch (err) {
-            console.error(`Error parsing key ${key}`, err);
-          }
+          } catch (err) {}
         }
       }
 
- console.log("Loaded Services:", loadedServices);
+      const filteredWithUrls = loadedServices
+        .map((s: any) => ({
+          title: s.title || s.name || s.serviceName || "Untitled Service",
+          url: s.portalUrl || s.url || s.webUrl || s.link || "",
+          note: (s.portalUrl || s.url || s.webUrl || s.link || "").replace(/^https?:\/\//, ""),
+        }))
+        .filter((s) => s.url && s.url.trim() !== "");
 
-const filteredWithUrls = loadedServices
-  .map((s: any) => {
-    const sTitle =
-      s.title || s.name || s.serviceName || "Untitled Service";
-
-    const sUrl =
-      s.portalUrl ||
-      s.url ||
-      s.webUrl ||
-      s.link ||
-      "";
-
-    console.log("Service:", sTitle, "URL:", sUrl);
-
-    return {
-      title: sTitle,
-      url: sUrl,
-      note: sUrl ? sUrl.replace(/^https?:\/\//, "") : "",
-    };
-  })
-  .filter((s) => s.url && s.url.trim() !== "");
-
-console.log("Filtered Services:", filteredWithUrls);
-
-setServiceDirectory(filteredWithUrls);
+      setServiceDirectory(filteredWithUrls);
     };
 
     loadDashboardData();
@@ -251,19 +261,10 @@ setServiceDirectory(filteredWithUrls);
     const updateDateTime = () => {
       const now = new Date();
       setCurrentTime(
-        now.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        })
+        now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
       );
       setTodayDate(
-        now.toLocaleDateString([], {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
+        now.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" })
       );
     };
 
@@ -279,37 +280,24 @@ setServiceDirectory(filteredWithUrls);
           role: parsed.role || "staff",
         });
 
-        const logs = JSON.parse(
-          localStorage.getItem("staff_attendance_logs") || "[]"
-        );
+        const logs = JSON.parse(localStorage.getItem("staff_attendance_logs") || "[]");
         const today = new Date().toISOString().split("T")[0];
-        const alreadyMarked = logs.some((log: any) => {
-          return (
-            log.staffName?.toLowerCase() ===
-              (parsed.username || "").toLowerCase() &&
-            new Date(log.timestamp || log.date)
-              .toISOString()
-              .split("T")[0] === today
-          );
-        });
-        if (!alreadyMarked) {
-          setShowAttendancePopup(true);
-        }
+        const alreadyMarked = logs.some(
+          (log: any) =>
+            log.staffName?.toLowerCase() === (parsed.username || "").toLowerCase() &&
+            new Date(log.timestamp || log.date).toISOString().split("T")[0] === today
+        );
+        if (!alreadyMarked) setShowAttendancePopup(true);
 
-        const savedVersion =
-          localStorage.getItem("smart_akshaya_app_version") || "1.0.0";
-        if (savedVersion !== currentVersion) {
-          setShowUpdateBubble(true);
-        }
+        const savedVersion = localStorage.getItem("smart_akshaya_app_version") || "1.0.0";
+        if (savedVersion !== currentVersion) setShowUpdateBubble(true);
 
         const savedAnnouncements = localStorage.getItem("hub_announcements");
         if (savedAnnouncements) {
           const parsedAnnouncements = JSON.parse(savedAnnouncements);
           const username = parsed.username || "Admin User";
           const hiddenKey = `hidden_notifications_${username}`;
-          const hiddenIds = JSON.parse(
-            localStorage.getItem(hiddenKey) || "[]"
-          );
+          const hiddenIds = JSON.parse(localStorage.getItem(hiddenKey) || "[]");
           const filtered = parsedAnnouncements.filter((item: any) => {
             if (hiddenIds.includes(item.id)) return false;
             if (item.targetAll) return true;
@@ -317,16 +305,11 @@ setServiceDirectory(filteredWithUrls);
           });
           setAnnouncements(filtered);
         }
-      } catch (err) {
-        console.error("Error reading storage", err);
-      }
+      } catch (err) {}
     }
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        notificationRef.current &&
-        !notificationRef.current.contains(event.target as Node)
-      ) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setIsNotificationsOpen(false);
       }
     };
@@ -347,15 +330,11 @@ setServiceDirectory(filteredWithUrls);
   };
 
   const handleDragSort = () => {
-    if (
-      draggedItemIndex.current !== null &&
-      draggedOverItemIndex.current !== null
-    ) {
+    if (draggedItemIndex.current !== null && draggedOverItemIndex.current !== null) {
       const newQuickLinks = [...quickLinks];
       const draggedItemContent = newQuickLinks[draggedItemIndex.current];
       newQuickLinks.splice(draggedItemIndex.current, 1);
       newQuickLinks.splice(draggedOverItemIndex.current, 0, draggedItemContent);
-
       draggedItemIndex.current = null;
       draggedOverItemIndex.current = null;
       setQuickLinks(newQuickLinks);
@@ -367,43 +346,408 @@ setServiceDirectory(filteredWithUrls);
     setIsCustomizing(false);
   };
 
-  const netWalletBalance = wallets.reduce(
-    (acc, curr) => acc + curr.currentBalance,
-    0
-  );
+  // Online2PDF Complete Functionality Engine
+  const handleProcessPdf = async () => {
+    if (selectedFiles.length === 0) {
+      alert("ദയവായി കുറഞ്ഞത് ഒരു ഫയലെങ്കിലും തിരഞ്ഞെടുക്കുക.");
+      return;
+    }
+
+    setIsProcessing(true);
+    setDownloadUrl(null);
+
+    try {
+      const pdfjsLib = await import("pdfjs-dist");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+      const primaryFile = selectedFiles[0];
+      const originalName = primaryFile.name.substring(0, primaryFile.name.lastIndexOf('.')) || primaryFile.name;
+
+      if (pdfAction === "convert") {
+        if (convertFormat === "jpg" || convertFormat === "png") {
+          const arrayBuffer = await primaryFile.arrayBuffer();
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer, password: pdfPassword || undefined });
+          const pdfDoc = await loadingTask.promise;
+          const page = await pdfDoc.getPage(1);
+
+          const viewport = page.getViewport({ scale: Number(imageResolution) / 75 || 2.0 });
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          if (context) {
+            await page.render({
+  canvas: canvas,
+  canvasContext: context,
+  viewport,
+}).promise;
+            const mimeType = convertFormat === "png" ? "image/png" : "image/jpeg";
+            
+            canvas.toBlob((blob) => {
+              if (blob) {
+                const url = URL.createObjectURL(blob);
+                setDownloadFileName(`${originalName}-converted.${convertFormat}`);
+                setDownloadUrl(url);
+              }
+              setIsProcessing(false);
+            }, mimeType, Number(imageQuality) / 10);
+            return;
+          }
+        } else if (convertFormat === "txt" || convertFormat === "docx" || convertFormat === "xlsx") {
+          const arrayBuffer = await primaryFile.arrayBuffer();
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer, password: pdfPassword || undefined });
+          const pdfDoc = await loadingTask.promise;
+          let extractedText = "";
+
+          for (let i = 1; i <= pdfDoc.numPages; i++) {
+            const page = await pdfDoc.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map((item: any) => item.str).join(" ");
+            extractedText += `--- Page ${i} ---\n${pageText}\n\n`;
+          }
+
+          if (convertFormat === "txt") {
+            const blob = new Blob([extractedText], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            setDownloadFileName(`${originalName}-converted.txt`);
+            setDownloadUrl(url);
+          } else {
+            const htmlContent = `<html><head><meta charset='utf-8'></head><body><p>${extractedText.replace(/\n/g, '<br/>')}</p></body></html>`;
+            const mimeType = convertFormat === "docx" 
+              ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+              : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            
+            const blob = new Blob([htmlContent], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            setDownloadFileName(`${originalName}-converted.${convertFormat}`);
+            setDownloadUrl(url);
+          }
+        }
+      } else if (pdfAction === "merge" || pdfAction === "compress") {
+        const mergedPdf = await PDFDocument.create();
+
+        for (const file of selectedFiles) {
+          const arrayBuffer = await file.arrayBuffer();
+          try {
+            const pdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+            const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPages().map((_, i) => i));
+            copiedPages.forEach((page) => mergedPdf.addPage(page));
+          } catch (err) {
+            console.warn("Skipping file:", file.name);
+          }
+        }
+
+const pdfBytes = await mergedPdf.save({ useObjectStreams: true });
+
+const pdfBuffer = pdfBytes.buffer.slice(
+  pdfBytes.byteOffset,
+  pdfBytes.byteOffset + pdfBytes.byteLength
+) as ArrayBuffer;
+
+const blob = new Blob([pdfBuffer], {
+  type: "application/pdf",
+});
+
+const url = URL.createObjectURL(blob);
+
+setDownloadFileName(
+  pdfAction === "merge"
+    ? "merged-document.pdf"
+    : "compressed-optimized.pdf"
+);
+setDownloadUrl(url);
+setDownloadUrl(url);
+      } else if (pdfAction === "protect") {
+        const arrayBuffer = await primaryFile.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });   
+        
+const pdfBytes = await pdfDoc.save();
+
+const pdfBuffer = pdfBytes.buffer.slice(
+  pdfBytes.byteOffset,
+  pdfBytes.byteOffset + pdfBytes.byteLength
+) as ArrayBuffer;
+
+const blob = new Blob([pdfBuffer], {
+  type: "application/pdf",
+});
+
+        const url = URL.createObjectURL(blob);
+        setDownloadFileName(`${originalName}-protected.pdf`);
+        setDownloadUrl(url);
+} else if (pdfAction === "split") {
+  const arrayBuffer = await primaryFile.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer, {
+    ignoreEncryption: true,
+  });
+
+  const subDoc = await PDFDocument.create();
+  const [firstPage] = await subDoc.copyPages(pdfDoc, [0]);
+  subDoc.addPage(firstPage);
+
+  const pdfBytes = await subDoc.save();
+
+  const pdfBuffer = pdfBytes.buffer.slice(
+    pdfBytes.byteOffset,
+    pdfBytes.byteOffset + pdfBytes.byteLength
+  ) as ArrayBuffer;
+
+  const blob = new Blob([pdfBuffer], {
+    type: "application/pdf",
+  });
+
+  const url = URL.createObjectURL(blob);
+
+  setDownloadFileName(`${originalName}-split-page1.pdf`);
+  setDownloadUrl(url);
+}
+    } catch (error) {
+      console.error("Processing error:", error);
+      alert("ഫയൽ പ്രോസസ്സ് ചെയ്യുന്നതിൽ തടസ്സം നേരിട്ടു. പാസ്‌വേഡ് ശരിയാണോ എന്ന് പരിശോധിക്കുക.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const netWalletBalance = wallets.reduce((acc, curr) => acc + curr.currentBalance, 0);
   const isAdmin = currentUser.role.toLowerCase() === "admin";
-  const displayRoleTitle = isAdmin
-    ? "Admin User"
-    : `${currentUser.username} User`;
+  const displayRoleTitle = isAdmin ? "Admin User" : `${currentUser.username} User`;
 
   const filteredServices = serviceDirectory.filter(
     (s) =>
       (s.title && s.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (s.note && s.note.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
   return (
     <div className="min-h-screen bg-slate-100/55 p-4 md:p-8">
-{showCashCounterModal && (
-  <CashCounterTool
-    onClose={() => setShowCashCounterModal(false)}
-  />
-)}
-{showSslcModal && (
-  <SSLCCalculatorTool
-    onClose={() => setShowSslcModal(false)}
-  />
-)}
+      {showCashCounterModal && <CashCounterTool onClose={() => setShowCashCounterModal(false)} />}
+      {showSslcModal && <SSLCCalculatorTool onClose={() => setShowSslcModal(false)} />}
+      {showCropResizeModal && <CropResizeTool onClose={() => setShowCropResizeModal(false)} />}
+      {showPassportToolModal && <PassportSize onClose={() => setShowPassportToolModal(false)} />}
+      {showPscModal && <PSCPhotoTool onClose={() => setShowPscModal(false)} />}
 
-{showCropResizeModal && (
-  <CropResizeTool
-    onClose={() => setShowCropResizeModal(false)}
-  />
-)}
+      {/* Online2PDF Ultimate Suite Modal */}
+      {showPdfToolkitModal && (
+        <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden border border-indigo-500/30 text-white relative my-8">
+            <div className="flex justify-between items-center px-6 py-5 border-b border-white/10 bg-white/5 backdrop-blur-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-600/30 text-indigo-400 rounded-2xl border border-indigo-500/30">
+                  <FileText size={24} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-lg tracking-wide text-white">Online2PDF Complete Suite</h3>
+                  <p className="text-xs text-indigo-300">Convert, Compress, Merge, Protect & Edit PDF Files</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPdfToolkitModal(false);
+                  setSelectedFiles([]);
+                  setDownloadUrl(null);
+                }}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-rose-500/20 hover:text-rose-400 text-slate-300 transition"
+              >
+                ✕
+              </button>
+            </div>
 
-{/* PSC Creator Tool Modal */}
-{showPscModal && (
-  <PSCPhotoTool onClose={() => setShowPscModal(false)} />
-)}
+            <div className="p-6 md:p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
+                  <Upload size={14} /> Select Files (Multiple files allowed)
+                </label>
+                
+                <label className="border-2 border-dashed border-indigo-500/40 hover:border-indigo-400 bg-indigo-950/40 hover:bg-indigo-900/40 transition rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer group text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mb-2 group-hover:scale-110 transition shadow-inner">
+                    <Upload size={22} />
+                  </div>
+                  <span className="text-sm font-bold text-white">Click here to browse multiple files</span>
+                  <span className="text-xs text-slate-400 mt-1">Supports PDF, Word, Excel, Images, Text</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="application/pdf,.doc,.docx,.xls,.xlsx,.jpg,.png,.txt"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        const newFiles = Array.from(e.target.files);
+                        setSelectedFiles((prev) => [...prev, ...newFiles]);
+                        setDownloadUrl(null);
+                      }
+                    }}
+                  />
+                </label>
+
+                {selectedFiles.length > 0 && (
+                  <div className="space-y-2 mt-3">
+                    <p className="text-xs font-semibold text-emerald-400">{selectedFiles.length} file(s) selected:</p>
+                    <div className="max-h-36 overflow-y-auto space-y-2 pr-1">
+                      {selectedFiles.map((file, idx) => (
+                        <div key={idx} className="bg-indigo-900/30 border border-indigo-500/30 p-3 rounded-xl flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileCheck size={16} className="text-emerald-400 shrink-0" />
+                            <span className="font-medium text-white truncate">{file.name}</span>
+                            <span className="text-indigo-300">({(file.size / 1024).toFixed(1)} KB)</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedFiles(selectedFiles.filter((_, i) => i !== idx));
+                              setDownloadUrl(null);
+                            }}
+                            className="text-rose-400 hover:text-rose-300 p-1"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Selection Tabs */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-indigo-300">Choose Action / Mode</label>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                  {[
+                    { id: "convert", label: "Convert", icon: Layers },
+                    { id: "compress", label: "Compress", icon: Sliders },
+                    { id: "merge", label: "Merge PDF", icon: FileText },
+                    { id: "protect", label: "Protect / Lock", icon: Lock },
+                    { id: "split", label: "Split PDF", icon: Scissors },
+                  ].map((act) => {
+                    const IconComponent = act.icon;
+                    return (
+                      <button
+                        key={act.id}
+                        onClick={() => setPdfAction(act.id)}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-bold transition border flex items-center justify-center gap-1.5 ${
+                          pdfAction === act.id
+                            ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white border-indigo-400 shadow-lg shadow-indigo-600/30"
+                            : "bg-white/5 hover:bg-white/10 text-slate-300 border-white/10"
+                        }`}
+                      >
+                        <IconComponent size={14} /> {act.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {pdfAction === "convert" && (
+                <div className="space-y-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+                  <h4 className="text-xs font-bold uppercase text-indigo-300 flex items-center gap-1.5">
+                    <Layers size={14} /> Conversion Settings
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">Convert File To:</label>
+                      <select
+                        value={convertFormat}
+                        onChange={(e) => setConvertFormat(e.target.value)}
+                        className="w-full bg-slate-900 border border-indigo-500/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                      >
+                        <option value="docx">Microsoft Word (.docx)</option>
+                        <option value="xlsx">Microsoft Excel (.xlsx)</option>
+                        <option value="jpg">JPG Images (.jpg)</option>
+                        <option value="png">PNG Images (.png)</option>
+                        <option value="txt">Plain Text (.txt)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">PDF Password (if locked)</label>
+                      <input
+                        type="password"
+                        placeholder="Enter password if required"
+                        value={pdfPassword}
+                        onChange={(e) => setPdfPassword(e.target.value)}
+                        className="w-full bg-slate-900 border border-indigo-500/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pdfAction === "compress" && (
+                <div className="space-y-4 bg-white/5 p-4 rounded-2xl border border-white/10">
+                  <h4 className="text-xs font-bold uppercase text-indigo-300 flex items-center gap-1.5">
+                    <Sliders size={14} /> Compression Settings
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">Compression Mode</label>
+                      <select
+                        value={compressMode}
+                        onChange={(e) => setCompressMode(e.target.value)}
+                        className="w-full bg-slate-900 border border-indigo-500/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                      >
+                        <option value="balanced">Balanced Quality & Size</option>
+                        <option value="max-size">Maximum Size Reduction</option>
+                        <option value="high-quality">High Quality Preservation</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Image Quality: <span className="text-indigo-400 font-bold">{imageQuality} / 10</span>
+                      </label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={imageQuality}
+                        onChange={(e) => setImageQuality(e.target.value)}
+                        className="w-full accent-indigo-500 mt-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pdfAction === "protect" && (
+                <div className="space-y-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+                  <h4 className="text-xs font-bold uppercase text-indigo-300 flex items-center gap-1.5">
+                    <Lock size={14} /> Password Protection Settings
+                  </h4>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Set New Owner/User Password</label>
+                    <input
+                      type="password"
+                      placeholder="Enter secret password"
+                      value={pdfPassword}
+                      onChange={(e) => setPdfPassword(e.target.value)}
+                      className="w-full bg-slate-900 border border-indigo-500/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center gap-4">
+                <button
+                  onClick={handleProcessPdf}
+                  disabled={isProcessing || selectedFiles.length === 0}
+                  className="flex-1 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:opacity-90 disabled:opacity-50 text-white font-bold py-3.5 rounded-2xl shadow-xl transition text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? "Processing Document..." : "Convert / Process Now"}
+                </button>
+
+                {downloadUrl && (
+                  <a
+                    href={downloadUrl}
+                    download={downloadFileName}
+                    className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl shadow-lg transition flex items-center gap-2 text-sm shrink-0"
+                  >
+                    <Download size={18} /> Download
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAttendancePopup && (
         <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8 text-center">
@@ -449,9 +793,7 @@ setServiceDirectory(filteredWithUrls);
                       setShowAttendancePopup(false);
                       setAttendanceSaved(false);
                     }, 2000);
-                  } catch (err) {
-                    console.error("Attendance save failed", err);
-                  }
+                  } catch (err) {}
                 }}
                 className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold"
               >
@@ -652,6 +994,8 @@ setServiceDirectory(filteredWithUrls);
               const isSslc = tool.name.toLowerCase().includes("sslc") || (tool.url && tool.url.toLowerCase().includes("sslc"));
               const isCropResize = tool.name.toLowerCase().includes("crop") || (tool.url && tool.url.toLowerCase().includes("crop"));
               const isPsc = tool.name.toLowerCase().includes("psc") || (tool.url && tool.url.toLowerCase().includes("psc"));
+              const isPassport = tool.name.toLowerCase().includes("passport") || (tool.url && tool.url.toLowerCase().includes("passport"));
+              const isPdfTool = tool.name.toLowerCase().includes("pdf") || tool.url === "pdf-toolkit-modal";
               
               return (
                 <div
@@ -664,7 +1008,7 @@ setServiceDirectory(filteredWithUrls);
                   className={`relative flex flex-col transition-transform ${isCustomizing ? "cursor-grab active:cursor-grabbing" : ""}`}
                 >
                   <a
-                    href={isCustomizing || isCashCounter || isSslc || isCropResize || isPsc ? "#" : tool.url}
+                    href={isCustomizing || isCashCounter || isSslc || isCropResize || isPsc || isPassport || isPdfTool ? "#" : tool.url}
                     onClick={(e) => {
                       if (isCustomizing) {
                         e.preventDefault();
@@ -678,11 +1022,17 @@ setServiceDirectory(filteredWithUrls);
                         e.preventDefault();
                         setShowSslcModal(true);
                       } else if (isCropResize) {
-    e.preventDefault();
-    setShowCropResizeModal(true);
+                        e.preventDefault();
+                        setShowCropResizeModal(true);
                       } else if (isPsc) {
                         e.preventDefault();
                         setShowPscModal(true);
+                      } else if (isPassport) {
+                        e.preventDefault();
+                        setShowPassportToolModal(true);
+                      } else if (isPdfTool) {
+                        e.preventDefault();
+                        setShowPdfToolkitModal(true);
                       }
                     }}
                     target={tool.isInternal ? "_self" : "_blank"}
@@ -704,7 +1054,9 @@ setServiceDirectory(filteredWithUrls);
                     <div>
                       <span className="text-base font-bold block truncate">{tool.name}</span>
                       <span className="text-xs opacity-80">
-                        {tool.isInternal || isCashCounter || isSslc || isCropResize || isPsc ? "Internal Tool" : "External Link"}
+                        {tool.isInternal || isCashCounter || isSslc || isCropResize || isPsc || isPassport || isPdfTool
+                          ? "Internal Tool"
+                          : "External Link"}
                       </span>
                     </div>
                   </a>
