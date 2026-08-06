@@ -24,7 +24,10 @@ import {
   X,
   Sun,
   Moon,
+  Home,
+  ClipboardList,
 } from "lucide-react";
+
 
 const APP_VERSION = "1.0.9";
 
@@ -59,6 +62,11 @@ const allMenuItems: MenuItem[] = [
     permissionKey: "Service Entry",
   },
   {
+  title: "Work Status",
+  href: "/dashboard/work-status",
+  icon: ClipboardList,
+},
+  {
     name: "Saved Bills",
     path: "/dashboard/saved-bills",
     icon: Receipt,
@@ -72,6 +80,13 @@ const allMenuItems: MenuItem[] = [
     section: "Services",
     permissionKey: "Service Management",
   },
+  {
+  name: "Work Status",
+  path: "/dashboard/work-status",
+  icon: ClipboardList,
+  section: "Services",
+  permissionKey: "Work Status",
+},
   {
     name: "Wallet Management",
     path: "/dashboard/wallet-management",

@@ -3,6 +3,7 @@
 import html2canvas from "html2canvas";
 import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import QuickReceiptScan from "./components/QuickReceiptScan";
 import { 
   Calendar, User, Phone, Search, Plus, Trash2, 
   ReceiptText, CreditCard, Calculator, Printer, Share2, QrCode, Lock, ShieldCheck, X, Palette
@@ -923,7 +924,7 @@ function ServiceEntryForm() {
       <div className={`p-6 max-w-7xl mx-auto space-y-6 relative min-h-screen transition-colors duration-300 ${activeTheme.bg} ${activeTheme.text}`} ref={customerDropdownRef}>
         {showStaffModal && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-100">
+            <div className="w-full bg-white rounded-2xl border border-white/20 shadow-lg px-5 py-3">
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
                   <Lock size={18} className="text-indigo-600" /> Switch Staff / Login
@@ -1208,13 +1209,13 @@ function ServiceEntryForm() {
             </select>
           </div>
         </div>
-
         <div className="bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-600 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <p className="text-[11px] uppercase tracking-widest font-semibold text-blue-100">Billing Dashboard</p>
             <h2 className="text-5xl font-black mt-1">₹{totalAmount.toFixed(2)}</h2>
           </div>
           <div className="flex flex-wrap gap-3">
+            
             <div className="bg-white/10 backdrop-blur-md rounded-2xl px-5 py-3 flex items-center gap-3 border border-white/10">
               <Calendar size={20} className="text-blue-200" />
               <div>
@@ -1222,7 +1223,7 @@ function ServiceEntryForm() {
                 <p className="text-sm font-bold">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
               </div>
             </div>
-
+            <QuickReceiptScan />
             <div 
               onClick={() => setShowStaffModal(true)} 
               className="bg-white/10 hover:bg-white/25 cursor-pointer backdrop-blur-md rounded-2xl px-5 py-3 flex items-center gap-3 transition border border-white/10"
