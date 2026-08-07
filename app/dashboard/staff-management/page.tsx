@@ -47,6 +47,7 @@ export default function StaffManagementPage() {
   const [editPhone, setEditPhone] = useState('');
   const [editRole, setEditRole] = useState('');
   const [editSalary, setEditSalary] = useState(0);
+const [editPassword, setEditPassword] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem('smart_akshaya_staff');
@@ -111,8 +112,9 @@ export default function StaffManagementPage() {
     setEditEmail(staff.email);
     setEditPhone(staff.phone);
     setEditRole(staff.role);
-    setEditSalary(staff.salary);
-    setShowEditModal(true);
+setEditSalary(staff.salary);
+setEditPassword((staff as any).password || "");
+setShowEditModal(true);
   };
 
  // എഡിറ്റ് ചെയ്യുന്ന ഫോമിൽ പുതിയ പാസ്‌വേഡ് സ്റ്റേറ്റ് ഉണ്ടെന്ന് ഉറപ്പാക്കുകയോ അല്ലെങ്കിൽ നിലവിലുള്ളത് നിലനിർത്തുകയോ ചെയ്യുക
@@ -122,22 +124,28 @@ export default function StaffManagementPage() {
 
     const updatedList = staffList.map(s => {
       if (s.id === selectedStaff.id) {
-        return {
-          ...s,
-          name: editName,
-          email: editEmail,
-          phone: editPhone,
-          role: editRole,
-          salary: Number(editSalary),
-          // പാസ്‌വേഡ് മാറ്റാൻ കൊടുത്തിട്ടുണ്ടെങ്കിൽ അതും അപ്ഡേറ്റ് ചെയ്യാം
-        };
+return {
+  ...s,
+  name: editName,
+  email: editEmail,
+  phone: editPhone,
+  role: editRole,
+  salary: Number(editSalary),
+  password:
+    editPassword.trim() ||
+    (s as any).password ||
+    `${editName.trim().split(" ")[0].toLowerCase()}akshaya`,
+};
       }
       return s;
     });
 
     setStaffList(updatedList);
-    localStorage.setItem('smart_akshaya_staff', JSON.stringify(updatedList));
-    setShowEditModal(false);
+localStorage.setItem('smart_akshaya_staff', JSON.stringify(updatedList));
+
+alert("Password changed successfully.");
+
+setShowEditModal(false);
     setSelectedStaff(null);
   };
 
@@ -518,10 +526,13 @@ export default function StaffManagementPage() {
                 <div className="relative mt-1.5">
                   <Key size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
-                    type="password"
-                    placeholder="Leave empty to keep current"
-                    className="w-full border border-slate-200 rounded-xl pl-10 pr-10 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
-                  />
+<input
+  type="text"
+  value={editPassword}
+  onChange={(e) => setEditPassword(e.target.value)}
+  placeholder="Enter new password"
+  className="w-full border border-slate-200 rounded-xl pl-10 pr-10 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+/>
                   <Eye size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-slate-600" />
                 </div>
               </div>

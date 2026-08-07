@@ -166,7 +166,7 @@ const counts = {
           {filteredWorks.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center">
               <h3 className="text-lg font-semibold text-slate-700">No Works Found</h3>
-              <p className="mt-2 text-slate-500">നിങ്ങൾ തിരഞ്ഞ ഫിൽട്ടറിന് അനുസൃതമായ റെക്കോർഡുകൾ ലഭ്യമല്ല.</p>
+              <p className="mt-2 text-slate-500">വര്‍ക്കുകള്‍ ഒന്നും ലഭ്യമല്ല.</p>
             </div>
           )}
 
