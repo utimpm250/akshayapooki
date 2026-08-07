@@ -13,6 +13,12 @@ export interface WorkItem {
 
   staff: string;
 
+  addedBy?: string;
+
+  receiptUrl?: string;
+
+  receiptType?: "image" | "pdf";
+
   status:
     | "Pending"
     | "Processing"

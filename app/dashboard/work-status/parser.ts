@@ -24,6 +24,11 @@ if (pan) {
 
   if (!enrollmentMatch) return null;
 
+const loggedUser =
+  typeof window !== "undefined"
+    ? JSON.parse(localStorage.getItem("loggedInUser") || "{}")
+    : {};
+
 return {
   id: crypto.randomUUID(),
   service: "Unknown Service",
@@ -31,7 +36,10 @@ return {
   phone: phoneMatch?.[0] || "",
   reference: enrollmentMatch[0],
   date: dateMatch?.[0] || "",
-  staff: "",
+  staff: loggedUser.username || "",
+  addedBy: loggedUser.username || "",
+  receiptUrl: "",
+  receiptType: "image",
   status: "Pending",
 };
 }

@@ -51,14 +51,34 @@ export default function QuickReceiptScan() {
 
       // alert(text); // Removed to get rid of the OK button popup
 
-      const work = extractWorkData(text);
+const work = extractWorkData(text);
 
-      if (work) {
-        addWork(work);
-        setMessage("✅ Saved to Work Status");
-      } else {
-        setMessage("⚠️ Required fields not detected.");
-      }
+if (work) {
+  const loggedUser = JSON.parse(
+    localStorage.getItem("loggedInUser") || "{}"
+  );
+
+  const receiptUrl = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(reader.result as string);
+
+    reader.readAsDataURL(file);
+  });
+
+  work.addedBy = loggedUser.username || "";
+  work.staff = loggedUser.username || "";
+  work.receiptUrl = receiptUrl;
+  work.receiptType = file.type.includes("pdf")
+    ? "pdf"
+    : "image";
+
+  addWork(work);
+
+  setMessage("✅ Saved to Work Status");
+} else {
+  setMessage("⚠️ Required fields not detected.");
+}
     } catch (err) {
       console.error(err);
       setMessage("❌ Failed to scan document.");

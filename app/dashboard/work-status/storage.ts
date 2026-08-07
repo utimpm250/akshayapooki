@@ -26,7 +26,14 @@ export function saveWorks(items: WorkItem[]) {
 export function addWork(item: WorkItem) {
   const items = getWorks();
 
-  items.unshift(item);
+  const work: WorkItem = {
+    ...item,
+    addedBy: item.addedBy || item.staff || "",
+    receiptUrl: item.receiptUrl || "",
+    receiptType: item.receiptType || "image",
+  };
+
+  items.unshift(work);
 
   saveWorks(items);
 }
