@@ -171,7 +171,7 @@ const counts = {
           )}
 
           {filteredWorks.map((work) => {
-          onst workId = work.id || work.reference;
+          const workId = work.id || work.reference;
             return (
               <div
                 key={workId}
