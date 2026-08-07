@@ -1,4 +1,5 @@
-export function parsePanReceipt(text: string) {
+import type { WorkItem } from "../types";
+export function parsePanReceipt(text: string): WorkItem | null {
   const upperText = text.toUpperCase();
   console.log(text);
 
@@ -84,14 +85,16 @@ export function parsePanReceipt(text: string) {
     date,
   });
 
-  return {
-    id: crypto.randomUUID(),
-    service: "PAN",
-    name,
-    phone: mobile,
-    reference: couponNumber || "N/A",
-    date: date || "N/A",
-    staff: "Current User",
-    status: "Pending",
-  };
+const item: WorkItem = {
+  id: crypto.randomUUID(),
+  service: "PAN",
+  name,
+  phone: mobile,
+  reference: couponNumber || "N/A",
+  date: date || "N/A",
+  staff: "Current User",
+  status: "Pending",
+};
+
+return item;
 }

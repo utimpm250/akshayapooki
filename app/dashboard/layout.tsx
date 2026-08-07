@@ -62,11 +62,6 @@ const allMenuItems: MenuItem[] = [
     permissionKey: "Service Entry",
   },
   {
-  title: "Work Status",
-  href: "/dashboard/work-status",
-  icon: ClipboardList,
-},
-  {
     name: "Saved Bills",
     path: "/dashboard/saved-bills",
     icon: Receipt,

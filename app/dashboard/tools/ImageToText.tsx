@@ -53,7 +53,13 @@ export default function ImageToTextTool({ onClose }: ImageToTextProps) {
           canvas.width = viewport.width;
 
           if (context) {
-            await page.render({ canvasContext: context, viewport }).promise;
+            const renderTask = page.render({
+  canvas,
+  canvasContext: context,
+  viewport,
+});
+
+await renderTask.promise;
             const imageUrl = canvas.toDataURL("image/png");
             
             const result = await Tesseract.recognize(imageUrl, "eng+mal", {

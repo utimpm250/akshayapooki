@@ -33,7 +33,7 @@ export default function ToolsPage() {
           <h1 className="text-xl font-bold">PDF Tool</h1>
         </div>
 
-        <PDFTool />
+        <PDFTool onClose={() => {}} />
       </div>
     );
   }
@@ -47,7 +47,7 @@ export default function ToolsPage() {
   }
 
   if (activeTool === "ocr") {
-    return <ImageToTextTool />;
+    return <ImageToTextTool onClose={() => {}} />;
   }
 
   return (
