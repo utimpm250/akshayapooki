@@ -1,1049 +1,561 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { 
+  Users, Search, Plus, Edit2, Trash2, Mail, Phone, RefreshCw, Eye, Shield, Key 
+} from "lucide-react";
 
-export default function LoginPage() {
-  const router = useRouter();
+interface Staff {
+  id: string;
+  staffId: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  salary: number;
+}
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isSigningIn, setIsSigningIn] = useState(false);
+const INITIAL_STAFF: Staff[] = [
+  { id: '1', staffId: '#1', name: 'Admin User', email: 'admin@gmail.com', phone: '8589868773', role: 'Admin', salary: 10000 },
+  { id: '2', staffId: '#2', name: 'FASNIL', email: 'fasnil@gmail.com', phone: '9544739520', role: 'Accountant', salary: 10000 },
+  { id: '3', staffId: '#3', name: 'SUMAYYA', email: 'sumayya@gmail.com', phone: '7025400130', role: 'Staff', salary: 10000 },
+  { id: '4', staffId: '#4', name: 'SHEEJA', email: 'sheeja@gmail.com', phone: '8907428080', role: 'Staff', salary: 10000 },
+  { id: '5', staffId: '#5', name: 'SAHLA', email: 'sahla@gmail.com', phone: '9037977659', role: 'Staff', salary: 10000 },
+  { id: '6', staffId: '#6', name: 'test', email: 'test@gmail.com', phone: '9876543210', role: 'Staff', salary: 10000 },
+];
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
+export default function StaffManagementPage() {
+  const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Modals State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 
-    if (isSigningIn) return;
+  // New Staff Form State
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newRole, setNewRole] = useState('Staff');
+  const [newSalary, setNewSalary] = useState(10000);
+  const [newPassword, setNewPassword] = useState('');
 
-    setIsSigningIn(true);
+  // Edit Staff Form State
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editRole, setEditRole] = useState('');
+  const [editSalary, setEditSalary] = useState(0);
+const [editPassword, setEditPassword] = useState("");
 
-    let isValid = false;
-    let assignedRole = "staff";
-    let displayName = "";
-
-    const cleanUsername = username.trim().toLowerCase();
-    const cleanPassword = password.trim();
-
-    // Admin Login
-    if (cleanUsername === "admin" && cleanPassword === "admin") {
-      isValid = true;
-      assignedRole = "admin";
-      displayName = "Admin User";
-    } else {
-      // Staff Login
-      const savedStaffData = localStorage.getItem("smart_akshaya_staff");
-
-      if (savedStaffData) {
-        try {
-          const staffArray = JSON.parse(savedStaffData);
-
-          if (Array.isArray(staffArray)) {
-            const matchedStaff = staffArray.find((s: any) => {
-              const sName = String(
-                s.name || s.staffName || ""
-              )
-                .trim()
-                .toLowerCase();
-
-              const sUsername = String(s.username || "")
-                .trim()
-                .toLowerCase();
-
-              const sEmail = String(s.email || "")
-                .trim()
-                .toLowerCase();
-
-              const sStaffId = String(s.staffId || "")
-                .trim()
-                .toLowerCase();
-
-              /*
-               * IMPORTANT:
-               * Staff Management saves the changed password in `password`.
-               * Do NOT replace a changed password with the default password.
-               * Only use the default password when the staff record has no
-               * password saved.
-               */
-              const savedPassword = String(
-                s.password ?? s.pass ?? ""
-              ).trim();
-
-              const defaultPassword =
-                `${(sName.split(" ")[0] || "staff")}akshaya`.toLowerCase();
-
-              const usernameMatches =
-                sName === cleanUsername ||
-                sUsername === cleanUsername ||
-                sEmail === cleanUsername ||
-                sStaffId === cleanUsername;
-
-              const passwordMatches =
-                savedPassword !== ""
-                  ? savedPassword === cleanPassword
-                  : defaultPassword === cleanPassword.toLowerCase();
-
-              return usernameMatches && passwordMatches;
-            });
-
-            if (matchedStaff) {
-              isValid = true;
-
-              assignedRole =
-                String(matchedStaff.role || "").toLowerCase() === "admin"
-                  ? "admin"
-                  : "staff";
-
-              displayName =
-                matchedStaff.name ||
-                matchedStaff.staffName ||
-                matchedStaff.username ||
-                matchedStaff.email ||
-                matchedStaff.staffId ||
-                "Staff";
-            }
-          }
-        } catch (err) {
-          console.error("Error reading staff storage", err);
-        }
+  useEffect(() => {
+    const saved = localStorage.getItem('smart_akshaya_staff');
+    if (saved) {
+      try {
+        setStaffList(JSON.parse(saved));
+      } catch (e) {
+        setStaffList(INITIAL_STAFF);
       }
-    }
-
-    if (isValid) {
-      localStorage.setItem(
-        "loggedInUser",
-        JSON.stringify({
-          username: displayName,
-          role: assignedRole,
-        })
-      );
-
-      localStorage.setItem(
-        "loginSessionDate",
-        new Date().toISOString().split("T")[0]
-      );
-
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 700);
     } else {
-      setTimeout(() => {
-        setIsSigningIn(false);
-        alert("Invalid Username or Password. Please check your credentials.");
-      }, 700);
+      setStaffList(INITIAL_STAFF);
+      localStorage.setItem('smart_akshaya_staff', JSON.stringify(INITIAL_STAFF));
+    }
+  }, []);
+
+  const handleAutoGeneratePassword = (isEdit: boolean = false) => {
+    const nameVal = isEdit ? editName : newName;
+    const firstName = nameVal.trim().split(' ')[0].toLowerCase() || 'staff';
+    const generated = `${firstName}akshaya`;
+    if (isEdit) {
+      // Handle edit password if needed
+    } else {
+      setNewPassword(generated);
     }
   };
 
+ const handleAddStaff = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+
+    // ഓട്ടോമാറ്റിക് പാസ്‌വേഡ് ജനറേറ്റ് ചെയ്യുക (ഉദാഹരണത്തിന്: fasnilakshaya)
+    const firstName = newName.trim().split(' ')[0].toLowerCase();
+    const finalPassword = newPassword.trim() || `${firstName}akshaya`;
+
+    const newStaffMember: Staff & { password?: string } = {
+      id: Date.now().toString(),
+      staffId: `#${staffList.length + 1}`,
+      name: newName,
+      email: newEmail || 'N/A',
+      phone: newPhone || 'N/A',
+      role: newRole,
+      salary: Number(newSalary) || 0,
+      password: finalPassword // പാസ്‌വേഡ് ഇവിടെ സേവ് ചെയ്യുന്നു
+    };
+
+    const updatedList = [newStaffMember, ...staffList];
+    setStaffList(updatedList);
+    localStorage.setItem('smart_akshaya_staff', JSON.stringify(updatedList));
+
+    setNewName('');
+    setNewEmail('');
+    setNewPhone('');
+    setNewRole('Staff');
+    setNewSalary(10000);
+    setNewPassword('');
+    setShowAddModal(false);
+  };
+
+  const handleOpenEdit = (staff: Staff) => {
+    setSelectedStaff(staff);
+    setEditName(staff.name);
+    setEditEmail(staff.email);
+    setEditPhone(staff.phone);
+    setEditRole(staff.role);
+setEditSalary(staff.salary);
+setEditPassword((staff as any).password || "");
+setShowEditModal(true);
+  };
+
+ // എഡിറ്റ് ചെയ്യുന്ന ഫോമിൽ പുതിയ പാസ്‌വേഡ് സ്റ്റേറ്റ് ഉണ്ടെന്ന് ഉറപ്പാക്കുകയോ അല്ലെങ്കിൽ നിലവിലുള്ളത് നിലനിർത്തുകയോ ചെയ്യുക
+  const handleUpdateStaff = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStaff) return;
+
+    const updatedList = staffList.map(s => {
+      if (s.id === selectedStaff.id) {
+return {
+  ...s,
+  name: editName,
+  email: editEmail,
+  phone: editPhone,
+  role: editRole,
+  salary: Number(editSalary),
+  password:
+    editPassword.trim() ||
+    (s as any).password ||
+    `${editName.trim().split(" ")[0].toLowerCase()}akshaya`,
+};
+      }
+      return s;
+    });
+
+    setStaffList(updatedList);
+localStorage.setItem('smart_akshaya_staff', JSON.stringify(updatedList));
+
+alert("Password changed successfully.");
+
+setShowEditModal(false);
+    setSelectedStaff(null);
+  };
+
+  const handleDeleteStaff = (id: string) => {
+    if (confirm("Are you sure you want to delete this staff member?")) {
+      const updatedList = staffList.filter(s => s.id !== id);
+      setStaffList(updatedList);
+      localStorage.setItem('smart_akshaya_staff', JSON.stringify(updatedList));
+    }
+  };
+
+  const filteredStaff = staffList.filter(s => 
+    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.staffId.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <>
-      <style jsx global>{`
-        * {
-          box-sizing: border-box;
-        }
-
-        html,
-        body {
-          margin: 0;
-          padding: 0;
-          width: 100%;
-          min-height: 100%;
-        }
-
-        body {
-          font-family:
-            "Segoe UI",
-            Tahoma,
-            Geneva,
-            Verdana,
-            sans-serif;
-          background: #0b0f19;
-        }
-
-        .flow-login-page {
-          position: relative;
-          width: 100%;
-          min-height: 100vh;
-          overflow: hidden;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 24px;
-          color: #ffffff;
-          background:
-            radial-gradient(
-              circle at 15% 20%,
-              rgba(0, 198, 255, 0.16),
-              transparent 32%
-            ),
-            radial-gradient(
-              circle at 85% 80%,
-              rgba(124, 58, 237, 0.18),
-              transparent 35%
-            ),
-            #0b0f19;
-        }
-
-        /* ------------------------------------------------
-           LIQUID BACKGROUND
-        ------------------------------------------------ */
-
-        .liquid-bg {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-          z-index: 0;
-        }
-
-        .liquid-orb {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(2px);
-          opacity: 0.75;
-          mix-blend-mode: screen;
-          pointer-events: none;
-        }
-
-        .liquid-orb-1 {
-          width: 420px;
-          height: 420px;
-          left: -130px;
-          top: -100px;
-          background:
-            radial-gradient(
-              circle at 35% 35%,
-              rgba(0, 198, 255, 0.85),
-              rgba(0, 114, 255, 0.35) 42%,
-              transparent 72%
-            );
-          animation: liquidFloatOne 10s ease-in-out infinite;
-        }
-
-        .liquid-orb-2 {
-          width: 500px;
-          height: 500px;
-          right: -190px;
-          bottom: -180px;
-          background:
-            radial-gradient(
-              circle at 40% 40%,
-              rgba(139, 92, 246, 0.8),
-              rgba(236, 72, 153, 0.28) 45%,
-              transparent 72%
-            );
-          animation: liquidFloatTwo 13s ease-in-out infinite;
-        }
-
-        .liquid-orb-3 {
-          width: 300px;
-          height: 300px;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          background:
-            radial-gradient(
-              circle,
-              rgba(0, 198, 255, 0.28),
-              rgba(59, 130, 246, 0.1) 48%,
-              transparent 72%
-            );
-          animation: liquidFloatThree 8s ease-in-out infinite;
-        }
-
-        .liquid-orb-4 {
-          width: 220px;
-          height: 220px;
-          right: 12%;
-          top: 12%;
-          background:
-            radial-gradient(
-              circle,
-              rgba(255, 65, 108, 0.22),
-              rgba(255, 75, 43, 0.06) 55%,
-              transparent 75%
-            );
-          animation: liquidFloatFour 11s ease-in-out infinite;
-        }
-
-        @keyframes liquidFloatOne {
-          0%,
-          100% {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-
-          50% {
-            transform: translate3d(80px, 55px, 0) scale(1.15);
-          }
-        }
-
-        @keyframes liquidFloatTwo {
-          0%,
-          100% {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-
-          50% {
-            transform: translate3d(-90px, -70px, 0) scale(1.12);
-          }
-        }
-
-        @keyframes liquidFloatThree {
-          0%,
-          100% {
-            transform: translate(-50%, -50%) scale(1);
-          }
-
-          50% {
-            transform: translate(-42%, -56%) scale(1.3);
-          }
-        }
-
-        @keyframes liquidFloatFour {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-
-          50% {
-            transform: translate(-45px, 55px) scale(1.2);
-          }
-        }
-
-        /* ------------------------------------------------
-           GLASS CARD
-        ------------------------------------------------ */
-
-.flow-container {
-  position: relative;
-  width: 100%;
-  max-width: 560px;
-  z-index: 5;
-}
-
-.logo-wrapper {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 190px;
-  height: 155px;
-  margin-bottom: 10px;
-}
-
-.animated-logo {
-  position: relative;
-  width: auto;
-  height: 135px;
-  object-fit: contain;
-  pointer-events: none;
-  user-select: none;
-
-  filter:
-    drop-shadow(0 18px 30px rgba(0, 114, 255, 0.35))
-    drop-shadow(0 0 20px rgba(0, 198, 255, 0.2));
-
-  animation: logoFloat 4s ease-in-out infinite;
-  transition: transform 0.4s ease;
-}
-
-        .flow-card::before {
-          content: "";
-          position: absolute;
-          top: -150px;
-          left: 50%;
-          width: 300px;
-          height: 300px;
-          transform: translateX(-50%);
-          border-radius: 50%;
-          background: rgba(0, 198, 255, 0.13);
-          filter: blur(70px);
-          pointer-events: none;
-        }
-
-.flow-card::after {
-  display: none;
-}
-
-        @keyframes cardEntrance {
-          from {
-            opacity: 0;
-            transform: translateY(35px) scale(0.96);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        /* ------------------------------------------------
-           LOGO
-        ------------------------------------------------ */
-.logo-area {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 34px;
-}
-.company-logo-area {
-  position: relative;
-  width: 180px;
-  height: 150px;
-  margin: 0 auto 8px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  animation: companyLogoEntrance 1s
-    cubic-bezier(0.2, 0.8, 0.2, 1)
-    both;
-}
-
-.company-logo {
-  position: relative;
-  z-index: 2;
-
-  width: 120px;
-  height: 120px;
-
-  object-fit: contain;
-  border-radius: 14px;
-
-  filter:
-    drop-shadow(0 12px 20px rgba(0, 198, 255, 0.25))
-    drop-shadow(0 0 18px rgba(0, 114, 255, 0.18));
-
-  animation:
-    companyLogoFloat 3.5s ease-in-out infinite,
-    companyLogoPulse 3.5s ease-in-out infinite;
-
-  transform-origin: center center;
-}
-
-.company-logo:hover {
-  transform: scale(1.05);
-
-  filter:
-    drop-shadow(0 18px 30px rgba(0, 198, 255, 0.4))
-    drop-shadow(0 0 28px rgba(0, 114, 255, 0.3));
-}
-
-.company-logo-area {
-  position: relative;
-  width: 150px;
-  height: 125px;
-  margin: 0 auto 8px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  animation: companyLogoEntrance 1s
-    cubic-bezier(0.2, 0.8, 0.2, 1)
-    both;
-}
-
-.company-logo-glow {
-  position: absolute;
-
-  width: 180px;
-  height: 150px;
-
-  border-radius: 50%;
-
-  background:
-    radial-gradient(
-      ellipse,
-      rgba(255, 255, 255, 0.28),
-      rgb(249, 251, 253) 45%,
-      transparent 100%
-    );
-
-  filter: blur(22px);
-
-  animation: companyLogoGlow 3.5s ease-in-out infinite;
-}
-
-@keyframes companyLogoEntrance {
-  0% {
-    opacity: 0;
-    transform: translateY(-25px) scale(0.85);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-@keyframes companyLogoFloat {
-  0% {
-    transform: translateY(0) scale(1) rotate(0deg);
-  }
-
-  25% {
-    transform: translateY(-5px) scale(1.02) rotate(-1deg);
-  }
-
-  50% {
-    transform: translateY(-10px) scale(1.05) rotate(0deg);
-  }
-
-  75% {
-    transform: translateY(-5px) scale(1.02) rotate(1deg);
-  }
-
-  100% {
-    transform: translateY(0) scale(1) rotate(0deg);
-  }
-}
-
-@keyframes companyLogoPulse {
-  0%,
-  100% {
-    filter:
-      drop-shadow(0 10px 18px rgba(0, 198, 255, 0.20))
-      drop-shadow(0 0 12px rgba(0, 114, 255, 0.12));
-  }
-
-  50% {
-    filter:
-      drop-shadow(0 16px 28px rgba(0, 198, 255, 0.45))
-      drop-shadow(0 0 28px rgba(0, 114, 255, 0.35));
-  }
-}
-        .logo-wrapper {
-          position: relative;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          width: 150px;
-          height: 125px;
-          margin-bottom: 8px;
-        }
-
-        .logo-glow {
-          position: absolute;
-          width: 130px;
-          height: 130px;
-          border-radius: 50%;
-          background:
-            radial-gradient(
-              circle,
-              rgba(0, 198, 255, 0.42),
-              rgba(0, 114, 255, 0.16) 40%,
-              transparent 72%
-            );
-          filter: blur(20px);
-          animation: logoGlow 4s ease-in-out infinite;
-        }
-
-        .animated-logo {
-          position: relative;
-          width: auto;
-          height: 110px;
-          object-fit: contain;
-          pointer-events: none;
-          user-select: none;
-          filter:
-            drop-shadow(0 18px 30px rgba(0, 114, 255, 0.35))
-            drop-shadow(0 0 20px rgba(0, 198, 255, 0.2));
-          animation: logoFloat 4s ease-in-out infinite;
-          transition: transform 0.4s ease;
-        }
-
-        .animated-logo:hover {
-          transform: scale(1.06);
-        }
-
-        @keyframes logoGlow {
-          0%,
-          100% {
-            transform: scale(0.9);
-            opacity: 0.65;
-          }
-
-          50% {
-            transform: scale(1.15);
-            opacity: 1;
-          }
-        }
-
-        @keyframes logoFloat {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-
-          50% {
-            transform: translateY(-7px);
-          }
-        }
-
-.flow-title {
-  margin: 0;
-  font-size: 36px;
-  line-height: 1.2;
-  font-weight: 700;
-  letter-spacing: -0.6px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #ffffff 0%,
-      #b9efff 45%,
-      #8ab4ff 75%,
-      #ffffff 100%
-    );
-
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.flow-subtitle {
-  margin: 10px 0 0;
-  color: rgba(226, 232, 240, 0.75);
-  font-size: 16px;
-  line-height: 1.5;
-  text-align: center;
-}
-
-        /* ------------------------------------------------
-           FORM
-        ------------------------------------------------ */
-
-.flow-form {
-  position: relative;
-  z-index: 3;
-  animation: formEntrance 1s ease 0.2s both;
-}
-
-        @keyframes formEntrance {
-          from {
-            opacity: 0;
-            transform: translateY(18px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
- .input-group {
-  position: relative;
-  margin-bottom: 18px;
-}
-
-.input-group input {
-  width: 100%;
-  height: 62px;
-  padding: 0 20px;
-
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 15px;
-
-  color: #ffffff;
-  font-size: 16px;
-  font-weight: 500;
-
-  outline: none;
-
-  transition:
-    border-color 0.3s ease,
-    background 0.3s ease,
-    box-shadow 0.3s ease,
-    transform 0.3s ease;
-}
-
-.input-group input::placeholder {
-  color: rgba(203, 213, 225, 0.58);
-}
-
-        .input-group input:hover {
-          background: rgba(255, 255, 255, 0.085);
-          border-color: rgba(255, 255, 255, 0.18);
-        }
-
-        .input-group input:focus {
-          background: rgba(255, 255, 255, 0.11);
-          border-color: rgba(0, 198, 255, 0.65);
-
-          box-shadow:
-            0 0 0 4px rgba(0, 198, 255, 0.08),
-            0 0 25px rgba(0, 114, 255, 0.15);
-
-          transform: translateY(-1px);
-        }
-
-        .options {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin: 5px 2px 22px;
-          font-size: 12px;
-          color: rgba(203, 213, 225, 0.65);
-        }
-
-        .remember-label {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          cursor: pointer;
-          user-select: none;
-        }
-
-        .remember-label input {
-          accent-color: #00a9ff;
-          cursor: pointer;
-        }
-
-        .forgot-link {
-          color: rgba(186, 230, 253, 0.8);
-          text-decoration: none;
-          transition:
-            color 0.25s ease,
-            text-shadow 0.25s ease;
-        }
-
-        .forgot-link:hover {
-          color: #ffffff;
-          text-shadow: 0 0 12px rgba(0, 198, 255, 0.5);
-        }
-
-        /* ------------------------------------------------
-           SIGN IN BUTTON
-        ------------------------------------------------ */
-
-.sign-in-btn {
-  position: relative;
-  overflow: hidden;
-
-  width: 100%;
-  height: 62px;
-
-  border: none;
-  border-radius: 15px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #00c6ff 0%,
-      #0072ff 45%,
-      #6d28d9 100%
-    );
-
-  color: #ffffff;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-
-  cursor: pointer;
-
-  box-shadow:
-    0 12px 32px rgba(0, 114, 255, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-
-  transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease,
-    opacity 0.25s ease;
-}
-
-        .sign-in-btn::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: -120%;
-          width: 80%;
-          height: 100%;
-
-          background:
-            linear-gradient(
-              100deg,
-              transparent,
-              rgba(255, 255, 255, 0.32),
-              transparent
-            );
-
-          transform: skewX(-20deg);
-          transition: left 0.6s ease;
-        }
-
-        .sign-in-btn:hover::before {
-          left: 140%;
-        }
-
-        .sign-in-btn:hover {
-          transform: translateY(-2px);
-          box-shadow:
-            0 16px 38px rgba(0, 114, 255, 0.38),
-            inset 0 1px 0 rgba(255, 255, 255, 0.3);
-        }
-
-        .sign-in-btn:active {
-          transform: scale(0.98);
-        }
-
-        .sign-in-btn:disabled {
-          cursor: wait;
-          opacity: 0.75;
-          transform: none;
-        }
-
-        .button-content {
-          position: relative;
-          z-index: 2;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 9px;
-        }
-
-        .spinner {
-          width: 17px;
-          height: 17px;
-          border: 2px solid rgba(255, 255, 255, 0.35);
-          border-top-color: #ffffff;
-          border-radius: 50%;
-          animation: spin 0.7s linear infinite;
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        /* ------------------------------------------------
-           DIVIDER
-        ------------------------------------------------ */
-
-        .divider {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin: 24px 0;
-          color: rgba(148, 163, 184, 0.55);
-          font-size: 11px;
-        }
-
-        .divider::before,
-        .divider::after {
-          content: "";
-          flex: 1;
-          height: 1px;
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* ------------------------------------------------
-           SOCIAL BUTTONS
-        ------------------------------------------------ */
-
-        .social-login {
-          display: flex;
-          gap: 12px;
-          margin-bottom: 24px;
-        }
-
-        .social-btn {
-          flex: 1;
-          height: 46px;
-          border-radius: 12px;
-
-          background: rgba(255, 255, 255, 0.055);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-
-          color: rgba(255, 255, 255, 0.8);
-          font-size: 13px;
-          font-weight: 600;
-
-          cursor: pointer;
-
-          transition:
-            background 0.25s ease,
-            border-color 0.25s ease,
-            transform 0.25s ease;
-        }
-
-        .social-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.18);
-          transform: translateY(-2px);
-        }
-
-        /* ------------------------------------------------
-           FOOTER
-        ------------------------------------------------ */
-
-        .footer-text {
-          margin: 0;
-          text-align: center;
-          font-size: 11px;
-          line-height: 1.7;
-          color: rgba(148, 163, 184, 0.55);
-        }
-
-        .footer-text strong {
-          color: rgba(186, 230, 253, 0.75);
-          font-weight: 600;
-        }
-
-        .footer-small {
-          margin-top: 3px;
-          font-size: 10px;
-          color: rgba(148, 163, 184, 0.4);
-        }
-
-        /* ------------------------------------------------
-           RESPONSIVE
-        ------------------------------------------------ */
-
-@media (max-width: 600px) {
-.company-logo-area {
-  width: 150px;
-  height: 125px;
-}  
-.flow-login-page {
-    padding: 16px;
-  }
-
-  .flow-container {
-    max-width: 100%;
-  }
-
-  .flow-card {
-    padding: 38px 22px 30px;
-    border-radius: 26px;
-  }
-
-  .logo-wrapper {
-    width: 150px;
-    height: 125px;
-  }
-
-  .animated-logo {
-    height: 105px;
-  }
-
-  .flow-title {
-    font-size: 30px;
-  }
-
-  .flow-subtitle {
-    font-size: 14px;
-  }
-
-  .input-group input {
-    height: 56px;
-    font-size: 15px;
-  }
-
-  .sign-in-btn {
-    height: 56px;
-    font-size: 16px;
-  }
-}
-
-        @media (prefers-reduced-motion: reduce) {
-          .liquid-orb,
-          .flow-card,
-          .flow-form,
-          .logo-glow,
-          .animated-logo {
-            animation: none !important;
-          }
-
-          * {
-            scroll-behavior: auto !important;
-          }
-        }
-      `}</style>
-
-      <main className="flow-login-page">
-        {/* Liquid background */}
-        <div className="liquid-bg">
-          <div className="liquid-orb liquid-orb-1" />
-          <div className="liquid-orb liquid-orb-2" />
-          <div className="liquid-orb liquid-orb-3" />
-          <div className="liquid-orb liquid-orb-4" />
+    <div className="p-6 max-w-7xl mx-auto space-y-6 relative min-h-screen pb-20">
+      
+      {/* Top Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-xl font-bold text-slate-800">Staff Management</h1>
+      </div>
+
+      {/* Top Gradient Banner Card */}
+      <div className="bg-gradient-to-r from-orange-500 via-rose-500 to-pink-500 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+        <div>
+          <p className="text-xs uppercase tracking-wider font-semibold text-orange-100">Staff Profiles</p>
+          <h2 className="text-5xl font-black mt-1">{staffList.length}</h2>
+        </div>
+        <div className="bg-white/15 backdrop-blur-md rounded-2xl px-5 py-3 flex items-center gap-3 border border-white/20">
+          <Users size={24} className="text-white" />
+          <div>
+            <p className="text-[10px] tracking-wider uppercase text-orange-100 font-bold">Active Accounts</p>
+            <p className="text-sm font-black">{staffList.length}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Staff Directory Header & Search Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2">
+        <div className="flex items-center gap-2">
+          <h3 className="font-bold text-slate-800 text-base">Staff Directory</h3>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-slate-400 hover:text-slate-600 transition"
+            title="Refresh"
+          >
+            <RefreshCw size={14} />
+          </button>
         </div>
 
-        {/* Login */}
-        <div className="flow-container">
-          <section className="flow-card">
-            {/* Logo */}
-            <div className="logo-area">
+        <div className="relative w-full sm:w-80">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by name, ID or email..."
+            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500 shadow-sm"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
 
-<div className="company-logo-area">
-  <div className="company-logo-glow" />
+      {/* Staff Table Section */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider bg-slate-50/50">
+                <th className="py-4 px-6 font-bold">Staff ID</th>
+                <th className="py-4 px-6 font-bold">Name</th>
+                <th className="py-4 px-6 font-bold">Contact</th>
+                <th className="py-4 px-6 font-bold">Role</th>
+                <th className="py-4 px-6 font-bold">Salary</th>
+                <th className="py-4 px-6 font-bold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredStaff.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-slate-400 font-medium">
+                    No staff members found.
+                  </td>
+                </tr>
+              ) : (
+                filteredStaff.map((staff) => (
+                  <tr key={staff.id} className="hover:bg-slate-50/80 transition text-slate-700">
+                    <td className="py-4 px-6 font-bold text-slate-500">{staff.staffId}</td>
+                    <td className="py-4 px-6 font-extrabold text-slate-900">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs">
+                          {staff.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span>{staff.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 space-y-0.5">
+                      <div className="flex items-center gap-1.5 text-slate-500">
+                        <Mail size={12} className="text-slate-400" />
+                        <span>{staff.email}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-500">
+                        <Phone size={12} className="text-slate-400" />
+                        <span>{staff.phone}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                        staff.role.toLowerCase() === 'admin' 
+                          ? 'bg-blue-50 text-blue-600 border border-blue-200' 
+                          : staff.role.toLowerCase() === 'accountant'
+                          ? 'bg-purple-50 text-purple-600 border border-purple-200'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {staff.role}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 font-bold text-slate-800">₹{staff.salary}</td>
+                    <td className="py-4 px-6 text-right space-x-2">
+                      <button 
+                        onClick={() => handleOpenEdit(staff)}
+                        className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition inline-flex items-center justify-center"
+                        title="Edit"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteStaff(staff.id)}
+                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition inline-flex items-center justify-center"
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-  <img
-    src="/logo.png"
-    alt="Company Logo"
-    className="company-logo"
-  />
-</div>
-              <h1 className="flow-title">Welcome Back</h1>
+      {/* Floating Action Button (FAB) */}
+      <button 
+        onClick={() => setShowAddModal(true)}
+        className="fixed bottom-8 right-8 w-14 h-14 bg-rose-500 hover:bg-rose-600 text-white rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 z-50"
+        title="Add Staff"
+      >
+        <Plus size={24} />
+      </button>
 
-              <p className="flow-subtitle">
-                Sign in to your Akshaya Pookiparamba Account
-              </p>
+      {/* Add New Staff Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center border-b pb-3">
+              <div className="flex items-center gap-2">
+                <Users size={18} className="text-rose-500" />
+                <h3 className="font-bold text-slate-800 text-base">Add New Staff</h3>
+              </div>
+              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
             </div>
 
-            {/* Form */}
-            <form
-              onSubmit={handleLogin}
-              className="flow-form"
-            >
-              <div className="input-group">
-                <input
-                  type="text"
-                  placeholder="Staff Name / Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoComplete="username"
-                  required
-                  disabled={isSigningIn}
-                />
+            <form onSubmit={handleAddStaff} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-500">Full Name *</label>
+                <div className="relative mt-1.5">
+                  <Users size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. John Doe"
+                    className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                  />
+                </div>
               </div>
 
-              <div className="input-group">
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                  disabled={isSigningIn}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500">Mobile *</label>
+                  <div className="relative mt-1.5">
+                    <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="10-digit number"
+                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      value={newPhone}
+                      onChange={(e) => setNewPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500">Email *</label>
+                  <div className="relative mt-1.5">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="name@mail.com"
+                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
-              <button
-                type="submit"
-                className="sign-in-btn"
-                disabled={isSigningIn}
-              >
-                <span className="button-content">
-                  {isSigningIn ? (
-                    <>
-                      <span className="spinner" />
-                      <span>Signing in...</span>
-                    </>
-                  ) : (
-                    <span>Sign In</span>
-                  )}
-                </span>
-              </button>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500">User Role</label>
+                  <div className="relative mt-1.5">
+                    <Shield size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <select
+                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none bg-white appearance-none"
+                      value={newRole}
+                      onChange={(e) => setNewRole(e.target.value)}
+                    >
+                      <option value="Staff">Staff</option>
+                      <option value="Accountant">Accountant</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500">Basic Salary</label>
+                  <input
+                    type="number"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 mt-1.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                    value={newSalary}
+                    onChange={(e) => setNewSalary(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mt-2">
+                  <label className="text-xs font-bold uppercase text-slate-500">Password</label>
+                  <button 
+                    type="button" 
+                    onClick={() => handleAutoGeneratePassword(false)} 
+                    className="text-xs text-blue-600 font-semibold hover:underline"
+                  >
+                    Auto Generate
+                  </button>
+                </div>
+                <div className="relative mt-1.5">
+                  <Key size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Leave empty for default: [firstname]akshaya"
+                    className="w-full border border-slate-200 rounded-xl pl-10 pr-10 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                  <Eye size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-slate-600" />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-md transition"
+                >
+                  Add Staff
+                </button>
+              </div>
             </form>
-          </section>
+          </div>
         </div>
-      </main>
-    </>
+      )}
+
+      {/* Edit Staff Profile Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center border-b pb-3">
+              <div className="flex items-center gap-2">
+                <Users size={18} className="text-rose-500" />
+                <h3 className="font-bold text-slate-800 text-base">Edit Staff Profile</h3>
+              </div>
+              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+            </div>
+
+            <form onSubmit={handleUpdateStaff} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-500">Full Name *</label>
+                <div className="relative mt-1.5">
+                  <Users size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500">Mobile *</label>
+                  <div className="relative mt-1.5">
+                    <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      required
+                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500">Email *</label>
+                  <div className="relative mt-1.5">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="email"
+                      required
+                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500">User Role</label>
+                  <div className="relative mt-1.5">
+                    <Shield size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <select
+                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none bg-white appearance-none"
+                      value={editRole}
+                      onChange={(e) => setEditRole(e.target.value)}
+                    >
+                      <option value="Staff">Staff</option>
+                      <option value="Accountant">Accountant</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500">Basic Salary</label>
+                  <input
+                    type="number"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 mt-1.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                    value={editSalary}
+                    onChange={(e) => setEditSalary(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mt-2">
+                  <label className="text-xs font-bold uppercase text-slate-500">Password</label>
+                  <button type="button" onClick={() => alert("Password auto-generated!")} className="text-xs text-blue-600 font-semibold hover:underline">
+                    Auto Generate
+                  </button>
+                </div>
+                <div className="relative mt-1.5">
+                  <Key size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+  type="text"
+  value={editPassword}
+  onChange={(e) => setEditPassword(e.target.value)}
+  placeholder="Enter new password"
+  className="w-full border border-slate-200 rounded-xl pl-10 pr-10 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+/>
+                  <Eye size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-slate-600" />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-md transition"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
   );
 }
