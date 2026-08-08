@@ -9,7 +9,11 @@ export interface WorkItem {
 
   reference: string;
 
+  registrationNo?: string;
+
   date: string;
+
+  dob?: string;
 
   staff: string;
 

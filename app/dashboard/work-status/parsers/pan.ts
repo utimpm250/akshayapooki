@@ -2,15 +2,13 @@ import type { WorkItem } from "../types";
 export function parsePanReceipt(text: string): WorkItem | null {
   const upperText = text.toUpperCase();
   console.log(text);
-
-  if (
-    !upperText.includes("PAN") &&
-    !upperText.includes("COUPON") &&
-    !upperText.includes("ACKNOWLEDGEMENT") &&
-    !upperText.includes("APPLICATION")
-  ) {
-    return null;
-  }
+if (
+  !upperText.includes("MODE OF PAN CARD") &&
+  !upperText.includes("PAN SERVICE CENTER") &&
+  !upperText.includes("APPLICATION NO./COUPON NO")
+) {
+  return null;
+}
 
   let name = "";
   let mobile = "";

@@ -364,21 +364,29 @@ const [previewReceipt, setPreviewReceipt] = useState<{
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-slate-800">
-                      👤 {work.name}
-                    </h3>
+<h3 className="text-lg font-bold text-slate-800">
+  👤 {work.name || "Unknown Name"}
+</h3>
 
-                    <p className="text-slate-600">
-                      📞 {work.phone}
-                    </p>
+{work.phone && (
+  <p className="text-slate-600">
+    📞 {work.phone}
+  </p>
+)}
 
-                    <p className="text-slate-600">
-                      🔢 {work.reference}
-                    </p>
+<p className="text-slate-600">
+  📄 Application No: {work.reference || "N/A"}
+</p>
 
-                    <p className="text-slate-600">
-                      📅 {work.date}
-                    </p>
+{(work as any).registrationNo && (
+  <p className="text-slate-600">
+    🔢 Registration No: {(work as any).registrationNo}
+  </p>
+)}
+
+<p className="text-slate-600">
+  📅 {work.date || "N/A"}
+</p>
 
                     <p className="text-slate-600">
                       👨‍💼 Added By :{" "}

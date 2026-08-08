@@ -1,10 +1,29 @@
 import type { WorkItem } from "./types";
 import { parsePanReceipt } from "./parsers/pan";
+import { parseAadhaarReceipt } from "./parsers/aadhaar";
+import { parseRationCardReceipt } from "./parsers/ration";
+import { parseEdistrictCertificateReceipt } from "./parsers/edistrictcertificate";
 export function extractWorkData(text: string): WorkItem | null {
+const edistrict = parseEdistrictCertificateReceipt(text);
+
+if (edistrict) {
+  return edistrict;
+}
+  const ration = parseRationCardReceipt(text);
+
+if (ration) {
+  return ration;
+}
   const pan = parsePanReceipt(text);
 
 if (pan) {
   return pan;
+}
+
+const aadhaar = parseAadhaarReceipt(text);
+
+if (aadhaar) {
+  return aadhaar;
 }
   const cleanText = text.replace(/\r/g, "");
 

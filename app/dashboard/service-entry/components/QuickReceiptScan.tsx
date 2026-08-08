@@ -37,59 +37,339 @@ export default function QuickReceiptScan() {
     };
   }, []);
 
+  // =========================================================
+  // IMAGE PREPROCESSING
+  // =========================================================
+
+  const preprocessImage = async (
+    file: File
+  ): Promise<Blob> => {
+    const image = new Image();
+
+    const objectUrl = URL.createObjectURL(file);
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = reject;
+        image.src = objectUrl;
+      });
+
+      const scale = 2;
+
+      const canvas = document.createElement("canvas");
+
+      canvas.width = image.naturalWidth * scale;
+      canvas.height = image.naturalHeight * scale;
+
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        throw new Error("Canvas not supported");
+      }
+
+      ctx.drawImage(
+        image,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      const imageData = ctx.getImageData(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      const data = imageData.data;
+
+      // Grayscale + contrast
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        let gray =
+          0.299 * r +
+          0.587 * g +
+          0.114 * b;
+
+        // Increase contrast
+        gray = ((gray - 128) * 1.35) + 128;
+
+        gray = Math.max(0, Math.min(255, gray));
+
+        data[i] = gray;
+        data[i + 1] = gray;
+        data[i + 2] = gray;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+
+      return await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(
+                new Error("Unable to create processed image")
+              );
+            }
+          },
+          "image/png",
+          1
+        );
+      });
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  };
+
+  // =========================================================
+  // NUMERIC OCR
+  // =========================================================
+
+  const runNumericOCR = async (
+    image: Blob
+  ): Promise<string> => {
+    try {
+      const result = await Tesseract.recognize(
+        image,
+        "eng",
+        {
+          logger: (info) => {
+            if (
+              info.status === "recognizing text" &&
+              typeof info.progress === "number"
+            ) {
+              console.log(
+                `Numeric OCR: ${Math.round(
+                  info.progress * 100
+                )}%`
+              );
+            }
+          },
+        }
+      );
+
+      return result.data.text || "";
+    } catch (error) {
+      console.error(
+        "Numeric OCR failed:",
+        error
+      );
+
+      return "";
+    }
+  };
+
+  // =========================================================
+  // NORMAL OCR
+  // =========================================================
+
+  const runNormalOCR = async (
+    image: File | Blob
+  ): Promise<string> => {
+    const result = await Tesseract.recognize(
+      image,
+      "eng+mal",
+      {
+        logger: (info) => {
+          if (
+            info.status === "recognizing text" &&
+            typeof info.progress === "number"
+          ) {
+            console.log(
+              `OCR: ${Math.round(
+                info.progress * 100
+              )}%`
+            );
+          }
+        },
+      }
+    );
+
+    return result.data.text || "";
+  };
+
+  // =========================================================
+  // EXTRA NUMBER OCR USING MULTIPLE IMAGE PASSES
+  // =========================================================
+
+  const runExtraNumberOCR = async (
+    file: File
+  ): Promise<string> => {
+    try {
+      const processed = await preprocessImage(file);
+
+      const numericText =
+        await runNumericOCR(processed);
+
+      console.log(
+        "========== NUMERIC OCR =========="
+      );
+      console.log(numericText);
+      console.log(
+        "================================="
+      );
+
+      return numericText;
+    } catch (error) {
+      console.error(
+        "Extra numeric OCR error:",
+        error
+      );
+
+      return "";
+    }
+  };
+
+  // =========================================================
+  // HANDLE FILE
+  // =========================================================
+
   const handleFile = async (file: File) => {
     setLoading(true);
     setMessage("");
 
     try {
-      const result = await Tesseract.recognize(file, "eng+mal");
-      console.log("========== OCR ==========");
-      console.log(result.data.text);
-      console.log("=========================");
+      // -----------------------------------------------------
+      // 1. NORMAL OCR
+      // -----------------------------------------------------
 
-      const text = result.data.text;
+      const normalText =
+        await runNormalOCR(file);
 
-      // alert(text); // Removed to get rid of the OK button popup
+      console.log(
+        "========== OCR =========="
+      );
+      console.log(normalText);
+      console.log(
+        "========================="
+      );
 
-const work = extractWorkData(text);
+      // -----------------------------------------------------
+      // 2. EXTRA NUMERIC OCR
+      // -----------------------------------------------------
 
-if (work) {
-  const loggedUser = JSON.parse(
-    localStorage.getItem("loggedInUser") || "{}"
-  );
+      const numericText =
+        await runExtraNumberOCR(file);
 
-  const receiptUrl = await new Promise<string>((resolve) => {
-    const reader = new FileReader();
+      // -----------------------------------------------------
+      // 3. COMBINE OCR RESULTS
+      // -----------------------------------------------------
 
-    reader.onload = () => resolve(reader.result as string);
+      const combinedText = [
+        normalText,
+        "",
+        "===== EXTRA NUMERIC OCR =====",
+        numericText,
+      ].join("\n");
 
-    reader.readAsDataURL(file);
-  });
+      console.log(
+        "========== COMBINED OCR =========="
+      );
+      console.log(combinedText);
+      console.log(
+        "=================================="
+      );
 
-  work.addedBy = loggedUser.username || "";
-  work.staff = loggedUser.username || "";
-  work.receiptUrl = receiptUrl;
-  work.receiptType = file.type.includes("pdf")
-    ? "pdf"
-    : "image";
+      // -----------------------------------------------------
+      // 4. PARSE
+      // -----------------------------------------------------
 
-  addWork(work);
+      const work =
+        extractWorkData(combinedText);
 
-  setMessage("✅ Saved to Work Status");
-} else {
-  setMessage("⚠️ Required fields not detected.");
-}
+      if (work) {
+        const loggedUser = JSON.parse(
+          localStorage.getItem(
+            "loggedInUser"
+          ) || "{}"
+        );
+
+        // ---------------------------------------------------
+        // SAVE ORIGINAL RECEIPT IMAGE
+        // ---------------------------------------------------
+
+        const receiptUrl =
+          await new Promise<string>(
+            (resolve, reject) => {
+              const reader =
+                new FileReader();
+
+              reader.onload = () =>
+                resolve(
+                  reader.result as string
+                );
+
+              reader.onerror = reject;
+
+              reader.readAsDataURL(file);
+            }
+          );
+
+        work.addedBy =
+          loggedUser.username || "";
+
+        work.staff =
+          loggedUser.username || "";
+
+        work.receiptUrl =
+          receiptUrl;
+
+        work.receiptType =
+          file.type.includes("pdf")
+            ? "pdf"
+            : "image";
+
+        // ---------------------------------------------------
+        // SAVE
+        // ---------------------------------------------------
+
+        addWork(work);
+
+        console.log(
+          "========== FINAL WORK =========="
+        );
+        console.log(work);
+        console.log(
+          "================================"
+        );
+
+        setMessage(
+          "✅ Saved to Work Status"
+        );
+      } else {
+        setMessage(
+          "⚠️ Required fields not detected."
+        );
+      }
     } catch (err) {
-      console.error(err);
-      setMessage("❌ Failed to scan document.");
+      console.error(
+        "Quick Scan Error:",
+        err
+      );
+
+      setMessage(
+        "❌ Failed to scan document."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // =========================================================
+  // UI
+  // =========================================================
+
   return (
     <div className="w-[280px] h-[64px] rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 px-3 flex items-center">
       <div className="flex items-center justify-between w-full gap-2">
+
         <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white">
           <ScanText size={20} />
         </div>
@@ -103,13 +383,18 @@ if (work) {
             Paste Image
           </p>
         </div>
+
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() =>
+            fileInputRef.current?.click()
+          }
           disabled={loading}
           className="rounded-lg bg-white text-indigo-700 px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap"
         >
-          {loading ? "Scanning..." : "Browse Image"}
+          {loading
+            ? "Scanning..."
+            : "Browse Image"}
         </button>
 
         <input
@@ -118,11 +403,14 @@ if (work) {
           accept="image/*"
           className="hidden"
           onChange={(e) => {
-            const file = e.target.files?.[0];
+            const file =
+              e.target.files?.[0];
 
             if (file) {
               handleFile(file);
             }
+
+            e.target.value = "";
           }}
         />
 
@@ -139,6 +427,7 @@ if (work) {
             {message}
           </div>
         )}
+
       </div>
     </div>
   );
