@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { hashPassword, supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,7 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isSigningIn) return;
@@ -30,51 +31,24 @@ export default function LoginPage() {
       assignedRole = "admin";
       displayName = "Admin User";
     } else {
-      // Staff Login
-      // Staff Management stores staff records in this localStorage key.
-      const savedStaffData = localStorage.getItem("smart_akshaya_staff");
+      // Staff accounts are stored centrally in Supabase.
+      try {
+        const passwordHash = await hashPassword(cleanPassword);
 
-      if (savedStaffData) {
-        try {
-          const parsed = JSON.parse(savedStaffData);
+        const { data: staffRecords, error: staffError } = await supabase
+          .from("staff")
+          .select("id, staff_id, name, email, role, password");
 
-          // Support the normal array and common wrapped storage formats.
-          const staffArray = Array.isArray(parsed)
-            ? parsed
-            : Array.isArray(parsed?.staff)
-              ? parsed.staff
-              : Array.isArray(parsed?.staffs)
-                ? parsed.staffs
-                : Array.isArray(parsed?.data)
-                  ? parsed.data
-                  : [];
-
-          const matchedStaff = staffArray.find((s: any) => {
-            if (!s || typeof s !== "object") return false;
-
-            const staffName = String(
-              s.name ?? s.staffName ?? ""
-            )
-              .trim()
-              .toLowerCase();
-
-            const staffUsername = String(
-              s.username ?? s.userName ?? ""
-            )
-              .trim()
-              .toLowerCase();
-
-            const staffEmail = String(
-              s.email ?? ""
-            )
-              .trim()
-              .toLowerCase();
-
+        if (staffError) {
+          console.error("Staff login database error:", staffError);
+        } else {
+          const matchedStaff = (staffRecords ?? []).find((staff: any) => {
+            const staffName = String(staff.name ?? "").trim().toLowerCase();
+            const staffUsername = String(staff.username ?? "").trim().toLowerCase();
+            const staffEmail = String(staff.email ?? "").trim().toLowerCase();
             const staffId = String(
-              s.staffId ?? s.id ?? ""
-            )
-              .trim()
-              .toLowerCase();
+              staff.staff_id ?? staff.staffId ?? staff.id ?? ""
+            ).trim().toLowerCase();
 
             const usernameMatches =
               cleanUsername === staffName ||
@@ -84,38 +58,11 @@ export default function LoginPage() {
 
             if (!usernameMatches) return false;
 
-            // Accept the password field used by Staff Management.
-            // Also support older password field names without changing
-            // the Staff Management page.
-            const storedPassword = String(
-              s.password ??
-              s.pass ??
-              s.staffPassword ??
-              s.loginPassword ??
-              s.newPassword ??
-              s.credentials?.password ??
-              ""
-            ).trim();
-
-            // If Staff Management has saved a password, compare ONLY
-            // against that saved password.
-            if (storedPassword !== "") {
-              return storedPassword === cleanPassword;
-            }
-
-            // Only records with no saved password use the old fallback.
-            const firstName = staffName.split(" ")[0] || "staff";
-            const defaultPassword = `${firstName}akshaya`;
-
-            return (
-              cleanPassword.toLowerCase() === defaultPassword ||
-              cleanPassword === "akshaya123"
-            );
+            return String(staff.password ?? "").trim() === passwordHash;
           });
 
           if (matchedStaff) {
             isValid = true;
-
             assignedRole =
               String(matchedStaff.role ?? "").toLowerCase() === "admin"
                 ? "admin"
@@ -123,15 +70,13 @@ export default function LoginPage() {
 
             displayName =
               matchedStaff.name ||
-              matchedStaff.staffName ||
-              matchedStaff.username ||
               matchedStaff.email ||
-              matchedStaff.staffId ||
+              matchedStaff.staff_id ||
               "Staff";
           }
-        } catch (err) {
-          console.error("Error reading staff storage", err);
         }
+      } catch (error) {
+        console.error("Staff login failed:", error);
       }
     }
 

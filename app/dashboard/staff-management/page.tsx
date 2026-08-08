@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { hashPassword, supabase } from "@/lib/supabase";
 import { 
   Users, Search, Plus, Edit2, Trash2, Mail, Phone, RefreshCw, Eye, Shield, Key 
 } from "lucide-react";
@@ -13,6 +14,7 @@ interface Staff {
   phone: string;
   role: string;
   salary: number;
+  password?: string;
 }
 
 const INITIAL_STAFF: Staff[] = [
@@ -50,17 +52,115 @@ export default function StaffManagementPage() {
 const [editPassword, setEditPassword] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem('smart_akshaya_staff');
-    if (saved) {
-      try {
-        setStaffList(JSON.parse(saved));
-      } catch (e) {
-        setStaffList(INITIAL_STAFF);
+    const loadStaff = async () => {
+      const { data, error } = await supabase
+        .from("staff")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Failed to load staff:", error);
+        alert(`Unable to load staff from database: ${error.message}`);
+        return;
       }
-    } else {
-      setStaffList(INITIAL_STAFF);
-      localStorage.setItem('smart_akshaya_staff', JSON.stringify(INITIAL_STAFF));
-    }
+
+      const mapRow = (row: any): Staff => ({
+        id: String(row.id),
+        staffId: String(row.staff_id ?? ""),
+        name: String(row.name ?? ""),
+        email: String(row.email ?? ""),
+        phone: String(row.phone ?? ""),
+        role: String(row.role ?? "Staff"),
+        salary: Number(row.salary ?? 0),
+        password: String(row.password ?? ""),
+      });
+
+      // One-time migration of the existing browser-only staff data.
+      if (!data || data.length === 0) {
+        const saved = localStorage.getItem("smart_akshaya_staff");
+
+        if (saved) {
+          try {
+            const localStaff = JSON.parse(saved);
+
+            if (Array.isArray(localStaff) && localStaff.length > 0) {
+              const rows = await Promise.all(
+                localStaff.map(async (s: any, index: number) => {
+                  const plainPassword = String(
+                    s.password ??
+                      `${String(s.name ?? "staff")
+                        .trim()
+                        .split(" ")[0]
+                        .toLowerCase()}akshaya`
+                  );
+
+                  return {
+                    id: String(s.id ?? Date.now() + index),
+                    staff_id: String(s.staffId ?? `#${index + 1}`),
+                    name: String(s.name ?? ""),
+                    email: String(s.email ?? "N/A"),
+                    phone: String(s.phone ?? "N/A"),
+                    role: String(s.role ?? "Staff"),
+                    salary: Number(s.salary ?? 0),
+                    password: await hashPassword(plainPassword),
+                  };
+                })
+              );
+
+              const { data: migrated, error: migrationError } = await supabase
+                .from("staff")
+                .insert(rows)
+                .select("*");
+
+              if (migrationError) {
+                console.error("Staff migration failed:", migrationError);
+                alert(`Unable to migrate staff: ${migrationError.message}`);
+                return;
+              }
+
+              setStaffList((migrated ?? []).map(mapRow));
+              return;
+            }
+          } catch (error) {
+            console.error("Invalid local staff data:", error);
+          }
+        }
+
+        // If the database is completely new, seed the existing staff list.
+        const seedRows = await Promise.all(
+          INITIAL_STAFF.map(async (s) => ({
+            id: s.id,
+            staff_id: s.staffId,
+            name: s.name,
+            email: s.email,
+            phone: s.phone,
+            role: s.role,
+            salary: s.salary,
+            password: await hashPassword(
+              `${s.name.trim().split(" ")[0].toLowerCase()}akshaya`
+            ),
+          }))
+        );
+
+        const { data: seeded, error: seedError } = await supabase
+          .from("staff")
+          .insert(seedRows)
+          .select("*");
+
+        if (seedError) {
+          console.error("Staff seed failed:", seedError);
+          alert(`Unable to initialize staff database: ${seedError.message}`);
+          return;
+        }
+
+        setStaffList((seeded ?? []).map(mapRow));
+        return;
+      }
+
+      setStaffList(data.map(mapRow));
+    };
+
+    loadStaff();
   }, []);
 
   const handleAutoGeneratePassword = (isEdit: boolean = false) => {
@@ -68,34 +168,55 @@ const [editPassword, setEditPassword] = useState("");
     const firstName = nameVal.trim().split(' ')[0].toLowerCase() || 'staff';
     const generated = `${firstName}akshaya`;
     if (isEdit) {
-      // Handle edit password if needed
+      setEditPassword(generated);
     } else {
       setNewPassword(generated);
     }
   };
 
- const handleAddStaff = (e: React.FormEvent) => {
+ const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
 
-    // ഓട്ടോമാറ്റിക് പാസ്‌വേഡ് ജനറേറ്റ് ചെയ്യുക (ഉദാഹരണത്തിന്: fasnilakshaya)
     const firstName = newName.trim().split(' ')[0].toLowerCase();
     const finalPassword = newPassword.trim() || `${firstName}akshaya`;
 
-    const newStaffMember: Staff & { password?: string } = {
+    const row = {
       id: Date.now().toString(),
-      staffId: `#${staffList.length + 1}`,
-      name: newName,
+      staff_id: `#${staffList.length + 1}`,
+      name: newName.trim(),
       email: newEmail || 'N/A',
       phone: newPhone || 'N/A',
       role: newRole,
       salary: Number(newSalary) || 0,
-      password: finalPassword // പാസ്‌വേഡ് ഇവിടെ സേവ് ചെയ്യുന്നു
+      password: await hashPassword(finalPassword),
     };
 
-    const updatedList = [newStaffMember, ...staffList];
-    setStaffList(updatedList);
-    localStorage.setItem('smart_akshaya_staff', JSON.stringify(updatedList));
+    const { data: insertedStaff, error } = await supabase
+      .from("staff")
+      .insert(row)
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("Failed to add staff:", error);
+      alert(`Unable to add staff: ${error.message}`);
+      return;
+    }
+
+    setStaffList((current) => [
+      {
+        id: String(insertedStaff.id),
+        staffId: String(insertedStaff.staff_id),
+        name: String(insertedStaff.name),
+        email: String(insertedStaff.email ?? ""),
+        phone: String(insertedStaff.phone ?? ""),
+        role: String(insertedStaff.role ?? "Staff"),
+        salary: Number(insertedStaff.salary ?? 0),
+        password: String(insertedStaff.password ?? ""),
+      },
+      ...current,
+    ]);
 
     setNewName('');
     setNewEmail('');
@@ -118,43 +239,74 @@ setShowEditModal(true);
   };
 
  // എഡിറ്റ് ചെയ്യുന്ന ഫോമിൽ പുതിയ പാസ്‌വേഡ് സ്റ്റേറ്റ് ഉണ്ടെന്ന് ഉറപ്പാക്കുകയോ അല്ലെങ്കിൽ നിലവിലുള്ളത് നിലനിർത്തുകയോ ചെയ്യുക
-  const handleUpdateStaff = (e: React.FormEvent) => {
+  const handleUpdateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStaff) return;
 
-    const updatedList = staffList.map(s => {
-      if (s.id === selectedStaff.id) {
-return {
-  ...s,
-  name: editName,
-  email: editEmail,
-  phone: editPhone,
-  role: editRole,
-  salary: Number(editSalary),
-  password:
-    editPassword.trim() ||
-    (s as any).password ||
-    `${editName.trim().split(" ")[0].toLowerCase()}akshaya`,
-};
-      }
-      return s;
-    });
+    const updateData: any = {
+      name: editName.trim(),
+      email: editEmail,
+      phone: editPhone,
+      role: editRole,
+      salary: Number(editSalary) || 0,
+    };
 
-    setStaffList(updatedList);
-localStorage.setItem('smart_akshaya_staff', JSON.stringify(updatedList));
+    if (editPassword.trim()) {
+      updateData.password = await hashPassword(editPassword.trim());
+    }
 
-alert("Password changed successfully.");
+    const { data: updatedStaff, error } = await supabase
+      .from("staff")
+      .update(updateData)
+      .eq("id", selectedStaff.id)
+      .select("*")
+      .single();
 
-setShowEditModal(false);
+    if (error) {
+      console.error("Failed to update staff:", error);
+      alert(`Unable to update staff: ${error.message}`);
+      return;
+    }
+
+    setStaffList((current) =>
+      current.map((s) =>
+        s.id === selectedStaff.id
+          ? {
+              id: String(updatedStaff.id),
+              staffId: String(updatedStaff.staff_id),
+              name: String(updatedStaff.name),
+              email: String(updatedStaff.email ?? ""),
+              phone: String(updatedStaff.phone ?? ""),
+              role: String(updatedStaff.role ?? "Staff"),
+              salary: Number(updatedStaff.salary ?? 0),
+              password: String(updatedStaff.password ?? ""),
+            }
+          : s
+      )
+    );
+
+    alert("Staff details and password updated successfully.");
+    setShowEditModal(false);
     setSelectedStaff(null);
   };
 
-  const handleDeleteStaff = (id: string) => {
-    if (confirm("Are you sure you want to delete this staff member?")) {
-      const updatedList = staffList.filter(s => s.id !== id);
-      setStaffList(updatedList);
-      localStorage.setItem('smart_akshaya_staff', JSON.stringify(updatedList));
+  const handleDeleteStaff = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this staff member?")) {
+      return;
     }
+
+    const { error } = await supabase
+      .from("staff")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Failed to delete staff:", error);
+      alert(`Unable to delete staff: ${error.message}`);
+      return;
+    }
+
+    setStaffList((current) => current.filter((s) => s.id !== id));
   };
 
   const filteredStaff = staffList.filter(s => 
