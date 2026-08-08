@@ -31,53 +31,103 @@ export default function LoginPage() {
       displayName = "Admin User";
     } else {
       // Staff Login
+      // Staff Management stores staff records in this localStorage key.
       const savedStaffData = localStorage.getItem("smart_akshaya_staff");
 
       if (savedStaffData) {
         try {
-          const staffArray = JSON.parse(savedStaffData);
+          const parsed = JSON.parse(savedStaffData);
 
-          if (Array.isArray(staffArray)) {
-            const matchedStaff = staffArray.find((s: any) => {
-              const sName = (
-                s.name ||
-                s.staffName ||
-                s.username ||
-                ""
-              )
-                .trim()
-                .toLowerCase();
+          // Support the normal array and common wrapped storage formats.
+          const staffArray = Array.isArray(parsed)
+            ? parsed
+            : Array.isArray(parsed?.staff)
+              ? parsed.staff
+              : Array.isArray(parsed?.staffs)
+                ? parsed.staffs
+                : Array.isArray(parsed?.data)
+                  ? parsed.data
+                  : [];
 
-              const sPass = (s.password || s.pass || "").trim();
+          const matchedStaff = staffArray.find((s: any) => {
+            if (!s || typeof s !== "object") return false;
 
-              const defaultPass =
-                `${sName.split(" ")[0]}akshaya`.toLowerCase();
+            const staffName = String(
+              s.name ?? s.staffName ?? ""
+            )
+              .trim()
+              .toLowerCase();
 
-              const sEmail = (s.email || "").trim().toLowerCase();
+            const staffUsername = String(
+              s.username ?? s.userName ?? ""
+            )
+              .trim()
+              .toLowerCase();
 
-              return (
-                (sName === cleanUsername || sEmail === cleanUsername) &&
-                (
-                  (sPass !== "" && sPass === cleanPassword) ||
-                  defaultPass === cleanPassword.toLowerCase() ||
-                  cleanPassword === "akshaya123"
-                )
-              );
-            });
+            const staffEmail = String(
+              s.email ?? ""
+            )
+              .trim()
+              .toLowerCase();
 
-            if (matchedStaff) {
-              isValid = true;
+            const staffId = String(
+              s.staffId ?? s.id ?? ""
+            )
+              .trim()
+              .toLowerCase();
 
-              assignedRole =
-                matchedStaff.role?.toLowerCase() === "admin"
-                  ? "admin"
-                  : "staff";
+            const usernameMatches =
+              cleanUsername === staffName ||
+              cleanUsername === staffUsername ||
+              cleanUsername === staffEmail ||
+              cleanUsername === staffId;
 
-              displayName =
-                matchedStaff.name ||
-                matchedStaff.staffName ||
-                matchedStaff.username;
+            if (!usernameMatches) return false;
+
+            // Accept the password field used by Staff Management.
+            // Also support older password field names without changing
+            // the Staff Management page.
+            const storedPassword = String(
+              s.password ??
+              s.pass ??
+              s.staffPassword ??
+              s.loginPassword ??
+              s.newPassword ??
+              s.credentials?.password ??
+              ""
+            ).trim();
+
+            // If Staff Management has saved a password, compare ONLY
+            // against that saved password.
+            if (storedPassword !== "") {
+              return storedPassword === cleanPassword;
             }
+
+            // Only records with no saved password use the old fallback.
+            const firstName = staffName.split(" ")[0] || "staff";
+            const defaultPassword = `${firstName}akshaya`;
+
+            return (
+              cleanPassword.toLowerCase() === defaultPassword ||
+              cleanPassword === "akshaya123"
+            );
+          });
+
+          if (matchedStaff) {
+            isValid = true;
+
+            assignedRole =
+              String(matchedStaff.role ?? "").toLowerCase() === "admin"
+                ? "admin"
+                : "staff";
+
+            displayName =
+              matchedStaff.name ||
+              matchedStaff.staffName ||
+              matchedStaff.username ||
+              matchedStaff.email ||
+              matchedStaff.staffId ||
+              "Staff";
           }
         } catch (err) {
           console.error("Error reading staff storage", err);
