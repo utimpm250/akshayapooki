@@ -86,28 +86,28 @@ export function CustomerDetailsPage() {
   );
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6 text-slate-800 bg-[#f8fafc] min-h-screen">
+    <div className="mx-auto min-h-screen w-full max-w-[1500px] space-y-5 bg-gradient-to-br from-slate-50 via-white to-cyan-50/30 p-4 text-slate-800 sm:p-5 lg:p-6">
       
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="relative flex flex-col items-start justify-between gap-4 overflow-hidden rounded-[30px] border border-cyan-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-6 text-white shadow-[0_22px_55px_rgba(15,23,42,0.2)] md:flex-row md:items-center sm:p-7">
         <div>
-          <h1 className="text-2xl font-black tracking-wide">Customer Details</h1>
-          <p className="text-xs text-emerald-100 mt-1">Manage customer profiles and track financial balances</p>
+          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Customer Details</h1>
+          <p className="mt-1 text-xs font-medium text-cyan-100/75">Manage customer profiles and track financial balances</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-4 py-2 flex items-center gap-2 w-full md:w-72">
+          <div className="flex w-full items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 backdrop-blur-xl md:w-80">
             <Search size={16} className="text-emerald-100" />
             <input
               type="text"
               placeholder="Search customers..."
-              className="bg-transparent outline-none text-xs text-white placeholder:text-emerald-200 w-full font-medium"
+              className="w-full bg-transparent text-xs font-semibold text-white outline-none placeholder:text-cyan-200/70"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <button 
             onClick={loadCustomerDataFromEntries}
-            className="bg-white/10 hover:bg-white/20 border border-white/20 p-2.5 rounded-2xl transition text-white"
+            className="rounded-2xl border border-white/10 bg-white/10 p-2.5 text-white transition-all hover:-translate-y-0.5 hover:bg-white/15"
             title="Refresh List"
           >
             <RefreshCw size={16} />
@@ -116,10 +116,10 @@ export function CustomerDetailsPage() {
       </div>
 
       {/* Customer Roster Table Card */}
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4">
+      <div className="space-y-4 rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-6">
         <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-          <h3 className="font-extrabold text-slate-800 text-base">Customer Roster</h3>
-          <span className="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full">
+          <h3 className="text-base font-black text-slate-800">Customer Roster</h3>
+          <span className="rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-black text-cyan-700">
             {customers.length} customers
           </span>
         </div>
@@ -127,7 +127,7 @@ export function CustomerDetailsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-100">
+              <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400">
                 <th className="py-3 px-4">Customer Name</th>
                 <th className="py-3 px-4">Mobile</th>
                 <th className="py-3 px-4">Email</th>
@@ -148,12 +148,12 @@ export function CustomerDetailsPage() {
                 filteredCustomers.map((cust) => {
                   const initialLetter = cust.name ? cust.name.charAt(0).toUpperCase() : 'C';
                   return (
-                    <tr key={cust.id} className="hover:bg-slate-50/80 transition font-medium">
+                    <tr key={cust.id} className="font-medium transition-all hover:bg-cyan-50/30">
                       <td className="py-4 px-4 flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-100 to-blue-100 text-xs font-black text-cyan-700">
                           {initialLetter}
                         </span>
-                        <span className="text-slate-800 font-bold">{cust.name}</span>
+                        <span className="font-black text-slate-800">{cust.name}</span>
                       </td>
                       <td className="py-4 px-4 text-slate-600 font-mono text-xs">{cust.mobile}</td>
                       <td className="py-4 px-4 text-slate-400 text-xs">{cust.email || '-'}</td>
@@ -167,7 +167,7 @@ export function CustomerDetailsPage() {
                       <td className="py-4 px-4 text-right">
                         <button
                           onClick={() => setSelectedCustomer(cust)}
-                          className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"
+                          className="rounded-xl border border-cyan-200 bg-cyan-50 px-3.5 py-2 text-xs font-black text-cyan-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-cyan-100"
                         >
                           View Details
                         </button>
@@ -183,15 +183,15 @@ export function CustomerDetailsPage() {
 
       {/* Customer Profile Modal */}
       {selectedCustomer && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-6 border border-slate-100 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md">
+          <div className="relative w-full max-w-lg space-y-6 rounded-3xl border border-white/80 bg-white/95 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.2)] backdrop-blur-2xl">
             <div className="flex justify-between items-center border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-100 to-blue-100 font-black text-cyan-700">
                   <User size={20} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-slate-800 text-base">Customer Profile</h3>
+                  <h3 className="text-base font-black text-slate-800">Customer Profile</h3>
                   <p className="text-[11px] text-slate-400">Detailed overview and financial summary</p>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export function CustomerDetailsPage() {
               </button>
             </div>
 
-            <div className="bg-slate-50/60 rounded-2xl p-4 border border-slate-100 space-y-3">
+            <div className="space-y-3 rounded-2xl border border-cyan-100 bg-gradient-to-br from-slate-50 to-cyan-50/40 p-4">
               <h4 className="font-black text-slate-800 text-base">{selectedCustomer.name}</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="flex items-center gap-2 text-slate-600">
@@ -245,7 +245,7 @@ export function CustomerDetailsPage() {
               </div>
             </div>
 
-            <button onClick={() => setSelectedCustomer(null)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl transition text-xs shadow-md">
+            <button onClick={() => setSelectedCustomer(null)} className="w-full rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 py-3.5 text-xs font-black text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl">
               Close Profile
             </button>
           </div>

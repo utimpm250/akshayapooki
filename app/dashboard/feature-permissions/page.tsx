@@ -149,16 +149,16 @@ export default function FeaturePermissionsPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="mx-auto min-h-screen w-full max-w-[1500px] bg-gradient-to-br from-slate-50 via-white to-cyan-50/30 p-4 sm:p-5 lg:p-6">
       {/* Top Banner Box */}
-      <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-2xl p-6 text-white shadow-md flex justify-between items-center mb-8">
+      <div className="relative mb-5 flex flex-col items-start justify-between gap-4 overflow-hidden rounded-[30px] border border-cyan-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-6 text-white shadow-[0_22px_55px_rgba(15,23,42,0.18)] sm:flex-row sm:items-center sm:p-7">
         <div>
-          <h1 className="text-2xl font-bold">Role Permissions</h1>
-          <p className="text-teal-100 text-sm mt-1">Manage access to features for Staff and Accountants</p>
+          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Role Permissions</h1>
+          <p className="mt-1 text-xs font-medium text-cyan-100/75 sm:text-sm">Manage access to features for Staff and Accountants</p>
         </div>
         <button 
           onClick={handleReset}
-          className="bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-xl transition flex items-center gap-2 text-sm font-medium backdrop-blur-sm cursor-pointer"
+          className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 text-sm font-black text-white backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-white/15"
           title="Reset to default"
         >
           <RefreshCw size={18} />
@@ -167,10 +167,10 @@ export default function FeaturePermissionsPage() {
       </div>
 
       {/* Permissions Table Container */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <h2 className="font-bold text-slate-800 text-base">Feature Access Control</h2>
-          <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">
+      <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_12px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 p-5">
+          <h2 className="text-base font-black tracking-tight text-slate-800">Feature Access Control</h2>
+          <span className="rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-black text-cyan-700">
             {permissions.length} Features
           </span>
         </div>
@@ -178,26 +178,26 @@ export default function FeaturePermissionsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 text-slate-400 text-xs uppercase tracking-wider bg-slate-50/30">
-                <th className="p-4 font-semibold">Feature Name</th>
-                <th className="p-4 font-semibold text-center w-48">Accountant Access</th>
-                <th className="p-4 font-semibold text-center w-48">Staff Access</th>
+              <tr className="border-b border-slate-200 bg-slate-50/70 text-xs uppercase tracking-wider text-slate-400">
+                <th className="p-4 font-black">Feature Name</th>
+                <th className="w-48 p-4 text-center font-black">Accountant Access</th>
+                <th className="w-48 p-4 text-center font-black">Staff Access</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {permissions.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/60 transition">
-                  <td className="p-4 text-slate-700 font-medium text-sm">{item.featureName}</td>
+                <tr key={item.id} className="transition-all hover:bg-cyan-50/35">
+                  <td className="p-4 text-sm font-black text-slate-700">{item.featureName}</td>
                   
                   {/* Accountant Access Checkbox */}
                   <td className="p-4 text-center">
                     <div className="flex justify-center">
                       <div 
                         onClick={() => handleToggle(item.id, 'accountantAccess')}
-                        className={`w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition ${
+                        className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border transition-all ${
                           item.accountantAccess 
-                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
-                            : 'border-slate-300 bg-white hover:border-slate-400'
+                            ? 'bg-gradient-to-br from-cyan-500 to-blue-600 border-cyan-500 text-white shadow-lg shadow-cyan-500/20' 
+                            : 'border-slate-300 bg-white hover:border-cyan-400 hover:bg-cyan-50/40'
                         }`}
                       >
                         {item.accountantAccess && <Check size={14} strokeWidth={3} />}
@@ -210,10 +210,10 @@ export default function FeaturePermissionsPage() {
                     <div className="flex justify-center">
                       <div 
                         onClick={() => handleToggle(item.id, 'staffAccess')}
-                        className={`w-5 h-5 rounded-md border flex items-center justify-center cursor-pointer transition ${
+                        className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border transition-all ${
                           item.staffAccess 
-                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
-                            : 'border-slate-300 bg-white hover:border-slate-400'
+                            ? 'bg-gradient-to-br from-cyan-500 to-blue-600 border-cyan-500 text-white shadow-lg shadow-cyan-500/20' 
+                            : 'border-slate-300 bg-white hover:border-cyan-400 hover:bg-cyan-50/40'
                         }`}
                       >
                         {item.staffAccess && <Check size={14} strokeWidth={3} />}

@@ -114,26 +114,26 @@ const printPDF = async () => {
 
   return (
 <div
-  className="absolute inset-y-0 right-0 left-64 z-30 flex bg-black/10"
+  className="absolute inset-0 z-50 flex bg-slate-950/55 backdrop-blur-md"
 >
-<div className="flex h-full w-full flex-col rounded-l-3xl border-l border-slate-200 bg-white shadow-2xl">
+<div className="flex h-full w-full flex-col overflow-hidden border border-white/20 bg-slate-950/95 shadow-[0_30px_100px_rgba(2,6,23,0.5)] backdrop-blur-2xl">
         {/* Header */}
 
-        <div className="flex items-center justify-between border-b border-slate-200 bg-white/95 px-6 py-3 backdrop-blur">
+        <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-slate-900/95 px-4 py-3.5 backdrop-blur-2xl sm:px-6">
 
           <div className="min-w-0">
 
-            <h2 className="truncate text-lg font-bold text-slate-800">
+            <h2 className="truncate text-base font-black tracking-tight text-white sm:text-lg">
               {title}
             </h2>
 
 <div className="mt-1 flex items-center gap-2">
 
-  <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
+  <span className="rounded-full border border-rose-400/20 bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-rose-300">
     PDF
   </span>
 
-  <span className="text-xs text-slate-500">
+  <span className="text-[11px] font-medium text-slate-400">
     Google Drive Preview
   </span>
 
@@ -145,7 +145,7 @@ const printPDF = async () => {
 
             <button
               onClick={toggleFullscreen}
-              className="rounded-xl border border-slate-200 p-2 transition hover:bg-emerald-50 hover:border-emerald-300"
+              className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300 transition-all hover:-translate-y-0.5 hover:border-cyan-400/40 hover:bg-cyan-400/10 hover:text-cyan-300"
             >
               {fullscreen ? (
                 <Minimize2 size={18} />
@@ -156,7 +156,7 @@ const printPDF = async () => {
 
             <button
               onClick={onClose}
-              className="rounded-xl border p-2 hover:bg-red-50 hover:text-red-600"
+              className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300 transition-all hover:-translate-y-0.5 hover:bg-rose-500/15 hover:text-rose-300"
             >
               <X size={20} />
             </button>
@@ -166,22 +166,22 @@ const printPDF = async () => {
         </div>
                 {/* PDF Viewer */}
 
-        <div className="relative flex-1 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="relative min-h-0 flex-1 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
 
           {loading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/90 backdrop-blur-sm">
 
               <div className="flex flex-col items-center">
 
-                <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent shadow-lg shadow-cyan-500/20" />
 
 <div className="mt-4 text-center">
 
-  <p className="text-sm text-slate-600">
+  <p className="text-sm font-semibold text-slate-200">
     Loading document...
   </p>
 
-  <p className="mt-2 text-xs text-slate-400">
+  <p className="mt-2 text-xs text-slate-500">
     Please wait while the PDF loads.
   </p>
 
@@ -204,13 +204,13 @@ const printPDF = async () => {
 
         {/* Footer */}
 
-        <div className="flex flex-wrap items-center justify-center gap-3 border-t border-slate-200 bg-white px-6 py-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-center gap-2 border-t border-white/10 bg-slate-900/95 px-4 py-3.5 sm:gap-3 sm:px-6">
 
           <a
             href={downloadUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-medium text-white transition hover:bg-emerald-600"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl"
           >
             <Download size={18} />
             Download
@@ -218,7 +218,7 @@ const printPDF = async () => {
 
           <button
             onClick={printPDF}
-            className="flex items-center gap-2 rounded-xl border px-5 py-3 font-medium transition hover:bg-emerald-50 hover:border-emerald-300"
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-slate-200 transition-all hover:-translate-y-0.5 hover:border-cyan-400/40 hover:bg-cyan-400/10"
           >
             <Printer size={18} />
             Print
@@ -226,7 +226,7 @@ const printPDF = async () => {
 
           <button
   onClick={() => {}}
-  className="flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 font-medium text-white transition hover:bg-green-700"
+  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl"
 >
   <FaWhatsapp size={20} />
   WhatsApp

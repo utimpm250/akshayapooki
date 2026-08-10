@@ -150,32 +150,32 @@ export default function ExpensesPage() {
   if (!isMounted) return null;
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-8 font-sans select-none text-slate-700 bg-slate-50/30 min-h-screen">
+    <div className="mx-auto min-h-screen w-full max-w-[1500px] select-none space-y-5 bg-gradient-to-br from-slate-50 via-white to-cyan-50/30 p-4 font-sans text-slate-700 sm:p-5 lg:p-6">
       
       {/* Top Header Label */}
-      <h1 className="text-xl font-bold text-slate-800">Expenses</h1>
+      <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Expenses</h1>
 
       {/* Main Purple Banner */}
-      <div className="bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 rounded-3xl p-8 text-white shadow-lg shadow-indigo-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="relative flex flex-col items-start justify-between gap-6 overflow-hidden rounded-[30px] border border-cyan-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-6 text-white shadow-[0_22px_55px_rgba(15,23,42,0.2)] md:flex-row md:items-center sm:p-8">
         <div>
-          <p className="text-xs uppercase tracking-widest text-indigo-200 font-bold">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">
             TOTAL EXPENSES ({selectedMonth ? new Date(selectedMonth + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase() : 'ALL TIME'})
           </p>
-          <h2 className="text-4xl md:text-5xl font-black mt-2 tracking-tight">
+          <h2 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
             ₹{totalExpensesAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h2>
         </div>
 
         {/* Records Count Badge */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl px-6 py-4 flex items-center gap-4 border border-white/20">
-          <div className="p-2.5 bg-white/20 rounded-xl">
+        <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/10 px-5 py-4 backdrop-blur-xl">
+          <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
             <Receipt className="w-6 h-6 text-white" />
           </div>
           <div>
             <span className="text-2xl font-extrabold leading-none block">
               {filteredExpenses.length}
             </span>
-            <span className="text-[10px] uppercase font-bold text-indigo-100 tracking-wider">
+            <span className="text-[10px] font-black uppercase tracking-wider text-cyan-200">
               RECORDS FOUND
             </span>
           </div>
@@ -183,18 +183,18 @@ export default function ExpensesPage() {
       </div>
 
       {/* Filter and Search Bar Row */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-2">
-        <h3 className="text-base font-bold text-slate-800 self-start md:self-auto">
+      <div className="flex flex-col items-start justify-between gap-4 pt-1 md:flex-row md:items-center">
+        <h3 className="self-start text-lg font-black tracking-tight text-slate-800 md:self-auto">
           Recent Transactions
         </h3>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           {/* Month Picker Input */}
-          <div className="relative flex items-center bg-white border border-slate-200 rounded-2xl px-4 py-2.5 shadow-xs hover:border-slate-300 transition focus-within:ring-2 focus-within:ring-indigo-500/20">
+          <div className="relative flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-all hover:border-cyan-200 focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
             <Calendar className="w-4 h-4 text-slate-400 mr-2 flex-shrink-0" />
             <input
               type="month"
-              className="bg-transparent outline-none text-xs font-semibold text-slate-600 cursor-pointer"
+              className="cursor-pointer bg-transparent text-xs font-semibold text-slate-600 outline-none"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
             />
@@ -206,7 +206,7 @@ export default function ExpensesPage() {
             <input
               type="text"
               placeholder="Search by category, description, or date..."
-              className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs placeholder-slate-400"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-xs font-semibold text-slate-700 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -215,11 +215,11 @@ export default function ExpensesPage() {
       </div>
 
       {/* Table Section */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_12px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
                 <th className="py-4 px-8">DATE</th>
                 <th className="py-4 px-6">CATEGORY</th>
                 <th className="py-4 px-6">DESCRIPTION</th>
@@ -236,10 +236,10 @@ export default function ExpensesPage() {
                 </tr>
               ) : (
                 filteredExpenses.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                  <tr key={item.id} className="transition-all hover:bg-cyan-50/30">
                     <td className="py-5 px-8 font-medium text-slate-700">{item.date}</td>
                     <td className="py-5 px-6">
-                      <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-[11px] font-bold border border-slate-200/60">
+                      <span className="rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-cyan-700">
                         {item.category}
                       </span>
                     </td>
@@ -252,7 +252,7 @@ export default function ExpensesPage() {
                         {/* Edit Button */}
                         <button
                           onClick={() => handleEdit(item)}
-                          className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-xl transition cursor-pointer"
+                          className="rounded-xl p-2 text-cyan-600 transition-all hover:bg-cyan-50 hover:text-cyan-700"
                           title="Edit"
                         >
                           <Pencil size={15} />
@@ -260,7 +260,7 @@ export default function ExpensesPage() {
                         {/* Delete Button */}
                         <button
                           onClick={() => handleDelete(item.id)}
-                          className="p-2 text-rose-400 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                          className="rounded-xl p-2 text-rose-500 transition-all hover:bg-rose-50 hover:text-rose-700"
                           title="Delete"
                         >
                           <Trash2 size={15} />
@@ -281,26 +281,26 @@ export default function ExpensesPage() {
           resetForm();
           setShowAddModal(true);
         }}
-        className="fixed bottom-8 right-8 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-xl shadow-indigo-300 transition-transform hover:scale-105 flex items-center justify-center cursor-pointer z-40"
+        className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 p-4 text-white shadow-[0_15px_35px_rgba(6,182,212,0.28)] transition-all hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(37,99,235,0.3)] active:scale-95"
       >
         <Plus size={26} />
       </button>
 
       {/* Add / Edit Expense Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md">
           <form
             onSubmit={handleSubmit}
-            className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4"
+            className="w-full max-w-md space-y-4 rounded-3xl border border-white/80 bg-white/95 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.2)] backdrop-blur-2xl"
           >
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-800 text-base">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black tracking-tight text-slate-800">
                 {editingExpense ? "Edit Expense" : "Add New Expense"}
               </h3>
               <button
                 type="button"
                 onClick={resetForm}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                className="rounded-xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               >
                 <X size={18} />
               </button>
@@ -312,7 +312,7 @@ export default function ExpensesPage() {
                 <input
                   type="date"
                   required
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs mt-1 outline-none focus:border-indigo-500 font-medium"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
                 />
@@ -324,7 +324,7 @@ export default function ExpensesPage() {
                   type="text"
                   required
                   placeholder="e.g. electricity, a4, rent"
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs mt-1 outline-none focus:border-indigo-500 font-medium"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value)}
                 />
@@ -337,7 +337,7 @@ export default function ExpensesPage() {
                   step="any"
                   required
                   placeholder="0.00"
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs mt-1 outline-none focus:border-indigo-500 font-medium"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                   value={formAmount}
                   onChange={(e) => setFormAmount(e.target.value)}
                 />
@@ -348,7 +348,7 @@ export default function ExpensesPage() {
                 <textarea
                   rows={2}
                   placeholder="Optional note or reason"
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs mt-1 outline-none focus:border-indigo-500 font-medium"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                 />
@@ -359,13 +359,13 @@ export default function ExpensesPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl cursor-pointer"
+                className="rounded-xl px-4 py-2 text-xs font-black text-slate-500 transition hover:bg-slate-100"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition cursor-pointer"
+                className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-5 py-2.5 text-xs font-black text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl"
               >
                 {editingExpense ? "Update Expense" : "Save Expense"}
               </button>

@@ -20,24 +20,24 @@ export default function SSLCCalculatorTool({
   const sslc = useSSLCCalculator();
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-slate-950/65 p-3 backdrop-blur-md sm:p-5">
 
-      <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl border border-slate-100 flex flex-col my-8 max-h-[92vh] overflow-y-auto">
+      <div className="my-5 flex max-h-[92vh] w-full max-w-5xl flex-col overflow-y-auto rounded-[30px] border border-white/80 bg-white/95 shadow-[0_30px_100px_rgba(15,23,42,0.28)] backdrop-blur-2xl sm:my-8">
 
-        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4">
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/85 px-4 py-4 backdrop-blur-xl sm:px-6">
 
           <div className="flex items-center gap-3">
 
-            <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
+            <div className="rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 text-white shadow-lg shadow-blue-500/20">
               <Calculator size={20} />
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-slate-800">
+              <h3 className="text-lg font-black tracking-tight text-slate-800">
                 Kerala SSLC Grade Calculator
               </h3>
 
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] text-slate-500">
                 Calculate percentage & overall grade
               </p>
             </div>
@@ -48,7 +48,7 @@ export default function SSLCCalculatorTool({
 
             <button
               onClick={sslc.handleSslcReset}
-              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold hover:bg-slate-50"
+              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md"
             >
               <RotateCcw size={14} />
               Reset
@@ -56,7 +56,7 @@ export default function SSLCCalculatorTool({
 
             <button
               onClick={onClose}
-              className="rounded-lg border border-slate-200 bg-white p-2 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 bg-white p-2 text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:text-slate-900 hover:shadow-md"
             >
               <X size={18} />
             </button>
@@ -65,14 +65,14 @@ export default function SSLCCalculatorTool({
 
         </div>
 
-        <div className="grid grid-cols-1 gap-6 p-6 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-4 p-4 sm:p-6 lg:grid-cols-12 lg:gap-6">
                       {/* LEFT SIDE */}
 
           <section className="lg:col-span-7">
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+            <div className="rounded-3xl border border-slate-200/80 bg-slate-50/80 p-5 shadow-sm">
 
-              <h4 className="mb-5 text-lg font-bold text-slate-800">
+              <h4 className="mb-5 text-lg font-black tracking-tight text-slate-800">
                 Enter Grade Count
               </h4>
 
@@ -82,7 +82,7 @@ export default function SSLCCalculatorTool({
 
                   <div
                     key={grade.key}
-                    className="rounded-2xl border border-slate-200 bg-white p-4"
+                    className="group rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_12px_30px_rgba(15,23,42,0.09)]"
                   >
 
                     <div className="flex items-center justify-between">
@@ -93,7 +93,7 @@ export default function SSLCCalculatorTool({
                           {grade.label}
                         </h5>
 
-                        <p className="text-xs text-slate-500">
+                        <p className="text-[11px] text-slate-500">
                           {grade.points}
                         </p>
 
@@ -110,7 +110,7 @@ export default function SSLCCalculatorTool({
                           )
                         }
                         placeholder="0"
-                        className="h-11 w-20 rounded-xl border border-slate-200 text-center font-bold focus:border-blue-500 focus:outline-none"
+                        className="h-11 w-20 rounded-xl border border-slate-200 bg-slate-50 text-center font-black shadow-inner outline-none transition-all focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                       />
 
                     </div>
@@ -123,7 +123,7 @@ export default function SSLCCalculatorTool({
 
               <button
                 onClick={sslc.calculateSslcResults}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3.5 font-bold text-white hover:bg-blue-700"
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 font-black text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(37,99,235,0.3)]"
               >
                 <Calculator size={18} />
                 Calculate Result
@@ -136,21 +136,21 @@ export default function SSLCCalculatorTool({
 
           <section className="space-y-4 lg:col-span-5">
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-3xl border border-white/80 bg-white/90 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.07)] backdrop-blur-xl sm:p-6">
 
               <div className="flex items-center gap-2">
 
                 <Award className="text-amber-500" size={20} />
 
-                <h4 className="text-lg font-bold text-slate-800">
+                <h4 className="text-lg font-black tracking-tight text-slate-800">
                   Result Summary
                 </h4>
 
               </div>
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-6 space-y-3">
 
-                <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 shadow-sm">
 
                   <span className="text-sm text-slate-600">
                     Total Subjects
@@ -166,7 +166,7 @@ export default function SSLCCalculatorTool({
 
                   <>
 
-                    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 shadow-sm">
 
                       <span className="text-sm text-slate-600">
                         Total Grade Points
@@ -178,7 +178,7 @@ export default function SSLCCalculatorTool({
 
                     </div>
 
-                    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 shadow-sm">
 
                       <span className="text-sm text-slate-600">
                         Percentage
@@ -190,7 +190,7 @@ export default function SSLCCalculatorTool({
 
                     </div>
 
-                    <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 text-center text-white">
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-700 p-6 text-center text-white shadow-[0_18px_45px_rgba(16,185,129,0.25)]">
 
                       <CheckCircle2
                         size={36}
@@ -201,7 +201,7 @@ export default function SSLCCalculatorTool({
                         Overall Grade
                       </p>
 
-                      <h2 className="mt-2 text-4xl font-black">
+                      <h2 className="mt-2 text-4xl font-black tracking-tight">
                         {sslc.sslcResultObj.overallGrade}
                       </h2>
 
@@ -211,7 +211,7 @@ export default function SSLCCalculatorTool({
 
                 ) : (
 
-                  <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+                  <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/80 p-8 text-center transition-colors hover:border-blue-200 hover:bg-blue-50/30">
 
                     <Calculator
                       size={40}

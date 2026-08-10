@@ -108,18 +108,18 @@ export default function CreditDetailsPage() {
   };
 
   return (
-    <div className="p-6 bg-slate-100 min-h-screen font-sans">
+    <div className="mx-auto min-h-screen w-full max-w-[1500px] space-y-5 bg-gradient-to-br from-slate-50 via-white to-rose-50/30 p-4 font-sans sm:p-5 lg:p-6">
       
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-red-500 via-pink-600 to-purple-600 rounded-3xl p-6 text-white shadow-xl mb-6 relative overflow-hidden">
+      <div className="relative mb-5 overflow-hidden rounded-[30px] border border-rose-400/20 bg-gradient-to-br from-slate-950 via-rose-950 to-indigo-950 p-6 text-white shadow-[0_22px_55px_rgba(15,23,42,0.2)] sm:p-7">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl">
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur-xl">
               <CreditCard className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-wide">Credit Details</h1>
-              <p className="text-sm text-white/80 font-medium">All staff credit & partial-payment bills</p>
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Credit Details</h1>
+              <p className="text-xs font-medium text-rose-100/75 sm:text-sm">All staff credit & partial-payment bills</p>
             </div>
           </div>
 
@@ -137,8 +137,8 @@ export default function CreditDetailsPage() {
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+      <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="flex items-center justify-between rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-lg">
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Balance Owed</p>
             <h3 className="text-2xl font-black text-slate-800">₹ {totalBalanceOwed.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
@@ -146,7 +146,7 @@ export default function CreditDetailsPage() {
           <div className="p-3 bg-red-50 rounded-xl text-red-500 font-bold text-lg">₹</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-lg">
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Unique Customers</p>
             <h3 className="text-2xl font-black text-slate-800">{uniqueCustomers}</h3>
@@ -157,7 +157,7 @@ export default function CreditDetailsPage() {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-lg">
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Credit Bookings</p>
             <h3 className="text-2xl font-black text-slate-800">{totalCreditBookings}</h3>
@@ -170,7 +170,7 @@ export default function CreditDetailsPage() {
       </div>
 
       {/* Filter & Main Card Area */}
-      <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6">
+      <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-6">
         
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
@@ -202,7 +202,7 @@ export default function CreditDetailsPage() {
               placeholder="Search customer, mobile, service..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-4 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
             />
           </div>
 
@@ -244,10 +244,10 @@ export default function CreditDetailsPage() {
             filteredBills.map((bill) => (
               <div 
                 key={bill.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:border-slate-300 transition gap-4"
+                className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_25px_rgba(15,23,42,0.04)] transition-all hover:-translate-y-0.5 hover:border-rose-200 hover:shadow-lg sm:flex-row sm:items-center"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-red-500 text-white font-bold flex items-center justify-center uppercase text-sm shadow-sm shrink-0">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 text-sm font-black uppercase text-white shadow-lg shadow-rose-500/20">
                     {bill.customerName.charAt(0)}
                   </div>
                   <div>
@@ -270,7 +270,7 @@ export default function CreditDetailsPage() {
 
                   <button 
                     onClick={() => handleSettleBill(bill)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-1 cursor-pointer"
+                    className="flex items-center gap-1 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-5 py-2.5 text-xs font-black text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl"
                   >
                     Settle Bill
                     <ChevronDown size={14} />

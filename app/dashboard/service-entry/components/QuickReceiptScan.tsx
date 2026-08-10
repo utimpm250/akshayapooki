@@ -367,19 +367,19 @@ export default function QuickReceiptScan() {
   // =========================================================
 
   return (
-    <div className="w-[280px] h-[64px] rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 px-3 flex items-center">
+    <div className="w-[300px] min-h-[68px] rounded-2xl border border-cyan-400/20 bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-cyan-950/90 px-3.5 py-2.5 flex items-center shadow-[0_14px_35px_rgba(6,182,212,0.16)] backdrop-blur-xl">
       <div className="flex items-center justify-between w-full gap-2">
 
-        <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-400/15 text-cyan-200 shadow-inner">
           <ScanText size={20} />
         </div>
 
         <div className="flex-1 overflow-hidden">
-          <p className="text-[10px] uppercase tracking-widest text-white/70">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-200/75">
             QUICK SCAN
           </p>
 
-          <p className="text-sm font-semibold text-white truncate">
+          <p className="truncate text-sm font-black text-white">
             Paste Image
           </p>
         </div>
@@ -390,7 +390,7 @@ export default function QuickReceiptScan() {
             fileInputRef.current?.click()
           }
           disabled={loading}
-          className="rounded-lg bg-white text-indigo-700 px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap"
+          className="whitespace-nowrap rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-3 py-2 text-[11px] font-black text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:-translate-y-0.5"
         >
           {loading
             ? "Scanning..."
@@ -416,7 +416,7 @@ export default function QuickReceiptScan() {
 
         {message && (
           <div
-            className={`mt-3 text-xs font-medium ${
+            className={`mt-2 text-[11px] font-bold ${
               message.startsWith("✅")
                 ? "text-emerald-200"
                 : message.startsWith("⚠️")

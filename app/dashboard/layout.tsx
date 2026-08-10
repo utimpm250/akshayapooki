@@ -401,30 +401,36 @@ export default function DashboardLayout({
       )}
 
       <div
+        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl" />
+        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl" />
+      </div>
+
+      <div
         className="fixed left-0 top-0 z-40 h-screen w-3"
         onMouseEnter={openSidebar}
       />
 
-      <div className="relative flex h-screen w-full overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
+      <div className="relative flex h-screen w-full overflow-hidden bg-[#eef3ff] dark:bg-[#070b16] text-slate-800 dark:text-slate-100 font-sans">
         <aside
           onMouseEnter={openSidebar}
           onMouseLeave={closeSidebar}
           className={`
             fixed
-            top-0
-            left-0
+            top-3 bottom-3 left-3
             z-50
-            w-64
-            h-screen
-            bg-slate-900
+            w-[272px]
+            h-[calc(100vh-24px)]
+            bg-slate-950/90 dark:bg-slate-900/85
             text-slate-300
-            hidden
-            md:flex
-            flex-col
-            justify-between
-            p-4
-            transition-transform
-            duration-300
+            hidden md:flex flex-col justify-between p-4
+            rounded-[28px] border border-white/10
+            shadow-[0_24px_80px_rgba(15,23,42,0.28)]
+            backdrop-blur-2xl
+            transition-transform duration-300
             ${
               sidebarOpen
                 ? "translate-x-0"
@@ -433,9 +439,9 @@ export default function DashboardLayout({
           `}
         >
           <div className="flex flex-col flex-1 overflow-hidden">
-            <div className="mb-4 flex shrink-0 items-start justify-between px-2">
+            <div className="mb-5 flex shrink-0 items-start justify-between px-2">
               <div>
-                <h1 className="text-xl font-bold tracking-wide text-white">
+                <h1 className="text-xl font-black tracking-tight text-white">
                   Smart Akshaya
                 </h1>
                 <p className="text-xs text-slate-400">
@@ -471,7 +477,7 @@ export default function DashboardLayout({
               </div>
             </div>
 
-            <nav className="flex-1 space-y-4 overflow-y-auto pr-1">
+            <nav className="flex-1 space-y-5 overflow-y-auto pr-1">
               {sections.map((sectionName) => {
                 const sectionItems = allowedMenus.filter(
                   (item) => item.section === sectionName
@@ -481,7 +487,7 @@ export default function DashboardLayout({
 
                 return (
                   <div key={sectionName}>
-                    <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                       {sectionName}
                     </p>
 
@@ -495,10 +501,10 @@ export default function DashboardLayout({
                             onClick={() =>
                               router.push(item.path)
                             }
-                            className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 font-medium transition ${
+                            className={`group flex cursor-pointer items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                               isActive(item.path)
-                                ? "bg-emerald-600 text-white"
-                                : "hover:bg-slate-800 hover:text-white"
+                                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-900/20"
+                                : "text-slate-400 hover:bg-white/[0.07] hover:text-white hover:translate-x-0.5"
                             }`}
                           >
                             <IconComponent size={18} />
@@ -513,9 +519,9 @@ export default function DashboardLayout({
             </nav>
           </div>
 
-          <div className="flex shrink-0 items-center justify-between border-t border-slate-800 pt-3">
+          <div className="flex shrink-0 items-center justify-between border-t border-white/10 pt-4 mt-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold uppercase text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-sm font-black uppercase text-white shadow-lg shadow-emerald-900/30">
                 {userInitial}
               </div>
 
@@ -531,7 +537,7 @@ export default function DashboardLayout({
 
             <button
               onClick={handleLogout}
-              className="cursor-pointer text-slate-500 transition hover:text-rose-400"
+              className="cursor-pointer rounded-xl p-2 text-slate-500 transition-all hover:bg-rose-500/10 hover:text-rose-400"
             >
               <LogOut size={18} />
             </button>
@@ -539,16 +545,15 @@ export default function DashboardLayout({
         </aside>
 
         <main
+          style={
+            {
+              "--dashboard-sidebar-offset": sidebarOpen ? "288px" : "0px",
+            } as React.CSSProperties
+          }
           className={`
-            flex-1
-            min-h-screen
-            overflow-y-auto
-            bg-slate-100
-            dark:bg-slate-950
-            p-6
-            transition-all
-            duration-300
-            ${sidebarOpen ? "ml-64" : "ml-0"}
+            relative z-10 flex-1 min-h-screen overflow-y-auto bg-transparent
+            p-3 sm:p-4 lg:p-5 xl:p-6 transition-all duration-300
+            ${sidebarOpen ? "md:ml-[288px]" : "ml-0"}
           `}
         >
           {children}

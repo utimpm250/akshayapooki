@@ -8,6 +8,8 @@ import PSCPhotoTool from "./tools/PSCPhotoTool";
 import PDFToolkitTool from "./tools/PDFTool";
 import LandAreaConverterTool from "./tools/ConverterTool";
 import ImageToTextTool from "./tools/ImageToText";
+import CalculatorTool from "./tools/calculatol";
+import ResumeStudio from "./tools/ResumeStudio";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -81,6 +83,8 @@ export default function DashboardPage() {
   const [showPdfToolkitModal, setShowPdfToolkitModal] = useState(false);
   const [showConverterModal, setShowConverterModal] = useState(false);
   const [showImageToTextModal, setShowImageToTextModal] = useState(false);
+  const [showCalculatorModal, setShowCalculatorModal] = useState(false);
+  const [showResumeStudioModal, setShowResumeStudioModal] = useState(false);
 
   const [showServiceDirectory, setShowServiceDirectory] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -95,7 +99,7 @@ export default function DashboardPage() {
     {
       id: 1,
       name: "Resume Studio",
-      url: "/dashboard/Tools/resume-studio",
+      url: "resume-studio-modal",
       bgColor: "from-blue-500 to-blue-600",
       isInternal: true,
     },
@@ -123,7 +127,7 @@ export default function DashboardPage() {
     {
       id: 5,
       name: "Calculator",
-      url: "/dashboard/Tools/calculator",
+      url: "calculator-modal",
       bgColor: "from-amber-500 to-amber-600",
       isInternal: true,
     },
@@ -371,15 +375,49 @@ setServiceDirectory(filteredWithUrls);
   );
 
   return (
-    <div className="min-h-screen bg-slate-100/55 p-4 md:p-8">
-      {showCashCounterModal && <CashCounterTool onClose={() => setShowCashCounterModal(false)} />}
-      {showSslcModal && <SSLCCalculatorTool onClose={() => setShowSslcModal(false)} />}
-      {showCropResizeModal && <CropResizeTool onClose={() => setShowCropResizeModal(false)} />}
-      {showPassportToolModal && <PassportSize onClose={() => setShowPassportToolModal(false)} />}
-      {showPscModal && <PSCPhotoTool onClose={() => setShowPscModal(false)} />}
-      {showPdfToolkitModal && <PDFToolkitTool onClose={() => setShowPdfToolkitModal(false)} />}
-      {showConverterModal && <LandAreaConverterTool onClose={() => setShowConverterModal(false)} />}
-      {showImageToTextModal && <ImageToTextTool onClose={() => setShowImageToTextModal(false)} />}
+    <div className="relative min-h-full overflow-x-hidden bg-transparent p-2 sm:p-3 lg:p-4 xl:p-5">
+      <div className="smart-akshaya-tool-layer contents">
+        {showCashCounterModal && <CashCounterTool onClose={() => setShowCashCounterModal(false)} />}
+        {showSslcModal && <SSLCCalculatorTool onClose={() => setShowSslcModal(false)} />}
+        {showCropResizeModal && <CropResizeTool onClose={() => setShowCropResizeModal(false)} />}
+        {showPassportToolModal && <PassportSize onClose={() => setShowPassportToolModal(false)} />}
+        {showPscModal && <PSCPhotoTool onClose={() => setShowPscModal(false)} />}
+        {showPdfToolkitModal && <PDFToolkitTool onClose={() => setShowPdfToolkitModal(false)} />}
+        {showConverterModal && <LandAreaConverterTool onClose={() => setShowConverterModal(false)} />}
+        {showImageToTextModal && <ImageToTextTool onClose={() => setShowImageToTextModal(false)} />}
+        {showCalculatorModal && (
+          <div
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[5px] sm:p-6"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) setShowCalculatorModal(false);
+            }}
+          >
+            <CalculatorTool onClose={() => setShowCalculatorModal(false)} />
+          </div>
+        )}
+        {showResumeStudioModal && (
+          <div
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-[6px] sm:p-5"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) setShowResumeStudioModal(false);
+            }}
+          >
+            <div className="relative h-[94vh] w-full max-w-[1450px] overflow-hidden rounded-3xl bg-slate-100 shadow-2xl dark:bg-slate-950">
+              <button
+                type="button"
+                aria-label="Close Resume Studio"
+                onClick={() => setShowResumeStudioModal(false)}
+                className="absolute right-4 top-4 z-[100] flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-xl font-bold text-slate-600 shadow-lg backdrop-blur transition hover:scale-105 hover:bg-white dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
+              >
+                ×
+              </button>
+              <div className="h-full overflow-y-auto">
+                <ResumeStudio onClose={() => setShowResumeStudioModal(false)} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {showAttendancePopup && (
         <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -454,8 +492,14 @@ setServiceDirectory(filteredWithUrls);
         </div>
       )}
 
-      <div className="w-full max-w-7xl mx-auto space-y-6 pb-12">
-        <div className="flex justify-between items-center bg-white px-6 py-4 rounded-xl shadow-sm border border-slate-100 mb-2">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute right-0 top-1/4 h-96 w-96 rounded-full bg-violet-500/10 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-emerald-400/10 blur-3xl" />
+      </div>
+
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] space-y-4 pb-8">
+        <div className="flex items-center justify-between rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl mb-1">
           <div>
             <h2 className="text-xl font-bold text-slate-800">Dashboard</h2>
           </div>
@@ -463,7 +507,7 @@ setServiceDirectory(filteredWithUrls);
           <div className="relative" ref={notificationRef}>
             <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="relative p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full text-slate-700 transition"
+              className="relative rounded-2xl border border-slate-200/80 bg-white/70 p-2.5 text-slate-700 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
             >
               <Bell size={20} />
               {announcements.length > 0 && (
@@ -514,51 +558,51 @@ setServiceDirectory(filteredWithUrls);
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white rounded-2xl p-8 shadow-md flex justify-between items-center">
+        <div className="relative overflow-hidden rounded-[28px] border border-white/20 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-900 p-6 text-white shadow-[0_24px_70px_rgba(37,99,235,0.22)] sm:p-7 lg:p-8">
           <div>
-            <p className="text-xs font-semibold tracking-wider uppercase opacity-85 mb-1">{todayDate}</p>
-            <h3 className="text-3xl font-extrabold">Welcome back, {currentUser.username}!</h3>
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-200">{todayDate}</p>
+            <h3 className="text-2xl font-black tracking-tight sm:text-3xl">Welcome back, {currentUser.username}!</h3>
           </div>
-          <div className="hidden sm:block text-right bg-white/15 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20">
+          <div className="hidden rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-right backdrop-blur-xl sm:block">
             <p className="text-xs opacity-80 uppercase font-semibold">Logged in as</p>
             <p className="text-sm font-bold">{displayRoleTitle}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="group flex items-center justify-between rounded-2xl border border-white/80 bg-white/85 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.07)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(15,23,42,0.11)]">
             <div>
               <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Today's Entries</p>
               <p className="text-2xl font-bold mt-1">{todayEntriesCount}</p>
             </div>
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+            <div className="rounded-2xl bg-emerald-50 p-3.5 text-emerald-600 shadow-sm transition-transform duration-200 group-hover:scale-105">
               <FileText size={22} />
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+          <div className="group flex items-center justify-between rounded-2xl border border-white/80 bg-white/85 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.07)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(15,23,42,0.11)]">
             <div>
               <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Completed Today</p>
               <p className="text-2xl font-bold mt-1">{completedTodayCount}</p>
             </div>
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+            <div className="rounded-2xl bg-blue-50 p-3.5 text-blue-600 shadow-sm transition-transform duration-200 group-hover:scale-105">
               <Wallet size={22} />
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+          <div className="group flex items-center justify-between rounded-2xl border border-white/80 bg-white/85 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.07)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(15,23,42,0.11)]">
             <div>
               <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Total Cash Collection</p>
               <p className="text-2xl font-bold mt-1">₹{totalCashCollection.toFixed(2)}</p>
             </div>
-            <div className="p-3 bg-rose-50 text-rose-600 rounded-lg">
+            <div className="rounded-2xl bg-rose-50 p-3.5 text-rose-600 shadow-sm transition-transform duration-200 group-hover:scale-105">
               <DollarSign size={22} />
             </div>
           </div>
 
           <div
             onClick={() => setShowWalletDetails(!showWalletDetails)}
-            className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:border-fuchsia-300 transition"
+            className="group flex cursor-pointer items-center justify-between rounded-2xl border border-white/80 bg-white/85 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.07)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:border-fuchsia-300/60 hover:shadow-[0_18px_45px_rgba(15,23,42,0.11)]"
           >
             <div>
               <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider flex items-center gap-1">
@@ -568,14 +612,14 @@ setServiceDirectory(filteredWithUrls);
                 ₹{netWalletBalance.toFixed(2)}
               </p>
             </div>
-            <div className="p-3 bg-fuchsia-50 text-fuchsia-600 rounded-lg">
+            <div className="rounded-2xl bg-fuchsia-50 p-3.5 text-fuchsia-600 shadow-sm transition-transform duration-200 group-hover:scale-105">
               <Wallet size={22} />
             </div>
           </div>
         </div>
 
         {showWalletDetails && (
-          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-2">
+          <div className="rounded-3xl border border-white/80 bg-white/65 p-5 shadow-sm backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
             <h4 className="font-bold text-slate-800 text-sm mb-4 flex items-center gap-2">
               <Wallet size={16} className="text-fuchsia-600" /> Individual Wallet Balances
             </h4>
@@ -592,7 +636,7 @@ setServiceDirectory(filteredWithUrls);
           </div>
         )}
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+        <div className="rounded-3xl border border-white/80 bg-white/85 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.07)] backdrop-blur-xl">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h4 className="font-bold text-slate-800">Quick Launch Tools</h4>
@@ -621,7 +665,7 @@ setServiceDirectory(filteredWithUrls);
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {quickLinks.map((tool, index) => {
               const isCashCounter = tool.name.toLowerCase().includes("cash") || (tool.url && tool.url.toLowerCase().includes("cash"));
               const isSslc = tool.name.toLowerCase().includes("sslc") || (tool.url && tool.url.toLowerCase().includes("sslc"));
@@ -631,6 +675,8 @@ setServiceDirectory(filteredWithUrls);
               const isPdfTool = tool.name.toLowerCase().includes("pdf") || tool.url === "pdf-toolkit-modal";
               const isConverterTool = tool.name.toLowerCase().includes("converter") || tool.url === "converter-modal";
               const isImageToTextTool = tool.name.toLowerCase().includes("image") || tool.url === "image-to-text-modal";
+              const isCalculatorTool = tool.name.toLowerCase().includes("calculator") || tool.url === "calculator-modal";
+              const isResumeStudioTool = tool.name.toLowerCase().includes("resume") || tool.url === "resume-studio-modal";
 
               return (
                 <div
@@ -644,7 +690,7 @@ setServiceDirectory(filteredWithUrls);
                 >
                   <a
                     href={
-                      isCustomizing || isCashCounter || isSslc || isCropResize || isPsc || isPassport || isPdfTool || isConverterTool || isImageToTextTool
+                      isCustomizing || isCashCounter || isSslc || isCropResize || isPsc || isPassport || isPdfTool || isConverterTool || isImageToTextTool || isCalculatorTool || isResumeStudioTool
                         ? undefined
                         : tool.url
                     }
@@ -677,13 +723,19 @@ setServiceDirectory(filteredWithUrls);
                       } else if (isImageToTextTool) {
                         e.preventDefault();
                         setShowImageToTextModal(true);
+                      } else if (isCalculatorTool) {
+                        e.preventDefault();
+                        setShowCalculatorModal(true);
+                      } else if (isResumeStudioTool) {
+                        e.preventDefault();
+                        setShowResumeStudioModal(true);
                       }
                     }}
                     target={tool.isInternal ? "_self" : "_blank"}
                     rel="noopener noreferrer"
-                    className={`flex flex-col justify-between p-5 bg-gradient-to-br ${
+                    className={`flex h-28 flex-col justify-between p-4 bg-gradient-to-br ${
                       tool.bgColor || "from-indigo-500 to-violet-600"
-                    } text-white rounded-2xl shadow-sm hover:opacity-95 transition h-28 ${
+                    } text-white rounded-2xl shadow-[0_12px_30px_rgba(15,23,42,0.14)] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,0.18)] transition-all duration-200 ${
                       isCustomizing ? "ring-2 ring-blue-400 ring-offset-2 opacity-95" : ""
                     }`}
                   >
@@ -698,7 +750,7 @@ setServiceDirectory(filteredWithUrls);
                     <div>
                       <span className="text-base font-bold block truncate">{tool.name}</span>
                       <span className="text-xs opacity-80">
-                        {(tool.isInternal || isCashCounter || isSslc || isCropResize || isPsc || isPassport || isPdfTool || isConverterTool || isImageToTextTool)
+                        {(tool.isInternal || isCashCounter || isSslc || isCropResize || isPsc || isPassport || isPdfTool || isConverterTool || isImageToTextTool || isCalculatorTool)
                           ? "Internal Tool"
                           : "External Link"}
                       </span>
@@ -710,7 +762,7 @@ setServiceDirectory(filteredWithUrls);
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+        <div className="rounded-3xl border border-white/80 bg-white/85 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.07)] backdrop-blur-xl">
           <div 
             onClick={() => setShowServiceDirectory(!showServiceDirectory)}
             className="flex items-center justify-between cursor-pointer select-none"
@@ -739,7 +791,7 @@ setServiceDirectory(filteredWithUrls);
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
+              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {filteredServices.length === 0 ? (
                   <div className="col-span-full py-8 text-slate-400 text-sm">No services with URLs found matching your search.</div>
                 ) : (
@@ -749,7 +801,7 @@ setServiceDirectory(filteredWithUrls);
                       href={service.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between hover:border-blue-300 hover:bg-blue-50/30 transition text-left group"
+                      className="group flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white/70 p-4 text-left shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md"
                     >
                       <div className="min-w-0 pr-2">
                         <p className="text-sm font-semibold text-slate-700 truncate group-hover:text-blue-600 transition">{service.title}</p>

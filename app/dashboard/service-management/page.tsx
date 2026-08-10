@@ -362,51 +362,51 @@ useEffect(() => {
   );
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl w-full mx-auto relative">
+    <div className="relative mx-auto w-full max-w-[1600px] space-y-5 bg-gradient-to-br from-slate-50 via-white to-cyan-50/30 p-4 sm:p-5 lg:p-6">
       
       {/* Header Section */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-black text-slate-800 tracking-tight">Service Management</h3>
+      <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-xl sm:px-5">
+        <h3 className="text-2xl font-black tracking-tight text-slate-900">Service Management</h3>
         <button 
           onClick={handleRefresh}
-          className="p-2 hover:bg-slate-100 rounded-full transition text-slate-500"
+          className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-600"
         >
           <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
         </button>
       </div>
 
       {/* Total Services Banner */}
-      <div className="bg-gradient-to-r from-indigo-600 via-indigo-600 to-indigo-500 text-white rounded-2xl p-8 shadow-sm flex justify-between items-center relative overflow-hidden">
+      <div className="relative flex items-center justify-between overflow-hidden rounded-[28px] border border-cyan-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-5 text-white shadow-[0_20px_55px_rgba(15,23,42,0.18)] sm:p-7">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-indigo-200">Total Services</p>
-          <h2 className="text-6xl font-black mt-1 tracking-tight">{filteredServices.length}</h2>
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200/80">Total Services</p>
+          <h2 className="mt-1 text-5xl font-black tracking-tight sm:text-6xl">{filteredServices.length}</h2>
         </div>
-        <div className="bg-white/15 backdrop-blur-md border border-white/10 rounded-2xl px-6 py-4 flex items-center gap-4">
-          <div className="p-2.5 bg-white/10 rounded-xl">
+        <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/10 px-5 py-3.5 backdrop-blur-xl">
+          <div className="rounded-xl bg-white/10 p-2.5 text-cyan-200">
             <Briefcase size={22} className="text-white" />
           </div>
           <div>
-            <p className="text-xl font-black tracking-tight">{filteredServices.length}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-200">Records Found</p>
+            <p className="text-xl font-black tracking-tight text-white">{filteredServices.length}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-200/70">Records Found</p>
           </div>
         </div>
       </div>
 
       {/* Search & List Title */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div className="flex items-center gap-1.5 text-slate-700 font-bold text-base">
+      <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm backdrop-blur-xl sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2 text-base font-black text-slate-800">
           <span>Service List</span>
-          <button onClick={handleRefresh} className="text-slate-400 hover:text-slate-600">
+          <button onClick={handleRefresh} className="text-slate-400 transition hover:text-cyan-600">
             <RefreshCw size={14} />
           </button>
         </div>
 
-        <div className="relative w-full sm:w-80">
+        <div className="relative w-full sm:w-96">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input 
             type="text"
             placeholder="Search by name or wallet..."
-            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-full text-xs outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition"
+            className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-xs font-semibold text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -414,11 +414,11 @@ useEffect(() => {
       </div>
 
       {/* Services Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_12px_35px_rgba(15,23,42,0.06)]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase bg-slate-50/50">
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-[10px] font-black uppercase tracking-wide text-slate-400">
                 <th className="py-4 px-6 w-1/3">Service Name</th>
                 <th className="py-4 px-4">Default Wallet</th>
                 <th className="py-4 px-4 text-center">Dept Fee</th>
@@ -430,28 +430,28 @@ useEffect(() => {
             <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
               {filteredServices.length > 0 ? (
                 filteredServices.map((service) => (
-                  <tr key={service.id} className="hover:bg-slate-50/50 transition">
+                  <tr key={service.id} className="transition hover:bg-cyan-50/30">
                     <td className="py-4 px-6">
-                      <div className="font-bold text-slate-800">{service.name}</div>
+                      <div className="font-black text-slate-800">{service.name}</div>
                       {service.portalUrl && (
                         <a 
                           href={service.portalUrl} 
                           target="_blank" 
                           rel="noreferrer" 
-                          className="text-[10px] text-indigo-600 font-bold inline-flex items-center gap-0.5 mt-0.5 hover:underline"
+                          className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-cyan-600 hover:underline"
                         >
                           Visit Portal <ExternalLink size={10} />
                         </a>
                       )}
                     </td>
                     <td className="py-4 px-4">
-                      <span className="px-2.5 py-1 rounded-md text-[10px] font-black tracking-wide bg-slate-100 text-slate-700">
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[9px] font-black tracking-wide text-slate-600">
                         {service.wallet || 'CASH'}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-center text-slate-500">₹{service.deptFee}</td>
-                    <td className="py-4 px-4 text-center text-slate-800 font-bold">₹{service.srvCharge}</td>
-                    <td className="py-4 px-4 text-center text-emerald-600 font-bold">₹{service.commission}</td>
+                    <td className="px-4 py-4 text-center font-bold text-slate-800">₹{service.srvCharge}</td>
+                    <td className="px-4 py-4 text-center font-bold text-emerald-600">₹{service.commission}</td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button 
@@ -459,8 +459,8 @@ useEffect(() => {
                           title={service.isPinned ? "Unpin from Dashboard" : "Pin to Dashboard"}
                           className={`p-1.5 rounded transition ${
                             service.isPinned 
-                              ? 'bg-indigo-50 text-indigo-600' 
-                              : 'hover:bg-slate-100 text-slate-400 hover:text-indigo-600'
+                              ? 'bg-cyan-50 text-cyan-600 ring-1 ring-cyan-200' 
+                              : 'text-slate-400 hover:bg-cyan-50 hover:text-cyan-600'
                           }`}
                         >
                           <Bookmark size={14} fill={service.isPinned ? "currentColor" : "none"} />
@@ -468,14 +468,14 @@ useEffect(() => {
                         <button 
                           onClick={() => handleOpenEditModal(service)}
                           title="Edit Service"
-                          className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-indigo-600 transition"
+                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
                         >
                           <Edit2 size={14} />
                         </button>
                         <button 
                           onClick={() => handleDelete(service.id)}
                           title="Delete Service"
-                          className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-red-600 transition"
+                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -498,24 +498,24 @@ useEffect(() => {
       {/* Floating Plus Button */}
       <button 
         onClick={handleOpenAddModal}
-        className="fixed bottom-6 right-6 p-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition transform active:scale-95 z-40"
+        className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 p-4 text-white shadow-[0_14px_35px_rgba(6,182,212,0.28)] transition-all hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(37,99,235,0.28)] active:scale-95"
       >
         <Plus size={24} />
       </button>
 
       {/* MODAL POPUP FOR ADD / EDIT SERVICE */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl border border-slate-100 w-full max-w-lg shadow-2xl overflow-hidden p-6 space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md">
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-white/80 bg-white/95 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.22)] backdrop-blur-2xl">
             
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2 text-indigo-600 font-bold text-base">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2 text-base font-black text-cyan-600">
                 <Briefcase size={20} />
-                <h4 className="font-bold text-slate-800 text-base">
+                <h4 className="text-base font-black text-slate-800">
                   {editingServiceId ? "Edit Service" : "Add New Service"}
                 </h4>
               </div>
-              <button onClick={handleCloseModal} className="text-slate-400 hover:text-slate-600 p-1">
+              <button onClick={handleCloseModal} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
                 <X size={18} />
               </button>
             </div>
@@ -527,7 +527,7 @@ useEffect(() => {
                   type="text" 
                   required
                   placeholder="e.g. Passport Application"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                 />
@@ -538,7 +538,7 @@ useEffect(() => {
                 <input 
                   type="url" 
                   placeholder="https://..."
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
                   value={newPortalUrl}
                   onChange={(e) => setNewPortalUrl(e.target.value)}
                 />
@@ -549,7 +549,7 @@ useEffect(() => {
                   <label className="text-xs font-bold text-slate-700 block mb-1">Dept Fee (₹)</label>
                   <input 
                     type="number" 
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-center"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-center text-xs font-semibold outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
                     value={newDeptFee || ''}
                     onChange={(e) => setNewDeptFee(Number(e.target.value))}
                   />
@@ -558,7 +558,7 @@ useEffect(() => {
                   <label className="text-xs font-bold text-slate-700 block mb-1">Srv Charge (₹)</label>
                   <input 
                     type="number" 
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-center"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-center text-xs font-semibold outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
                     value={newSrvCharge || ''}
                     onChange={(e) => setNewSrvCharge(Number(e.target.value))}
                   />
@@ -567,7 +567,7 @@ useEffect(() => {
                   <label className="text-xs font-bold text-slate-700 block mb-1">Commission (₹)</label>
                   <input 
                     type="number" 
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-center"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-center text-xs font-semibold outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
                     value={newCommission || ''}
                     onChange={(e) => setNewCommission(Number(e.target.value))}
                   />
@@ -578,7 +578,7 @@ useEffect(() => {
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Default Wallet</label>
                   <select 
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-bold text-slate-700"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
                     value={newWallet}
                     onChange={(e) => setNewWallet(e.target.value)}
                   >
@@ -591,7 +591,7 @@ useEffect(() => {
                   <label className="text-xs font-bold text-slate-700 block mb-1">Followup Days</label>
                   <input 
                     type="number" 
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-center"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-center text-xs font-semibold outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
                     value={newFollowupDays || 0}
                     onChange={(e) => setNewFollowupDays(Number(e.target.value))}
                   />
@@ -601,7 +601,7 @@ useEffect(() => {
               <div className="pt-2">
                 <button 
                   type="submit"
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-indigo-600/20"
+                  className="w-full rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 py-3 text-xs font-black text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl"
                 >
                   {editingServiceId ? "Update Service" : "Add Service"}
                 </button>

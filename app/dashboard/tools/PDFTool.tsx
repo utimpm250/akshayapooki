@@ -124,16 +124,16 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
-      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden border border-indigo-500/30 text-white relative my-8">
-        <div className="flex justify-between items-center px-6 py-5 border-b border-white/10 bg-white/5 backdrop-blur-lg">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-slate-950/70 p-2 backdrop-blur-md sm:p-3">
+      <div className="flex h-[calc(100vh-1rem)] max-h-[820px] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] border border-slate-700/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 shadow-[0_30px_100px_rgba(2,6,23,0.55)] sm:h-[calc(100vh-1.5rem)]">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-700/70 bg-slate-900/90 px-4 py-3.5 backdrop-blur-2xl sm:px-6 sm:py-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-600/30 text-indigo-400 rounded-2xl border border-indigo-500/30">
+            <div className="rounded-2xl border border-slate-700/80 bg-gradient-to-br from-emerald-500/20 to-orange-500/15 p-2.5 text-teal-300 shadow-lg shadow-teal-950/50">
               <FileText size={24} />
             </div>
             <div>
-              <h3 className="font-extrabold text-lg tracking-wide text-white">Online2PDF Complete Suite</h3>
-              <p className="text-xs text-indigo-300">Convert, Compress, Merge, Protect & Edit PDF Files</p>
+              <h3 className="text-base font-black tracking-tight text-white sm:text-lg">Online2PDF Complete Suite</h3>
+              <p className="text-[11px] text-slate-400">Convert, Compress, Merge, Protect & Edit PDF Files</p>
             </div>
           </div>
           <button
@@ -142,16 +142,16 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
               setSelectedFiles([]);
               setDownloadUrl(null);
             }}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-rose-500/20 hover:text-rose-400 text-slate-300 transition"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-slate-400 transition-all hover:-translate-y-0.5 hover:bg-rose-50 hover:text-rose-600"
           >
             ✕
           </button>
         </div>
 
-        <div className="p-6 md:p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-5 md:p-6">
           <div className="space-y-2">
             <label
-              className="border-2 border-dashed border-indigo-500/40 rounded-2xl p-8 bg-slate-900/40 hover:bg-slate-800 transition cursor-pointer text-center block"
+              className="group block min-h-20 cursor-pointer rounded-2xl border-2 border-dashed border-teal-400/50 bg-slate-800/65 p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-slate-800 hover:shadow-[0_14px_35px_rgba(45,212,191,0.14)] sm:min-h-24"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
@@ -160,11 +160,11 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
                 }
               }}
             >
-              <div className="space-y-3">
-                <Upload size={36} className="mx-auto text-indigo-400" />
-                <h3 className="font-bold text-lg">Browse PDF Files</h3>
-                <p className="text-sm text-slate-400">Click here or Drag & Drop PDF files</p>
-                <p className="text-xs text-slate-500">You can add more files anytime.</p>
+              <div className="space-y-2">
+                <Upload size={36} className="mx-auto text-teal-300 transition-transform duration-200 group-hover:-translate-y-1 group-hover:scale-105" />
+                <h3 className="text-base font-black tracking-tight text-white sm:text-lg">Browse PDF Files</h3>
+                <p className="text-xs text-slate-300 sm:text-sm">Click here or Drag & Drop PDF files</p>
+                <p className="text-[11px] text-slate-400">You can add more files anytime.</p>
               </div>
               <input
                 type="file"
@@ -176,17 +176,17 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
             </label>
 
             {selectedFiles.length > 0 && (
-              <div className="space-y-4 mt-5">
-                <div className="flex items-center justify-between">
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-bold text-white">Selected PDF Files</h3>
+                    <h3 className="text-sm font-black text-slate-100">Selected PDF Files</h3>
                     <p className="text-xs text-slate-400">Drag and drop files to change their order before merging.</p>
                   </div>
-                  <div className="text-xs bg-indigo-600/20 text-indigo-300 px-3 py-1 rounded-full">
+                  <div className="rounded-full border border-slate-700/80 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                     {selectedFiles.length} Files
                   </div>
                 </div>
-                <div className="space-y-3 max-h-72 overflow-y-auto">
+                <div className="max-h-52 space-y-2 overflow-y-auto sm:max-h-56">
                   {selectedFiles.map((file, index) => (
                     <div
                       key={`${file.name}-${index}`}
@@ -195,14 +195,14 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
                       onDragEnter={() => (draggedOverPdfIndex.current = index)}
                       onDragEnd={handlePdfDragSort}
                       onDragOver={(e) => e.preventDefault()}
-                      className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex items-center justify-between hover:border-indigo-500 transition cursor-grab active:cursor-grabbing"
+                      className="flex cursor-grab items-center justify-between rounded-2xl border border-slate-700/70 bg-slate-800/70 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300/60 hover:bg-slate-800 hover:shadow-lg active:cursor-grabbing"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 font-black text-white shadow-lg shadow-teal-950/50">
                           {index + 1}
                         </div>
                         <div>
-                          <p className="font-semibold text-white truncate max-w-xs">{file.name}</p>
+                          <p className="max-w-xs truncate text-sm font-bold text-slate-100">{file.name}</p>
                           <p className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                         </div>
                       </div>
@@ -210,7 +210,7 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
                         <button
                           type="button"
                           onClick={() => deleteFile(index)}
-                          className="w-9 h-9 rounded-lg bg-red-600 hover:bg-red-500 flex items-center justify-center text-white"
+                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-500 transition hover:bg-rose-500 hover:text-slate-100"
                         >
                           🗑
                         </button>
@@ -222,17 +222,17 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
             )}
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="space-y-3 rounded-2xl border border-slate-700/70 bg-slate-900/70 p-4 shadow-lg shadow-slate-950/20">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <h4 className="text-sm font-bold text-white">PDF Merge</h4>
+                <h4 className="text-sm font-black text-slate-100">PDF Merge</h4>
                 <p className="text-xs text-slate-400">Arrange files and merge into a single PDF.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCompressEnabled(!isCompressEnabled)}
-                className={`px-4 py-2 rounded-xl font-semibold transition ${
-                  isCompressEnabled ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-300"
+                className={`rounded-xl px-4 py-2 text-xs font-black transition-all sm:text-sm ${
+                  isCompressEnabled ? "bg-teal-500 text-slate-950" : "bg-slate-700 text-slate-200"
                 }`}
               >
                 Compress
@@ -241,11 +241,11 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
           </div>
 
           {isCompressEnabled && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-bold text-white">Compression Settings</h4>
+            <div className="space-y-2">
+              <h4 className="text-sm font-black text-slate-100">Compression Settings</h4>
               <p className="text-xs text-slate-400">These settings will be applied before downloading.</p>
 
-              <label className="flex items-center justify-between bg-slate-800 rounded-xl p-3 cursor-pointer">
+              <label className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-700/70 bg-slate-800/70 p-3 transition hover:bg-slate-100">
                 <span className="text-sm">Retain Original Compression</span>
                 <input
                   type="checkbox"
@@ -255,11 +255,11 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
               </label>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300">Image Quality</label>
+                <label className="text-xs font-semibold text-slate-400">Image Quality</label>
                 <select
                   value={imageQuality}
                   onChange={(e) => setImageQuality(e.target.value)}
-                  className="mt-2 w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-white"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-100 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-500/15"
                 >
                   <option value="1">1 - Low</option>
                   <option value="5">5 - Medium</option>
@@ -269,11 +269,11 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300">Resolution</label>
+                <label className="text-xs font-semibold text-slate-400">Resolution</label>
                 <select
                   value={imageResolution}
                   onChange={(e) => setImageResolution(e.target.value)}
-                  className="mt-2 w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-white"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-100 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-500/15"
                 >
                   <option value="72">72 DPI</option>
                   <option value="150">150 DPI</option>
@@ -282,11 +282,11 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300">Color Mode</label>
+                <label className="text-xs font-semibold text-slate-400">Color Mode</label>
                 <select
                   value={colorMode}
                   onChange={(e) => setColorMode(e.target.value as any)}
-                  className="mt-2 w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-white"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-100 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-500/15"
                 >
                   <option value="color">Color</option>
                   <option value="grayscale">Grayscale</option>
@@ -296,17 +296,17 @@ export default function PDFToolkitTool({ onClose }: PDFToolkitProps) {
             </div>
           )}
 
-          <div className="pt-4 space-y-4">
+          <div className="space-y-3 border-t border-slate-700/70 pt-4">
             {downloadUrl && (
-              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3">
-                <p className="text-sm text-emerald-400 font-semibold">PDF is ready for download.</p>
+              <div className="rounded-2xl border border-slate-700/80 bg-emerald-50 p-3">
+                <p className="text-sm font-bold text-teal-300">PDF is ready for download.</p>
               </div>
             )}
             <button
               type="button"
               onClick={handleProcessPdf}
               disabled={selectedFiles.length === 0 || isProcessing}
-              className="w-full bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 hover:opacity-90 disabled:opacity-50 transition rounded-2xl py-4 font-bold text-white text-base shadow-xl"
+              className="w-full rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-500 to-amber-400 py-3.5 text-sm font-black text-white shadow-[0_14px_35px_rgba(45,212,191,0.25)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(251,191,36,0.22)] disabled:cursor-not-allowed disabled:opacity-50 sm:py-4 sm:text-base"
             >
               {isProcessing ? "Processing PDF..." : "Merge & Download"}
             </button>

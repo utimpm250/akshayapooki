@@ -7,12 +7,12 @@ import {
   GraduationCap,
   Mail,
   MapPin,
+  Palette,
   Phone,
   Plus,
   Trash2,
   UserRound,
-  Palette,
-  Upload,
+  X,
 } from "lucide-react";
 
 type Education = {
@@ -30,25 +30,33 @@ type Experience = {
   description: string;
 };
 
-type TemplateId =
-  | "blue"
-  | "common"
-  | "navy"
-  | "dark"
-  | "ats"
-  | "corporate";
+type Language = {
+  id: number;
+  language: string;
+  level: string;
+};
 
-const templates: {
+type Project = {
+  id: number;
+  title: string;
+  description: string;
+};
+
+type TemplateId = "blue" | "common" | "navy" | "dark" | "ats" | "corporate";
+
+type Template = {
   id: TemplateId;
   name: string;
   description: string;
   accent: string;
-}[] = [
+};
+
+const templates: Template[] = [
   {
     id: "blue",
     name: "Professional Blue",
-    description: "Blue sidebar with a modern professional layout",
-    accent: "from-blue-800 to-blue-600",
+    description: "Modern blue header with a clean professional layout",
+    accent: "from-blue-800 to-cyan-600",
   },
   {
     id: "common",
@@ -59,58 +67,67 @@ const templates: {
   {
     id: "navy",
     name: "Modern Navy",
-    description: "Strong navy sidebar with clean white content",
+    description: "Strong navy profile column with white content",
     accent: "from-blue-950 to-blue-700",
   },
   {
     id: "dark",
     name: "Elegant Dark",
-    description: "Dark profile column with premium resume styling",
+    description: "Premium dark profile panel with refined typography",
     accent: "from-slate-950 to-slate-700",
   },
   {
     id: "ats",
     name: "ATS Readable",
-    description: "Simple structure designed for easy scanning",
+    description: "Simple single-column format designed for easy scanning",
     accent: "from-slate-700 to-slate-500",
   },
   {
     id: "corporate",
     name: "Corporate",
-    description: "Professional sidebar with compact sections",
-    accent: "from-blue-950 to-cyan-700",
+    description: "Compact corporate layout with a professional sidebar",
+    accent: "from-cyan-800 to-blue-950",
   },
 ];
 
-export default function ResumeStudio({
-  onClose,
-}: {
+type ResumeStudioProps = {
   onClose?: () => void;
-}) {
+};
+
+export default function ResumeStudio({ onClose }: ResumeStudioProps) {
   const [name, setName] = useState("Your Name");
   const [jobTitle, setJobTitle] = useState("Professional Title");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
+  const [fatherName, setFatherName] = useState("");
+  const [gender, setGender] = useState("");
+  const [dob, setDob] = useState("");
+  const [maritalStatus, setMaritalStatus] = useState("");
+  const [nationality, setNationality] = useState("");
+  const [religion, setReligion] = useState("");
+  const [passport, setPassport] = useState("");
   const [summary, setSummary] = useState("");
   const [skills, setSkills] = useState("");
   const [photo, setPhoto] = useState("");
-
   const [selectedTemplate, setSelectedTemplate] =
     useState<TemplateId>("blue");
+  const [showTemplates, setShowTemplates] = useState(true);
 
   const [education, setEducation] = useState<Education[]>([
     { id: 1, degree: "", institution: "", year: "" },
   ]);
 
   const [experience, setExperience] = useState<Experience[]>([
-    {
-      id: 1,
-      role: "",
-      company: "",
-      period: "",
-      description: "",
-    },
+    { id: 1, role: "", company: "", period: "", description: "" },
+  ]);
+
+  const [languages, setLanguages] = useState<Language[]>([
+    { id: 1, language: "", level: "" },
+  ]);
+
+  const [projects, setProjects] = useState<Project[]>([
+    { id: 1, title: "", description: "" },
   ]);
 
   const skillsList = useMemo(
@@ -125,12 +142,7 @@ export default function ResumeStudio({
   const addEducation = () =>
     setEducation((items) => [
       ...items,
-      {
-        id: Date.now(),
-        degree: "",
-        institution: "",
-        year: "",
-      },
+      { id: Date.now(), degree: "", institution: "", year: "" },
     ]);
 
   const removeEducation = (id: number) =>
@@ -150,6 +162,43 @@ export default function ResumeStudio({
 
   const removeExperience = (id: number) =>
     setExperience((items) => items.filter((item) => item.id !== id));
+
+  const addLanguage = () =>
+    setLanguages((items) => [...items, { id: Date.now(), language: "", level: "" }]);
+
+  const removeLanguage = (id: number) =>
+    setLanguages((items) => items.filter((item) => item.id !== id));
+
+  const updateLanguage = (
+    id: number,
+    field: keyof Omit<Language, "id">,
+    value: string
+  ) =>
+    setLanguages((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
+
+  const addProject = () =>
+    setProjects((items) => [
+      ...items,
+      { id: Date.now(), title: "", description: "" },
+    ]);
+
+  const removeProject = (id: number) =>
+    setProjects((items) => items.filter((item) => item.id !== id));
+
+  const updateProject = (
+    id: number,
+    field: keyof Omit<Project, "id">,
+    value: string
+  ) =>
+    setProjects((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
 
   const updateEducation = (
     id: number,
@@ -173,48 +222,19 @@ export default function ResumeStudio({
       )
     );
 
-  const handlePhoto = (file?: File) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setPhoto(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   const printResume = () => window.print();
 
-  const filteredExperience = experience.filter(
-    (item) => item.role || item.company || item.description
-  );
-
-  const filteredEducation = education.filter(
-    (item) => item.degree || item.institution || item.year
-  );
-
-  const contactItems = [
-    email && { icon: Mail, text: email },
-    phone && { icon: Phone, text: phone },
-    location && { icon: MapPin, text: location },
-  ].filter(Boolean) as {
-    icon: React.ComponentType<{ size?: number; className?: string }>;
-    text: string;
-  }[];
-
   return (
-    <div className="min-h-full bg-slate-100 p-3 text-slate-800 dark:bg-slate-950 dark:text-slate-100 sm:p-5">
-      <div className="mx-auto max-w-[1500px]">
-        {/* Header */}
-        <div className="mb-4 flex flex-col gap-3 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-700 p-4 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between sm:p-5">
+    <div className="min-h-screen bg-slate-100 p-4 text-slate-800 dark:bg-slate-950 dark:text-slate-100 sm:p-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-5 flex flex-col gap-3 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 p-5 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100">
               Smart Akshaya
             </p>
             <h1 className="text-2xl font-black">Resume Studio</h1>
             <p className="text-sm text-blue-100">
-              Choose a design, enter details and download a professional resume.
+              Create a clean professional resume with live preview.
             </p>
           </div>
 
@@ -233,63 +253,16 @@ export default function ResumeStudio({
                 type="button"
                 onClick={onClose}
                 aria-label="Close Resume Studio"
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-xl font-bold text-white transition hover:bg-white/30"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-slate-600 shadow-lg transition hover:bg-white hover:text-slate-900"
               >
-                ×
+                <X size={18} />
               </button>
             )}
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[430px_minmax(0,1fr)]">
-          {/* LEFT EDITOR */}
+        <div className="grid gap-5 lg:grid-cols-[420px_minmax(0,1fr)]">
           <div className="space-y-4">
-            {/* Templates */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="mb-3 flex items-center gap-2">
-                <Palette size={18} className="text-cyan-600" />
-                <div>
-                  <h2 className="font-black">Resume Designs</h2>
-                  <p className="text-xs text-slate-400">
-                    Designs based on the screenshots you provided
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                {templates.map((template) => {
-                  const active = selectedTemplate === template.id;
-
-                  return (
-                    <button
-                      key={template.id}
-                      type="button"
-                      onClick={() => setSelectedTemplate(template.id)}
-                      className={`overflow-hidden rounded-xl border-2 text-left transition ${
-                        active
-                          ? "border-cyan-500 ring-2 ring-cyan-100"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <TemplateThumbnail
-                        template={template.id}
-                        photo={photo}
-                      />
-                      <div className="bg-white p-2 dark:bg-slate-900">
-                        <p className="text-xs font-black text-slate-800 dark:text-white">
-                          {template.name}
-                        </p>
-                        <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-slate-400">
-                          {template.description}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* Personal */}
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="mb-4 flex items-center gap-2">
                 <UserRound size={18} className="text-cyan-600" />
@@ -304,52 +277,59 @@ export default function ResumeStudio({
                   onChange={setJobTitle}
                 />
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                   <Input label="Email" value={email} onChange={setEmail} />
                   <Input label="Phone" value={phone} onChange={setPhone} />
+                  <Input
+                    label="Location"
+                    value={location}
+                    onChange={setLocation}
+                  />
                 </div>
 
-                <Input
-                  label="Location"
-                  value={location}
-                  onChange={setLocation}
-                />
-
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 hover:border-cyan-400 dark:border-slate-700 dark:bg-slate-800">
-                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm dark:bg-slate-700">
-                    {photo ? (
-                      <img
-                        src={photo}
-                        alt="Profile"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <UserRound size={22} className="text-slate-400" />
-                    )}
-                  </div>
-
-                  <div className="flex-1">
-                    <p className="text-xs font-black text-slate-700 dark:text-slate-200">
-                      Profile Photo
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      Optional — JPG / PNG
-                    </p>
-                  </div>
-
-                  <Upload size={17} className="text-cyan-600" />
-
+                <label className="grid gap-1.5">
+                  <span className="text-xs font-bold text-slate-500">Profile Photo</span>
                   <input
                     type="file"
                     accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handlePhoto(e.target.files?.[0])}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => setPhoto(String(reader.result || ""));
+                      reader.readAsDataURL(file);
+                    }}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-800"
                   />
                 </label>
               </div>
             </section>
 
-            {/* Summary */}
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="mb-3 font-black">Basic Details</h2>
+              <div className="grid gap-3">
+                <Input label="Father's Name" value={fatherName} onChange={setFatherName} />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <SelectInput
+                    label="Gender"
+                    value={gender}
+                    onChange={setGender}
+                    options={["Male", "Female", "Transgender"]}
+                  />
+                  <Input label="Date of Birth" value={dob} onChange={setDob} />
+                  <SelectInput
+                    label="Marital Status"
+                    value={maritalStatus}
+                    onChange={setMaritalStatus}
+                    options={["Married", "Unmarried", "Widow", "Widower", "Divorced"]}
+                  />
+                  <Input label="Nationality" value={nationality} onChange={setNationality} />
+                  <Input label="Religion" value={religion} onChange={setReligion} />
+                  <Input label="Passport Number" value={passport} onChange={setPassport} />
+                </div>
+              </div>
+            </section>
+
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <h2 className="mb-3 font-black">Professional Summary</h2>
               <textarea
@@ -361,7 +341,51 @@ export default function ResumeStudio({
               />
             </section>
 
-            {/* Experience */}
+            
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="font-black">Languages Known</h2>
+                  <p className="text-[11px] text-slate-400">Add language and proficiency level</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addLanguage}
+                  className="rounded-lg bg-cyan-50 p-2 text-cyan-700 hover:bg-cyan-100 dark:bg-cyan-950/40"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {languages.map((item, index) => (
+                  <div key={item.id} className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1fr_1fr_auto] dark:border-slate-700">
+                    <Input
+                      label={`Language ${index + 1}`}
+                      value={item.language}
+                      onChange={(v) => updateLanguage(item.id, "language", v)}
+                    />
+                    <SelectInput
+                      label="Level"
+                      value={item.level}
+                      onChange={(v) => updateLanguage(item.id, "level", v)}
+                      options={["Mother tongue", "Professional", "Intermediate", "Basic"]}
+                    />
+                    {languages.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => removeLanguage(item.id)}
+                        className="self-end rounded-lg p-2 text-rose-500"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    ) : <span />}
+                  </div>
+                ))}
+              </div>
+            </section>
+
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -373,6 +397,7 @@ export default function ResumeStudio({
                   type="button"
                   onClick={addExperience}
                   className="rounded-lg bg-cyan-50 p-2 text-cyan-700 hover:bg-cyan-100 dark:bg-cyan-950/40"
+                  aria-label="Add work experience"
                 >
                   <Plus size={16} />
                 </button>
@@ -394,6 +419,7 @@ export default function ResumeStudio({
                           type="button"
                           onClick={() => removeExperience(item.id)}
                           className="text-rose-500"
+                          aria-label={`Remove experience ${index + 1}`}
                         >
                           <Trash2 size={15} />
                         </button>
@@ -408,7 +434,6 @@ export default function ResumeStudio({
                           updateExperience(item.id, "role", v)
                         }
                       />
-
                       <Input
                         label="Company"
                         value={item.company}
@@ -416,7 +441,6 @@ export default function ResumeStudio({
                           updateExperience(item.id, "company", v)
                         }
                       />
-
                       <Input
                         label="Period"
                         value={item.period}
@@ -424,7 +448,6 @@ export default function ResumeStudio({
                           updateExperience(item.id, "period", v)
                         }
                       />
-
                       <textarea
                         value={item.description}
                         onChange={(e) =>
@@ -444,7 +467,6 @@ export default function ResumeStudio({
               </div>
             </section>
 
-            {/* Education */}
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -456,6 +478,7 @@ export default function ResumeStudio({
                   type="button"
                   onClick={addEducation}
                   className="rounded-lg bg-cyan-50 p-2 text-cyan-700 hover:bg-cyan-100 dark:bg-cyan-950/40"
+                  aria-label="Add education"
                 >
                   <Plus size={16} />
                 </button>
@@ -477,6 +500,7 @@ export default function ResumeStudio({
                           type="button"
                           onClick={() => removeEducation(item.id)}
                           className="text-rose-500"
+                          aria-label={`Remove education ${index + 1}`}
                         >
                           <Trash2 size={15} />
                         </button>
@@ -491,7 +515,6 @@ export default function ResumeStudio({
                           updateEducation(item.id, "degree", v)
                         }
                       />
-
                       <Input
                         label="Institution"
                         value={item.institution}
@@ -499,7 +522,6 @@ export default function ResumeStudio({
                           updateEducation(item.id, "institution", v)
                         }
                       />
-
                       <Input
                         label="Year"
                         value={item.year}
@@ -513,7 +535,57 @@ export default function ResumeStudio({
               </div>
             </section>
 
-            {/* Skills */}
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="font-black">Projects Details</h2>
+                  <p className="text-[11px] text-slate-400">Add projects and short descriptions</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addProject}
+                  className="rounded-lg bg-cyan-50 p-2 text-cyan-700 hover:bg-cyan-100 dark:bg-cyan-950/40"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {projects.map((item, index) => (
+                  <div key={item.id} className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-xs font-black uppercase text-slate-400">
+                        Project {index + 1}
+                      </span>
+                      {projects.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeProject(item.id)}
+                          className="text-rose-500"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid gap-3">
+                      <Input
+                        label="Project Details"
+                        value={item.title}
+                        onChange={(v) => updateProject(item.id, "title", v)}
+                      />
+                      <textarea
+                        value={item.description}
+                        onChange={(e) => updateProject(item.id, "description", e.target.value)}
+                        rows={3}
+                        placeholder="Project related description in brief"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-800"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <h2 className="mb-3 font-black">Skills</h2>
               <textarea
@@ -524,29 +596,89 @@ export default function ResumeStudio({
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-800"
               />
             </section>
-          </div>
+<section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Palette size={18} className="text-cyan-600" />
+                  <div>
+                    <h2 className="font-black">Resume Templates</h2>
+                    <p className="text-[11px] text-slate-400">
+                      Choose a design — preview updates instantly
+                    </p>
+                  </div>
+                </div>
 
-          {/* LIVE PREVIEW */}
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wider text-slate-400">
-                  Live Preview
-                </p>
-                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                  {templates.find((item) => item.id === selectedTemplate)?.name}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowTemplates((value) => !value)}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  {showTemplates ? "Hide" : "Show"}
+                </button>
               </div>
 
-              <span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-500 shadow-sm">
-                A4 Resume
-              </span>
-            </div>
+              {showTemplates && (
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                {templates.map((template) => {
+                  const active = selectedTemplate === template.id;
 
-            <div className="overflow-auto rounded-2xl bg-slate-300 p-3 shadow-inner dark:bg-slate-800 sm:p-5">
+                  return (
+                    <button
+                      key={template.id}
+                      type="button"
+                      onClick={() => setSelectedTemplate(template.id)}
+                      className={`group overflow-hidden rounded-2xl border-2 text-left transition-all ${
+                        active
+                          ? "border-cyan-500 bg-cyan-50/60 shadow-md ring-2 ring-cyan-100 dark:bg-cyan-950/30 dark:ring-cyan-900"
+                          : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
+                      }`}
+                    >
+                      <div
+                        className={`h-16 bg-gradient-to-r ${template.accent} p-2.5`}
+                      >
+                        <div className="h-full rounded-lg bg-white/15 p-2">
+                          <div className="h-1.5 w-16 rounded-full bg-white/90" />
+                          <div className="mt-1.5 h-1 w-10 rounded-full bg-white/60" />
+                          <div className="mt-3 grid grid-cols-3 gap-1">
+                            <span className="h-1 rounded-full bg-white/50" />
+                            <span className="h-1 rounded-full bg-white/30" />
+                            <span className="h-1 rounded-full bg-white/30" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-black text-slate-800 dark:text-slate-100">
+                            {template.name}
+                          </p>
+                          {active && (
+                            <span className="rounded-full bg-cyan-500 px-1.5 py-0.5 text-[8px] font-black text-white">
+                              SELECTED
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-[10px] leading-4 text-slate-400">
+                          {template.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+                </div>
+              )}
+            </section>
+          </div>
+
+          <div className="lg:sticky lg:top-4 lg:self-start">
+            <div className="rounded-2xl bg-slate-300 p-3 shadow-inner dark:bg-slate-800">
               <article
                 id="resume-print"
-                className="mx-auto w-full max-w-[820px] overflow-hidden bg-white text-slate-800 shadow-2xl"
+                className={`mx-auto min-h-[900px] max-w-[800px] bg-white text-slate-800 shadow-2xl ${
+                  selectedTemplate === "ats"
+                    ? "p-8 sm:p-10"
+                    : "p-0"
+                }`}
               >
                 <ResumeDesign
                   template={selectedTemplate}
@@ -555,12 +687,20 @@ export default function ResumeStudio({
                   email={email}
                   phone={phone}
                   location={location}
-                  summary={summary}
-                  skills={skillsList}
-                  education={filteredEducation}
-                  experience={filteredExperience}
+                  fatherName={fatherName}
+                  gender={gender}
+                  dob={dob}
+                  maritalStatus={maritalStatus}
+                  nationality={nationality}
+                  religion={religion}
+                  passport={passport}
                   photo={photo}
-                  contactItems={contactItems}
+                  summary={summary}
+                  skillsList={skillsList}
+                  languages={languages}
+                  projects={projects}
+                  education={education}
+                  experience={experience}
                 />
               </article>
             </div>
@@ -605,12 +745,20 @@ function ResumeDesign({
   email,
   phone,
   location,
+  fatherName,
+  gender,
+  dob,
+  maritalStatus,
+  nationality,
+  religion,
+  passport,
+  photo,
   summary,
-  skills,
+  skillsList,
+  languages,
+  projects,
   education,
   experience,
-  photo,
-  contactItems,
 }: {
   template: TemplateId;
   name: string;
@@ -618,57 +766,200 @@ function ResumeDesign({
   email: string;
   phone: string;
   location: string;
+  fatherName: string;
+  gender: string;
+  dob: string;
+  maritalStatus: string;
+  nationality: string;
+  religion: string;
+  passport: string;
+  photo: string;
   summary: string;
-  skills: string[];
+  skillsList: string[];
+  languages: Language[];
+  projects: Project[];
   education: Education[];
   experience: Experience[];
-  photo: string;
-  contactItems: {
-    icon: React.ComponentType<{ size?: number; className?: string }>;
-    text: string;
-  }[];
 }) {
-  if (template === "common") {
+  if (template === "navy") {
     return (
-      <div className="min-h-[1100px] p-10 font-sans">
-        <header className="border-b-[10px] border-slate-300 pb-6">
-          <div className="flex items-start justify-between gap-5">
-            <div>
-              <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900">
-                {name || "YOUR NAME"}
-              </h1>
-              <p className="mt-1 text-lg font-bold text-slate-500">
-                {jobTitle || "PROFESSIONAL TITLE"}
-              </p>
+      <div className="grid min-h-[900px] grid-cols-[220px_1fr] bg-white">
+        <aside className="bg-gradient-to-b from-blue-950 to-blue-800 p-7 text-white">
+          <div className="mb-8">
+            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-white/10 text-3xl font-black">
+              {(name || "Y").charAt(0).toUpperCase()}
             </div>
-            {photo && <ProfilePhoto src={photo} size="lg" />}
+            <h1 className="text-2xl font-black leading-tight">
+              {name || "Your Name"}
+            </h1>
+            <p className="mt-1 text-sm font-semibold text-cyan-200">
+              {jobTitle || "Professional Title"}
+            </p>
           </div>
 
-          <ContactLine items={contactItems} className="mt-4" />
+          <ContactBlock
+            email={email}
+            phone={phone}
+            location={location}
+            light
+          />
+
+          {skillsList.length > 0 && (
+            <div className="mt-8">
+              <SideTitle>Skills</SideTitle>
+              <div className="space-y-2">
+                {skillsList.map((skill) => (
+                  <div
+                    key={skill}
+                    className="rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold"
+                  >
+                    {skill}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </aside>
+
+        <main className="p-8 sm:p-10">
+          <ResumeBody
+            summary={summary}
+            experience={experience}
+            education={education}
+            languages={languages}
+            projects={projects}
+            fatherName={fatherName}
+            gender={gender}
+            dob={dob}
+            maritalStatus={maritalStatus}
+            nationality={nationality}
+            religion={religion}
+            passport={passport}
+            skillsList={[]}
+            accent="text-blue-800"
+            headingBorder="border-blue-200"
+          />
+        </main>
+      </div>
+    );
+  }
+
+  if (template === "dark") {
+    return (
+      <div className="min-h-[900px] bg-white">
+        <header className="bg-slate-950 px-8 py-9 text-white sm:px-10">
+          <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+            <div>
+              <p className="mb-2 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-300">
+                Professional Resume
+              </p>
+              <h1 className="text-4xl font-black tracking-tight">
+                {name || "Your Name"}
+              </h1>
+              <p className="mt-2 text-lg font-semibold text-slate-300">
+                {jobTitle || "Professional Title"}
+              </p>
+            </div>
+            <ContactBlock
+              email={email}
+              phone={phone}
+              location={location}
+              light
+              compact
+            />
+          </div>
         </header>
 
-        <div className="grid gap-8 pt-7 md:grid-cols-[1.5fr_1fr]">
-          <main>
-            <ClassicSection title="Professional Summary">
-              <TextOrPlaceholder text={summary} />
-            </ClassicSection>
+        <main className="grid gap-8 p-8 sm:grid-cols-[1fr_220px] sm:p-10">
+          <ResumeBody
+            summary={summary}
+            experience={experience}
+            education={education}
+            languages={languages}
+            projects={projects}
+            fatherName={fatherName}
+            gender={gender}
+            dob={dob}
+            maritalStatus={maritalStatus}
+            nationality={nationality}
+            religion={religion}
+            passport={passport}
+            skillsList={skillsList}
+            accent="text-slate-900"
+            headingBorder="border-slate-300"
+          />
+          <aside className="border-l border-slate-200 pl-6">
+            <SideTitle dark>Skills</SideTitle>
+            <div className="flex flex-wrap gap-2">
+              {skillsList.length > 0 ? (
+                skillsList.map((skill) => (
+                  <span
+                    key={skill}
+                    className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700"
+                  >
+                    {skill}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-slate-400">
+                  Add skills from the editor.
+                </span>
+              )}
+            </div>
+          </aside>
+        </main>
+      </div>
+    );
+  }
 
-            <ClassicSection title="Work Experience">
-              <ExperienceList
-                experience={experience}
-                accent="slate"
-              />
-            </ClassicSection>
-          </main>
+  if (template === "common") {
+    return (
+      <div className="min-h-[900px] bg-white">
+        <header className="border-b-8 border-slate-600 bg-slate-100 px-8 py-7 sm:px-10">
+          <h1 className="text-3xl font-black text-slate-900">
+            {name || "Your Name"}
+          </h1>
+          <p className="mt-1 text-base font-bold text-slate-600">
+            {jobTitle || "Professional Title"}
+          </p>
+          <ContactBlock
+            email={email}
+            phone={phone}
+            location={location}
+            className="mt-4 text-slate-500"
+          />
+        </header>
 
+        <div className="grid gap-8 p-8 sm:grid-cols-[1fr_210px] sm:p-10">
+          <ResumeBody
+            summary={summary}
+            experience={experience}
+            education={education}
+            languages={languages}
+            projects={projects}
+            fatherName={fatherName}
+            gender={gender}
+            dob={dob}
+            maritalStatus={maritalStatus}
+            nationality={nationality}
+            religion={religion}
+            passport={passport}
+            skillsList={skillsList}
+            accent="text-slate-700"
+            headingBorder="border-slate-300"
+          />
           <aside>
-            <ClassicSection title="Education">
-              <EducationList education={education} />
-            </ClassicSection>
-
-            <ClassicSection title="Skills">
-              <SkillList skills={skills} variant="plain" />
-            </ClassicSection>
+            <SideTitle dark>Core Skills</SideTitle>
+            <div className="space-y-2">
+              {skillsList.map((skill) => (
+                <div
+                  key={skill}
+                  className="border-l-4 border-slate-500 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
+                >
+                  {skill}
+                </div>
+              ))}
+            </div>
           </aside>
         </div>
       </div>
@@ -677,506 +968,496 @@ function ResumeDesign({
 
   if (template === "ats") {
     return (
-      <div className="min-h-[1100px] p-11 font-sans text-[13px]">
-        <header className="border-b border-slate-800 pb-5">
-          <div className="flex items-start justify-between gap-5">
-            <div>
-              <h1 className="text-3xl font-black uppercase text-slate-900">
-                {name || "YOUR NAME"}
-              </h1>
-              <p className="mt-1 font-bold text-slate-700">
-                {jobTitle || "PROFESSIONAL TITLE"}
-              </p>
-            </div>
-            {photo && <ProfilePhoto src={photo} size="md" />}
-          </div>
-          <ContactLine items={contactItems} className="mt-3 text-[11px]" />
+      <div className="min-h-[900px] bg-white p-8 text-slate-900 sm:p-10">
+        <header className="border-b-2 border-slate-900 pb-5 text-center">
+          <h1 className="text-3xl font-black">
+            {name || "Your Name"}
+          </h1>
+          <p className="mt-1 font-bold">{jobTitle || "Professional Title"}</p>
+          <ContactBlock
+            email={email}
+            phone={phone}
+            location={location}
+            centered
+            className="mt-3 text-slate-600"
+          />
         </header>
 
-        <section className="mt-6">
-          <AtsTitle title="PROFESSIONAL SUMMARY" />
-          <TextOrPlaceholder text={summary} compact />
-        </section>
-
-        <section className="mt-6">
-          <AtsTitle title="PROFESSIONAL EXPERIENCE" />
-          <ExperienceList experience={experience} accent="ats" />
-        </section>
-
-        <section className="mt-6">
-          <AtsTitle title="EDUCATION" />
-          <EducationList education={education} compact />
-        </section>
-
-        <section className="mt-6">
-          <AtsTitle title="CORE COMPETENCIES" />
-          <SkillList skills={skills} variant="ats" />
-        </section>
+        <ResumeBody
+          summary={summary}
+          experience={experience}
+          education={education}
+          skillsList={skillsList}
+          accent="text-slate-900"
+          headingBorder="border-slate-900"
+          compact
+        />
       </div>
     );
   }
 
-  const sidebarClass =
-    template === "dark"
-      ? "bg-slate-950"
-      : template === "corporate"
-        ? "bg-blue-950"
-        : "bg-blue-900";
+  if (template === "corporate") {
+    return (
+      <div className="grid min-h-[900px] grid-cols-[190px_1fr] bg-white">
+        <aside className="bg-cyan-950 p-6 text-white">
+          <div className="mb-8 h-16 w-16 rounded-full border-4 border-cyan-300 bg-cyan-800 p-3 text-center text-2xl font-black">
+            {(name || "Y").charAt(0).toUpperCase()}
+          </div>
 
-  const accentText =
-    template === "dark" ? "text-amber-300" : "text-cyan-300";
+          <h1 className="text-xl font-black leading-tight">
+            {name || "Your Name"}
+          </h1>
+          <p className="mt-1 text-xs font-semibold text-cyan-200">
+            {jobTitle || "Professional Title"}
+          </p>
 
-  return (
-    <div className="grid min-h-[1100px] grid-cols-[30%_70%] font-sans">
-      <aside className={`${sidebarClass} p-6 text-white`}>
-        <div className="mb-6 flex justify-center">
-          {photo ? (
-            <img
-              src={photo}
-              alt="Profile"
-              className="h-28 w-28 rounded-full border-4 border-white/80 object-cover shadow-lg"
-            />
-          ) : (
-            <div className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-white/20 bg-white/10">
-              <UserRound size={48} className="text-white/70" />
-            </div>
-          )}
-        </div>
+          <ContactBlock
+            email={email}
+            phone={phone}
+            location={location}
+            light
+            compact
+            className="mt-7"
+          />
 
-        <h1 className="text-center text-2xl font-black leading-tight">
-          {name || "YOUR NAME"}
-        </h1>
-
-        <p className={`mt-2 text-center text-xs font-bold uppercase tracking-wider ${accentText}`}>
-          {jobTitle || "PROFESSIONAL TITLE"}
-        </p>
-
-        <SidebarSection title="CONTACT">
-          <SidebarContact items={contactItems} />
-        </SidebarSection>
-
-        <SidebarSection title="SKILLS">
-          <SidebarSkills skills={skills} />
-        </SidebarSection>
-
-        <SidebarSection title="EDUCATION">
-          {education.length ? (
-            <div className="space-y-3">
-              {education.map((item) => (
-                <div key={item.id}>
-                  <p className="text-xs font-black">
-                    {item.degree || "Qualification"}
-                  </p>
-                  <p className="mt-0.5 text-[10px] text-white/70">
-                    {item.institution}
-                  </p>
-                  <p className="text-[10px] text-white/50">{item.year}</p>
-                </div>
+          <div className="mt-7">
+            <SideTitle>Skills</SideTitle>
+            <div className="space-y-1.5">
+              {skillsList.map((skill) => (
+                <p key={skill} className="text-xs font-semibold text-cyan-50">
+                  • {skill}
+                </p>
               ))}
             </div>
-          ) : (
-            <p className="text-[10px] text-white/50">Add education details</p>
-          )}
-        </SidebarSection>
-      </aside>
+          </div>
+        </aside>
 
-      <main className="bg-white p-8">
-        <section>
-          <SectionHeading
-            title="Professional Profile"
-            dark={template === "dark"}
-          />
-          <TextOrPlaceholder text={summary} />
-        </section>
-
-        <section className="mt-7">
-          <SectionHeading title="Work Experience" dark={template === "dark"} />
-          <ExperienceList
+        <main className="p-7 sm:p-9">
+          <ResumeBody
+            summary={summary}
             experience={experience}
-            accent={template === "dark" ? "dark" : "blue"}
+            education={education}
+            languages={languages}
+            projects={projects}
+            fatherName={fatherName}
+            gender={gender}
+            dob={dob}
+            maritalStatus={maritalStatus}
+            nationality={nationality}
+            religion={religion}
+            passport={passport}
+            skillsList={[]}
+            accent="text-cyan-900"
+            headingBorder="border-cyan-200"
           />
-        </section>
+        </main>
+      </div>
+    );
+  }
 
-        <section className="mt-7">
-          <SectionHeading title="Education" dark={template === "dark"} />
-          <EducationList education={education} />
-        </section>
-      </main>
-    </div>
-  );
-}
-
-function TemplateThumbnail({
-  template,
-  photo,
-}: {
-  template: TemplateId;
-  photo: string;
-}) {
-  if (template === "common") {
-    return (
-      <div className="h-28 bg-white p-2">
-        <div className="flex justify-between border-b-4 border-slate-300 pb-2">
+  // Professional Blue — default design
+  return (
+    <div className="min-h-[900px] bg-white">
+      <header className="bg-gradient-to-r from-blue-800 to-cyan-600 px-8 py-8 text-white sm:px-10">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <div className="h-2 w-20 rounded bg-slate-800" />
-            <div className="mt-1 h-1.5 w-14 rounded bg-slate-400" />
+            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100">
+              Professional Resume
+            </p>
+            <h1 className="text-4xl font-black tracking-tight">
+              {name || "Your Name"}
+            </h1>
+            <p className="mt-1 text-lg font-semibold text-blue-100">
+              {jobTitle || "Professional Title"}
+            </p>
           </div>
-          <div className="h-8 w-8 rounded-full bg-slate-200" />
+
+          <ContactBlock
+            email={email}
+            phone={phone}
+            location={location}
+            light
+            compact
+          />
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <div className="h-1.5 w-full bg-slate-300" />
-            <div className="h-1.5 w-4/5 bg-slate-200" />
-            <div className="h-1.5 w-full bg-slate-200" />
+      </header>
+
+      <div className="grid gap-8 p-8 sm:grid-cols-[1fr_220px] sm:p-10">
+        <ResumeBody
+          summary={summary}
+          experience={experience}
+          education={education}
+          skillsList={[]}
+          accent="text-blue-800"
+          headingBorder="border-cyan-200"
+        />
+
+        <aside className="rounded-2xl bg-slate-50 p-5">
+          <SideTitle dark>Skills</SideTitle>
+          <div className="flex flex-wrap gap-2">
+            {skillsList.length > 0 ? (
+              skillsList.map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-blue-800 shadow-sm"
+                >
+                  {skill}
+                </span>
+              ))
+            ) : (
+              <span className="text-xs text-slate-400">
+                Add skills from the editor.
+              </span>
+            )}
           </div>
-          <div className="space-y-1">
-            <div className="h-1.5 w-full bg-slate-300" />
-            <div className="h-1.5 w-4/5 bg-slate-200" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (template === "ats") {
-    return (
-      <div className="h-28 bg-white p-3">
-        <div className="h-2 w-24 bg-slate-900" />
-        <div className="mt-1 h-1 w-16 bg-slate-500" />
-        <div className="mt-2 h-px bg-slate-800" />
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="mt-2 h-1.5 w-full bg-slate-200" />
-        ))}
-      </div>
-    );
-  }
-
-  const sidebar =
-    template === "dark"
-      ? "bg-slate-950"
-      : template === "corporate"
-        ? "bg-blue-950"
-        : "bg-blue-900";
-
-  return (
-    <div className="grid h-28 grid-cols-[30%_70%] bg-white">
-      <div className={`${sidebar} p-2`}>
-        <div className="mx-auto h-9 w-9 rounded-full border-2 border-white/70 bg-white/20" />
-        <div className="mx-auto mt-2 h-1.5 w-12 rounded bg-white/70" />
-        <div className="mx-auto mt-1 h-1 w-9 rounded bg-white/40" />
-        <div className="mt-4 space-y-1">
-          <div className="h-1 w-full bg-white/30" />
-          <div className="h-1 w-4/5 bg-white/20" />
-          <div className="h-1 w-full bg-white/20" />
-        </div>
-      </div>
-      <div className="p-3">
-        <div className="h-2 w-24 bg-slate-800" />
-        <div className="mt-1 h-1.5 w-16 bg-blue-600" />
-        <div className="mt-4 h-1.5 w-full bg-slate-300" />
-        <div className="mt-2 h-1.5 w-5/6 bg-slate-200" />
-        <div className="mt-2 h-1.5 w-full bg-slate-200" />
-        <div className="mt-4 h-1.5 w-20 bg-slate-700" />
-        <div className="mt-2 h-1.5 w-full bg-slate-200" />
+        </aside>
       </div>
     </div>
   );
 }
 
-function ProfilePhoto({
-  src,
-  size = "md",
+function ResumeBody({
+  summary,
+  experience,
+  education,
+  languages = [],
+  projects = [],
+  fatherName = "",
+  gender = "",
+  dob = "",
+  maritalStatus = "",
+  nationality = "",
+  religion = "",
+  passport = "",
+  skillsList,
+  accent,
+  headingBorder,
+  compact = false,
 }: {
-  src: string;
-  size?: "md" | "lg";
+  summary: string;
+  experience: Experience[];
+  education: Education[];
+  languages?: Language[];
+  projects?: Project[];
+  fatherName?: string;
+  gender?: string;
+  dob?: string;
+  maritalStatus?: string;
+  nationality?: string;
+  religion?: string;
+  passport?: string;
+  skillsList: string[];
+  accent: string;
+  headingBorder: string;
+  compact?: boolean;
 }) {
   return (
-    <img
-      src={src}
-      alt="Profile"
-      className={`rounded-full border border-slate-200 object-cover ${
-        size === "lg" ? "h-20 w-20" : "h-14 w-14"
-      }`}
-    />
-  );
-}
+    <div className={compact ? "space-y-5" : "space-y-7"}>
+      {(fatherName || gender || dob || maritalStatus || nationality || religion || passport) && (
+        <ResumeSection
+          title="Personal Information"
+          accent={accent}
+          headingBorder={headingBorder}
+        >
+          <div className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+            {fatherName && <InfoRow label="Father's Name" value={fatherName} />}
+            {gender && <InfoRow label="Gender" value={gender} />}
+            {dob && <InfoRow label="Date of Birth" value={dob} />}
+            {maritalStatus && <InfoRow label="Marital Status" value={maritalStatus} />}
+            {nationality && <InfoRow label="Nationality" value={nationality} />}
+            {religion && <InfoRow label="Religion" value={religion} />}
+            {passport && <InfoRow label="Passport Number" value={passport} />}
+          </div>
+        </ResumeSection>
+      )}
 
-function ContactLine({
-  items,
-  className = "",
-}: {
-  items: {
-    icon: React.ComponentType<{ size?: number; className?: string }>;
-    text: string;
-  }[];
-  className?: string;
-}) {
-  return (
-    <div className={`flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500 ${className}`}>
-      {items.map((item, index) => {
-        const Icon = item.icon;
-        return (
-          <span key={index} className="inline-flex items-center gap-1">
-            <Icon size={12} />
-            {item.text}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
+      {summary && (
+        <ResumeSection
+          title="Professional Summary"
+          accent={accent}
+          headingBorder={headingBorder}
+        >
+          <p className="text-sm leading-6 text-slate-600">{summary}</p>
+        </ResumeSection>
+      )}
 
-function SidebarSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="mt-7">
-      <h2 className="mb-2 border-b border-white/20 pb-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
+      {experience.some((item) => item.role || item.company) && (
+        <ResumeSection
+          title="Experience"
+          accent={accent}
+          headingBorder={headingBorder}
+        >
+          <div className={compact ? "space-y-4" : "space-y-5"}>
+            {experience
+              .filter((item) => item.role || item.company)
+              .map((item) => (
+                <div key={item.id}>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <div>
+                      <h3 className="font-black text-slate-900">
+                        {item.role || "Role"}
+                      </h3>
+                      {item.company && (
+                        <p className={`text-sm font-bold ${accent}`}>
+                          {item.company}
+                        </p>
+                      )}
+                    </div>
+                    {item.period && (
+                      <span className="text-xs font-semibold text-slate-400">
+                        {item.period}
+                      </span>
+                    )}
+                  </div>
 
-function SidebarContact({
-  items,
-}: {
-  items: {
-    icon: React.ComponentType<{ size?: number; className?: string }>;
-    text: string;
-  }[];
-}) {
-  return (
-    <div className="space-y-2">
-      {items.length ? (
-        items.map((item, index) => {
-          const Icon = item.icon;
-          return (
-            <div key={index} className="flex gap-2 text-[10px] leading-4 text-white/75">
-              <Icon size={12} className="mt-0.5 shrink-0" />
-              <span className="break-all">{item.text}</span>
-            </div>
-          );
-        })
-      ) : (
-        <p className="text-[10px] text-white/40">Add contact details</p>
+                  {item.description && (
+                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
+                      {item.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+          </div>
+        </ResumeSection>
+      )}
+
+      {education.some((item) => item.degree || item.institution) && (
+        <ResumeSection
+          title="Education"
+          accent={accent}
+          headingBorder={headingBorder}
+        >
+          <div className="space-y-3">
+            {education
+              .filter((item) => item.degree || item.institution)
+              .map((item) => (
+                <div
+                  key={item.id}
+                  className="flex justify-between gap-4"
+                >
+                  <div>
+                    <h3 className="font-black text-slate-900">
+                      {item.degree || "Degree / Course"}
+                    </h3>
+                    {item.institution && (
+                      <p className="text-sm text-slate-600">
+                        {item.institution}
+                      </p>
+                    )}
+                  </div>
+                  {item.year && (
+                    <span className="text-xs font-semibold text-slate-400">
+                      {item.year}
+                    </span>
+                  )}
+                </div>
+              ))}
+          </div>
+        </ResumeSection>
+      )}
+
+      {projects.some((item) => item.title || item.description) && (
+        <ResumeSection
+          title="Projects"
+          accent={accent}
+          headingBorder={headingBorder}
+        >
+          <div className="space-y-4">
+            {projects
+              .filter((item) => item.title || item.description)
+              .map((item) => (
+                <div key={item.id}>
+                  <h3 className="font-black text-slate-900">
+                    {item.title || "Project"}
+                  </h3>
+                  {item.description && (
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      {item.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+          </div>
+        </ResumeSection>
+      )}
+
+      {languages.some((item) => item.language) && (
+        <ResumeSection
+          title="Languages"
+          accent={accent}
+          headingBorder={headingBorder}
+        >
+          <div className="grid gap-2 sm:grid-cols-2">
+            {languages
+              .filter((item) => item.language)
+              .map((item) => (
+                <div
+                  key={item.id}
+                  className="flex justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2"
+                >
+                  <span className="text-sm font-bold text-slate-700">
+                    {item.language}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400">
+                    {item.level}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </ResumeSection>
+      )}
+
+      {skillsList.length > 0 && (
+        <ResumeSection
+          title="Skills"
+          accent={accent}
+          headingBorder={headingBorder}
+        >
+          <div className="flex flex-wrap gap-2">
+            {skillsList.map((skill) => (
+              <span
+                key={skill}
+                className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700"
+              >
+                {skill}
+              </span>
+            ))}
+          </div>
+        </ResumeSection>
       )}
     </div>
   );
 }
 
-function SidebarSkills({ skills }: { skills: string[] }) {
-  if (!skills.length) {
-    return <p className="text-[10px] text-white/40">Add skills</p>;
-  }
+function ContactBlock({
+  email,
+  phone,
+  location,
+  light = false,
+  compact = false,
+  centered = false,
+  className = "",
+}: {
+  email: string;
+  phone: string;
+  location: string;
+  light?: boolean;
+  compact?: boolean;
+  centered?: boolean;
+  className?: string;
+}) {
+  const items = [
+    email ? { icon: <Mail size={compact ? 12 : 13} />, value: email } : null,
+    phone ? { icon: <Phone size={compact ? 12 : 13} />, value: phone } : null,
+    location
+      ? { icon: <MapPin size={compact ? 12 : 13} />, value: location }
+      : null,
+  ].filter(Boolean) as { icon: React.ReactNode; value: string }[];
+
+  if (!items.length) return null;
 
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {skills.map((skill) => (
-        <span
-          key={skill}
-          className="rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[9px] font-bold text-white/90"
-        >
-          {skill}
+    <div
+      className={`flex flex-wrap gap-x-4 gap-y-2 text-xs ${
+        centered ? "justify-center" : ""
+      } ${light ? "text-slate-200" : "text-slate-500"} ${className}`}
+    >
+      {items.map((item) => (
+        <span key={item.value} className="inline-flex items-center gap-1.5">
+          {item.icon}
+          {item.value}
         </span>
       ))}
     </div>
   );
 }
 
-function SectionHeading({
-  title,
+function SideTitle({
+  children,
   dark = false,
 }: {
-  title: string;
+  children: React.ReactNode;
   dark?: boolean;
 }) {
   return (
-    <h2
-      className={`mb-3 border-b-2 pb-2 text-xs font-black uppercase tracking-[0.16em] ${
+    <h3
+      className={`mb-3 border-b pb-2 text-[10px] font-black uppercase tracking-[0.18em] ${
         dark
-          ? "border-slate-300 text-slate-900"
-          : "border-blue-100 text-blue-800"
+          ? "border-slate-200 text-slate-700"
+          : "border-white/20 text-cyan-200"
       }`}
     >
-      {title}
-    </h2>
+      {children}
+    </h3>
   );
 }
 
-function ClassicSection({
+function ResumeSection({
   title,
   children,
+  accent,
+  headingBorder,
 }: {
   title: string;
   children: React.ReactNode;
+  accent: string;
+  headingBorder: string;
 }) {
   return (
-    <section className="mb-7">
-      <h2 className="mb-3 bg-slate-200 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-800">
+    <section>
+      <h3
+        className={`mb-3 border-b pb-2 text-xs font-black uppercase tracking-[0.16em] ${accent} ${headingBorder}`}
+      >
         {title}
-      </h2>
+      </h3>
       {children}
     </section>
   );
 }
 
-function AtsTitle({ title }: { title: string }) {
-  return (
-    <h2 className="mb-3 border-b border-slate-800 pb-1 text-xs font-black tracking-wider text-slate-900">
-      {title}
-    </h2>
-  );
-}
 
-function TextOrPlaceholder({
-  text,
-  compact = false,
+function InfoRow({
+  label,
+  value,
 }: {
-  text: string;
-  compact?: boolean;
+  label: string;
+  value: string;
 }) {
   return (
-    <p
-      className={`whitespace-pre-line leading-6 text-slate-600 ${
-        compact ? "text-[12px]" : "text-sm"
-      }`}
-    >
-      {text || "Professional summary will appear here once you enter it."}
-    </p>
-  );
-}
-
-function ExperienceList({
-  experience,
-  accent,
-}: {
-  experience: Experience[];
-  accent: "blue" | "dark" | "slate" | "ats";
-}) {
-  if (!experience.length) {
-    return (
-      <p className="text-xs text-slate-400">
-        Add your work experience from the editor.
-      </p>
-    );
-  }
-
-  const accentClass =
-    accent === "blue"
-      ? "text-blue-800"
-      : accent === "dark"
-        ? "text-slate-800"
-        : "text-slate-700";
-
-  return (
-    <div className="space-y-5">
-      {experience.map((item) => (
-        <div key={item.id}>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <div>
-              <h3 className={`font-black ${accentClass}`}>
-                {item.role || "Professional Role"}
-              </h3>
-              <p className="text-xs font-bold text-slate-500">
-                {item.company || "Company"}
-              </p>
-            </div>
-
-            {item.period && (
-              <span className="text-[10px] font-bold text-slate-400">
-                {item.period}
-              </span>
-            )}
-          </div>
-
-          {item.description && (
-            <p className="mt-2 whitespace-pre-line text-xs leading-5 text-slate-600">
-              {item.description}
-            </p>
-          )}
-        </div>
-      ))}
+    <div className="flex justify-between gap-3 border-b border-slate-100 py-1.5">
+      <span className="font-semibold text-slate-400">{label}</span>
+      <span className="text-right font-bold text-slate-700">{value}</span>
     </div>
   );
 }
 
-function EducationList({
-  education,
-  compact = false,
+function SelectInput({
+  label,
+  value,
+  onChange,
+  options,
 }: {
-  education: Education[];
-  compact?: boolean;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
 }) {
-  if (!education.length) {
-    return (
-      <p className="text-xs text-slate-400">
-        Add education details from the editor.
-      </p>
-    );
-  }
-
   return (
-    <div className="space-y-3">
-      {education.map((item) => (
-        <div key={item.id} className="flex justify-between gap-4">
-          <div>
-            <h3 className="font-black text-slate-800">
-              {item.degree || "Qualification"}
-            </h3>
-            <p className={`${compact ? "text-[11px]" : "text-xs"} text-slate-500`}>
-              {item.institution || "Institution"}
-            </p>
-          </div>
-
-          {item.year && (
-            <span className="shrink-0 text-[10px] font-bold text-slate-400">
-              {item.year}
-            </span>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SkillList({
-  skills,
-  variant,
-}: {
-  skills: string[];
-  variant: "plain" | "ats";
-}) {
-  if (!skills.length) {
-    return <p className="text-xs text-slate-400">Add your skills.</p>;
-  }
-
-  return (
-    <div
-      className={
-        variant === "ats"
-          ? "grid grid-cols-2 gap-x-6 gap-y-2 text-xs"
-          : "flex flex-wrap gap-x-5 gap-y-2"
-      }
-    >
-      {skills.map((skill) => (
-        <span
-          key={skill}
-          className={
-            variant === "ats"
-              ? "font-semibold text-slate-700"
-              : "text-xs font-semibold text-slate-600"
-          }
-        >
-          {variant === "ats" ? `• ${skill}` : skill}
-        </span>
-      ))}
-    </div>
+    <label className="grid gap-1.5">
+      <span className="text-xs font-bold text-slate-500">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-800"
+      >
+        <option value="">Choose {label.toLowerCase()}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

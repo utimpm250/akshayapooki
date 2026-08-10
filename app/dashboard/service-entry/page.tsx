@@ -893,9 +893,9 @@ function ServiceEntryForm() {
 
   // Theme Class Mapping (Both background and cards match the selected pastel theme)
   const themeClasses: Record<string, { bg: string, cardBg: string, text: string, border: string, hoverColor: string }> = {
-    slate: { bg: 'bg-[#f8fafc]', cardBg: 'bg-slate-100', text: 'text-slate-900', border: 'border-slate-200', hoverColor: 'hover:bg-slate-200' },
-    green: { bg: 'bg-[#f0fdf4]', cardBg: 'bg-[#e8fbf0]', text: 'text-emerald-950', border: 'border-emerald-200', hoverColor: 'hover:bg-emerald-200' },
-    blue: { bg: 'bg-[#eff6ff]', cardBg: 'bg-[#e6f2ff]', text: 'text-blue-950', border: 'border-blue-200', hoverColor: 'hover:bg-blue-200' },
+    slate: { bg: 'bg-gradient-to-br from-slate-50 via-white to-cyan-50/40', cardBg: 'bg-white/85', text: 'text-slate-900', border: 'border-slate-200', hoverColor: 'hover:bg-cyan-50' },
+    green: { bg: 'bg-gradient-to-br from-emerald-50 via-white to-teal-50', cardBg: 'bg-white/85', text: 'text-emerald-950', border: 'border-emerald-200', hoverColor: 'hover:bg-emerald-100' },
+    blue: { bg: 'bg-gradient-to-br from-blue-50 via-white to-cyan-50', cardBg: 'bg-white/85', text: 'text-blue-950', border: 'border-blue-200', hoverColor: 'hover:bg-blue-100' },
     purple: { bg: 'bg-[#faf5ff]', cardBg: 'bg-[#f3eafc]', text: 'text-purple-950', border: 'border-purple-200', hoverColor: 'hover:bg-purple-200' },
     amber: { bg: 'bg-[#fffbeb]', cardBg: 'bg-[#fef3c7]', text: 'text-amber-950', border: 'border-amber-200', hoverColor: 'hover:bg-amber-200' },
     rose: { bg: 'bg-[#fff1f2]', cardBg: 'bg-[#ffe4e6]', text: 'text-rose-950', border: 'border-rose-200', hoverColor: 'hover:bg-rose-200' },
@@ -906,25 +906,25 @@ function ServiceEntryForm() {
   return (
     <>
       {showSuccessToast && (
-        <div className="fixed top-5 right-5 z-[9999] bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl font-bold">
+        <div className="fixed right-5 top-5 z-[9999] rounded-2xl border border-emerald-400/20 bg-emerald-500 px-6 py-3 font-black text-white shadow-[0_15px_40px_rgba(16,185,129,0.25)]">
           ✅ Bill Completed Successfully
         </div>
       )}
       {showShareToast && (
-        <div className="fixed top-20 right-5 z-[9999] bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl font-bold">
+        <div className="fixed right-5 top-20 z-[9999] rounded-2xl border border-cyan-400/20 bg-cyan-600 px-6 py-3 font-black text-white shadow-[0_15px_40px_rgba(6,182,212,0.25)]">
           📋 Invoice copied to clipboard
         </div>
       )}
       {showCopyQrToast && (
-        <div className="fixed top-5 right-5 z-[9999] bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl font-bold">
+        <div className="fixed right-5 top-5 z-[9999] rounded-2xl border border-emerald-400/20 bg-emerald-500 px-6 py-3 font-black text-white shadow-[0_15px_40px_rgba(16,185,129,0.25)]">
           ✅ Copied to clipboard successfully
         </div>
       )}
 
-      <div className={`p-6 max-w-7xl mx-auto space-y-6 relative min-h-screen transition-colors duration-300 ${activeTheme.bg} ${activeTheme.text}`} ref={customerDropdownRef}>
+      <div className={`w-full max-w-[1600px] mx-auto space-y-5 relative min-h-screen transition-colors duration-300 px-4 py-4 lg:px-5 lg:py-5 xl:px-6 ${activeTheme.bg} ${activeTheme.text}`} ref={customerDropdownRef}>
         {showStaffModal && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full bg-white rounded-2xl border border-white/20 shadow-lg px-5 py-3">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md">
+            <div className="w-full rounded-3xl border border-slate-200/80 bg-white/95 px-5 py-4 shadow-[0_25px_70px_rgba(15,23,42,0.18)] backdrop-blur-xl">
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
                   <Lock size={18} className="text-indigo-600" /> Switch Staff / Login
@@ -945,15 +945,15 @@ function ServiceEntryForm() {
               </div>
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowStaffModal(false)} className="flex-1 border border-slate-200 py-3 rounded-xl font-bold text-xs hover:bg-slate-50 text-slate-600">Cancel</button>
-                <button onClick={handleVerifyStaffPin} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20"><ShieldCheck size={16} /> Authorize</button>
+                <button onClick={handleVerifyStaffPin} className="flex-1 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 py-3 text-xs font-black text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5"><ShieldCheck size={16} /> Authorize</button>
               </div>
             </div>
           </div>
         )}
 
         {showCalculator && (
-          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5 border border-slate-100 relative">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-md">
+            <div className="w-full max-w-sm rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.2)] backdrop-blur-xl">
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
                   <Calculator size={18} className="text-indigo-600" /> Balance Calculator
@@ -1001,11 +1001,11 @@ function ServiceEntryForm() {
 
         {showPaymentQRModal && (
           <div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md"
             onClick={() => setShowPaymentQRModal(false)}
           >
             <div
-              className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4"
+              className="w-full max-w-md rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.2)] backdrop-blur-xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -1087,11 +1087,11 @@ function ServiceEntryForm() {
 
         {showQRModal && (
           <div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md"
             onClick={() => setShowQRModal(false)}
           >
             <div
-              className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4"
+              className="w-full max-w-md rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.2)] backdrop-blur-xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -1209,14 +1209,14 @@ function ServiceEntryForm() {
             </select>
           </div>
         </div>
-        <div className="bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-600 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-cyan-900 to-blue-900 p-5 text-white shadow-[0_20px_55px_rgba(15,23,42,0.22)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-cyan-400/10">
           <div>
-            <p className="text-[11px] uppercase tracking-widest font-semibold text-blue-100">Billing Dashboard</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-cyan-200">Billing Dashboard</p>
             <h2 className="text-5xl font-black mt-1">₹{totalAmount.toFixed(2)}</h2>
           </div>
           <div className="flex flex-wrap gap-3">
             
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl px-5 py-3 flex items-center gap-3 border border-white/10">
+            <div className="rounded-2xl border border-white/10 bg-white/10 px-5 py-3 backdrop-blur-md flex items-center gap-3 shadow-inner">
               <Calendar size={20} className="text-blue-200" />
               <div>
                 <p className="text-[10px] text-blue-200 font-semibold tracking-wider">DATE</p>
@@ -1226,7 +1226,7 @@ function ServiceEntryForm() {
             <QuickReceiptScan />
             <div 
               onClick={() => setShowStaffModal(true)} 
-              className="bg-white/10 hover:bg-white/25 cursor-pointer backdrop-blur-md rounded-2xl px-5 py-3 flex items-center gap-3 transition border border-white/10"
+              className="cursor-pointer rounded-2xl border border-white/10 bg-white/10 px-5 py-3 backdrop-blur-md transition hover:bg-white/15 flex items-center gap-3"
               title="Click to switch staff login"
             >
               <User size={20} className="text-blue-200" />
@@ -1239,13 +1239,13 @@ function ServiceEntryForm() {
         </div>
 
         <div className={`${activeTheme.cardBg} rounded-2xl p-6 shadow-sm border ${activeTheme.border}`}>
-          <h3 className="font-bold text-slate-700 text-sm flex items-center gap-2 mb-4 border-b border-slate-200/60 pb-3">
+          <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-3 text-sm font-black text-slate-800">
             <User size={16} className="text-slate-400" /> Customer Details
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             <div className="relative">
-              <div className="border border-slate-200/80 rounded-2xl p-2 bg-white/80 flex items-center">
+              <div className="border border-slate-200 rounded-2xl bg-white p-2.5 shadow-sm transition focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
                 <Phone size={18} className="text-slate-400 mx-3" />
                 <div className="w-full">
                   <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Mobile Number (Type first 4 digits)</label>
@@ -1263,12 +1263,12 @@ function ServiceEntryForm() {
                 </div>
               </div>
               {showMobileDropdown && filteredByMobile.length > 0 && (
-                <div className="absolute z-20 w-full bg-white border border-slate-200 rounded-2xl mt-1 max-h-48 overflow-y-auto shadow-xl">
+                <div className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
                   {filteredByMobile.map((cust, idx) => (
                     <div 
                       key={idx} 
                       onClick={() => handleSelectCustomer(cust)}
-                      className="p-3 text-sm hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-0"
+                      className="p-3 text-sm font-medium transition hover:bg-cyan-50 cursor-pointer border-b border-slate-100 last:border-0"
                     >
                       <p className="font-semibold text-slate-700">{cust.name}</p>
                       <p className="text-xs text-indigo-600 font-bold">{cust.mobile}</p>
@@ -1279,7 +1279,7 @@ function ServiceEntryForm() {
             </div>
 
             <div className="relative">
-              <div className="border border-slate-200/80 rounded-2xl p-2 bg-white/80 flex items-center">
+              <div className="border border-slate-200 rounded-2xl bg-white p-2.5 shadow-sm transition focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
                 <Search size={18} className="text-slate-400 mx-3" />
                 <div className="w-full">
                   <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Customer Name (Type first 3 letters)</label>
@@ -1297,12 +1297,12 @@ function ServiceEntryForm() {
                 </div>
               </div>
               {showNameDropdown && filteredByName.length > 0 && (
-                <div className="absolute z-20 w-full bg-white border border-slate-200 rounded-2xl mt-1 max-h-48 overflow-y-auto shadow-xl">
+                <div className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
                   {filteredByName.map((cust, idx) => (
                     <div 
                       key={idx} 
                       onClick={() => handleSelectCustomer(cust)}
-                      className="p-3 text-sm hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-0"
+                      className="p-3 text-sm font-medium transition hover:bg-cyan-50 cursor-pointer border-b border-slate-100 last:border-0"
                     >
                       <p className="font-semibold text-slate-700">{cust.name}</p>
                       <p className="text-xs text-indigo-600 font-bold">{cust.mobile}</p>
@@ -1316,14 +1316,14 @@ function ServiceEntryForm() {
         </div>
 
         <div className={`${activeTheme.cardBg} rounded-2xl p-6 shadow-sm border ${activeTheme.border} space-y-6`} ref={dropdownRef}>
-          <h3 className="font-bold text-slate-700 text-sm flex items-center gap-2 border-b border-slate-200/60 pb-3">
+          <h3 className="flex items-center gap-2 border-b border-slate-200 pb-3 text-sm font-black text-slate-800">
             <Plus size={16} className="text-slate-400" /> Add Service
           </h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
             <div className="lg:col-span-4 relative">
               <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Services</label>
-              <div className="border border-slate-200/80 rounded-2xl p-2.5 bg-white/80">
+              <div className="border border-slate-200 rounded-2xl bg-white p-2.5 shadow-sm transition focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
                 <input
                   ref={serviceInputRef}
                   type="text"
@@ -1338,7 +1338,7 @@ function ServiceEntryForm() {
                 />
               </div>
               {showDropdown && (
-                <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-2xl mt-1 max-h-48 overflow-y-auto shadow-xl">
+                <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
                   {services.filter(s => s.name.toLowerCase().includes(searchService.toLowerCase())).map(srv => (
                     <div 
                       key={srv.id} 
@@ -1355,7 +1355,7 @@ function ServiceEntryForm() {
 
             <div className="lg:col-span-2">
               <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Wallet Chg.</label>
-              <div className="border border-slate-200/80 rounded-2xl p-2.5 bg-white/80">
+              <div className="border border-slate-200 rounded-2xl bg-white p-2.5 shadow-sm transition focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
                 <input
                   type="number"
                   className="w-full bg-transparent outline-none text-sm text-slate-800 font-medium"
@@ -1367,7 +1367,7 @@ function ServiceEntryForm() {
 
             <div className="lg:col-span-2">
               <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Wallet</label>
-              <div className="border border-slate-200/80 rounded-2xl p-2 bg-white/80">
+              <div className="border border-slate-200 rounded-2xl bg-white p-2.5 shadow-sm transition focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
                 <select
                   className="w-full bg-transparent outline-none text-sm text-slate-800 font-medium cursor-pointer"
                   value={wallet}
@@ -1383,7 +1383,7 @@ function ServiceEntryForm() {
 
             <div className="lg:col-span-2">
               <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Srv. Chg.</label>
-              <div className="border border-slate-200/80 rounded-2xl p-2.5 bg-white/80">
+              <div className="border border-slate-200 rounded-2xl bg-white p-2.5 shadow-sm transition focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
                 <input
                   type="number"
                   className="w-full bg-transparent outline-none text-sm text-slate-800 font-medium"
@@ -1395,7 +1395,7 @@ function ServiceEntryForm() {
 
             <div className="lg:col-span-1">
               <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Qty</label>
-              <div className="border border-slate-200/80 rounded-2xl p-2.5 bg-white/80">
+              <div className="border border-slate-200 rounded-2xl bg-white p-2.5 shadow-sm transition focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
                 <input
                   type="number"
                   className="w-full bg-transparent outline-none text-sm text-slate-800 font-medium"
@@ -1409,14 +1409,14 @@ function ServiceEntryForm() {
             <div className="lg:col-span-1">
               <button 
                 onClick={handleAddItem}
-                className="w-full bg-slate-900 text-white rounded-2xl py-3 font-bold hover:bg-slate-800 transition flex items-center justify-center gap-1 text-sm shadow-md"
+                className="w-full rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 py-3 font-black text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl flex items-center justify-center gap-1 text-sm"
               >
                 <Plus size={16} /> Add
               </button>
             </div>
           </div>
 
-          <div className="p-4 bg-white/60 rounded-2xl border border-slate-200/60 min-h-[140px] flex flex-col justify-center">
+          <div className="min-h-[140px] rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-xl flex flex-col justify-center">
             <div className="flex items-center justify-between mb-3 border-b border-slate-200/60 pb-2">
               <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider flex items-center gap-2">
                 <ReceiptText size={14} className="text-slate-400" /> Bill Items
@@ -1443,7 +1443,7 @@ function ServiceEntryForm() {
                       <th className="py-2 px-2 text-center">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200/60">
+                  <tbody className="divide-y divide-slate-200/80">
                     {items.map((item, index) => (
                       <tr key={item.id} className="text-slate-800 font-medium">
                         <td className="py-3 px-2 text-xs text-slate-500">{index + 1}</td>
@@ -1452,7 +1452,7 @@ function ServiceEntryForm() {
                           <select
                             value={item.status}
                             onChange={(e) => handleItemChange(item.id, 'status', e.target.value)}
-                            className="border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white font-semibold outline-none cursor-pointer shadow-sm"
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold shadow-sm outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/10 cursor-pointer"
                           >
                             <option value="Completed">Completed</option>
                             <option value="In Progress">In Progress</option>
@@ -1461,7 +1461,7 @@ function ServiceEntryForm() {
                         <td className="py-3 px-2">
                           <input
                             type="number"
-                            className="w-20 border border-slate-200 rounded-xl px-2 py-1 text-xs bg-white font-medium outline-none"
+                            className="w-20 rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs font-medium shadow-sm outline-none focus:border-cyan-400"
                             value={item.walletChg}
                             onChange={(e) => handleItemChange(item.id, 'walletChg', Number(e.target.value))}
                           />
@@ -1470,7 +1470,7 @@ function ServiceEntryForm() {
                           <select
                             value={item.wallet}
                             onChange={(e) => handleItemChange(item.id, 'wallet', e.target.value)}
-                            className="border border-slate-200 rounded-xl px-2 py-1 text-xs bg-white font-medium outline-none cursor-pointer"
+                            className="rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs font-medium shadow-sm outline-none focus:border-cyan-400 cursor-pointer"
                           >
                             <option value="Select Wallet">Select Wallet</option>
                             {availableWallets.map(w => (
@@ -1481,7 +1481,7 @@ function ServiceEntryForm() {
                         <td className="py-3 px-2">
                           <input
                             type="number"
-                            className="w-20 border border-slate-200 rounded-xl px-2 py-1 text-xs bg-white font-medium outline-none"
+                            className="w-20 rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs font-medium shadow-sm outline-none focus:border-cyan-400"
                             value={item.srvChg}
                             onChange={(e) => handleItemChange(item.id, 'srvChg', Number(e.target.value))}
                           />
@@ -1489,7 +1489,7 @@ function ServiceEntryForm() {
                         <td className="py-3 px-2 text-center">
                           <input
                             type="number"
-                            className="w-14 border border-slate-200 rounded-xl px-2 py-1 text-xs bg-white font-medium outline-none text-center"
+                            className="w-14 rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs font-medium shadow-sm outline-none focus:border-cyan-400 text-center"
                             value={item.qty}
                             min="1"
                             onChange={(e) => handleItemChange(item.id, 'qty', Number(e.target.value))}
@@ -1638,7 +1638,7 @@ function ServiceEntryForm() {
           <div className="flex gap-2 w-full sm:w-auto">
             <button 
               onClick={handleClearForm}
-              className="border border-rose-200 bg-rose-50/50 hover:bg-rose-100/50 text-rose-600 font-bold text-xs px-5 py-3.5 rounded-2xl transition flex items-center justify-center gap-2 shadow-sm"
+              className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-3.5 text-xs font-black text-rose-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-rose-100 flex items-center justify-center gap-2"
             >
               Clear Form <span className="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[9px]">F10</span>
             </button>
@@ -1647,19 +1647,19 @@ function ServiceEntryForm() {
           <div className="flex gap-3 w-full sm:w-auto flex-wrap">
             <button 
               onClick={handlePrint}
-              className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-5 py-3.5 rounded-2xl transition flex items-center justify-center gap-2 shadow-sm"
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-xs font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-50 flex items-center justify-center gap-2"
             >
               <Printer size={16} /> Print <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[9px]">Alt+P</span>
             </button>
             <button
               onClick={() => { setIsModalGPayQr(true); setShowQRModal(true); }}
-              className="border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-5 py-3.5 rounded-2xl transition flex items-center justify-center gap-2 shadow-sm"
+              className="rounded-2xl border border-cyan-200 bg-cyan-50 px-5 py-3.5 text-xs font-black text-cyan-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-cyan-100 flex items-center justify-center gap-2"
             >
               <QrCode size={16} /> QR Code
             </button>
             <button
               onClick={handleShare}
-              className="border border-emerald-200 bg-emerald-50/30 hover:bg-emerald-50 text-emerald-700 font-bold text-xs px-5 py-3.5 rounded-2xl transition flex items-center justify-center gap-2 shadow-sm"
+              className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3.5 text-xs font-black text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-100 flex items-center justify-center gap-2"
             >
               <Share2 size={16} /> Share <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[9px]">Alt+W</span>
             </button>

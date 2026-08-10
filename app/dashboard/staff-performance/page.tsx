@@ -376,22 +376,22 @@ export default function StaffPerformancePage() {
     ]);
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen space-y-5 bg-gradient-to-br from-slate-50 via-white to-cyan-50/30 p-4 sm:p-5 lg:p-6">
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col items-start justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl lg:flex-row lg:items-center">
 
         <div>
-          <h1 className="text-3xl font-black text-slate-800">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
             Staff Performance Dashboard
           </h1>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-xs font-medium text-slate-500 sm:text-sm">
             Monitor attendance, performance,
             billing and salary.
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
           <select
             value={selectedStaff}
             onChange={(e) =>
@@ -402,7 +402,7 @@ export default function StaffPerformancePage() {
               currentUser.role?.toLowerCase() !==
                 "admin"
             }
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium outline-none focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500"
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm font-black text-slate-700 outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 disabled:bg-slate-100 disabled:text-slate-500 sm:w-72"
           >
             {staffList.map((staff) => (
               <option
@@ -432,17 +432,17 @@ export default function StaffPerformancePage() {
         setYearlyYear={setSummaryYear}
       />
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-wrap border-b border-slate-200">
+      <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_12px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+        <div className="flex flex-wrap border-b border-slate-200 bg-slate-50/60">
 
           <button
             onClick={() =>
               setActiveTab("pending")
             }
-            className={`px-6 py-4 text-sm font-semibold transition ${
+            className={`px-5 py-4 text-sm font-black transition-all ${
               activeTab === "pending"
-                ? "border-b-2 border-indigo-600 text-indigo-600"
-                : "text-slate-500 hover:text-slate-700"
+                ? "border-b-2 border-cyan-500 text-cyan-700 bg-cyan-50/50"
+                : "text-slate-500 hover:bg-white hover:text-slate-800"
             }`}
           >
             Pending Bills
@@ -452,10 +452,10 @@ export default function StaffPerformancePage() {
             onClick={() =>
               setActiveTab("billed")
             }
-            className={`px-6 py-4 text-sm font-semibold transition ${
+            className={`px-5 py-4 text-sm font-black transition-all ${
               activeTab === "billed"
-                ? "border-b-2 border-indigo-600 text-indigo-600"
-                : "text-slate-500 hover:text-slate-700"
+                ? "border-b-2 border-cyan-500 text-cyan-700 bg-cyan-50/50"
+                : "text-slate-500 hover:bg-white hover:text-slate-800"
             }`}
           >
             Billed Services
@@ -465,10 +465,10 @@ export default function StaffPerformancePage() {
             onClick={() =>
               setActiveTab("attendance")
             }
-            className={`px-6 py-4 text-sm font-semibold transition ${
+            className={`px-5 py-4 text-sm font-black transition-all ${
               activeTab === "attendance"
-                ? "border-b-2 border-indigo-600 text-indigo-600"
-                : "text-slate-500 hover:text-slate-700"
+                ? "border-b-2 border-cyan-500 text-cyan-700 bg-cyan-50/50"
+                : "text-slate-500 hover:bg-white hover:text-slate-800"
             }`}
           >
             Attendance
@@ -478,10 +478,10 @@ export default function StaffPerformancePage() {
             onClick={() =>
               setActiveTab("salary")
             }
-            className={`px-6 py-4 text-sm font-semibold transition ${
+            className={`px-5 py-4 text-sm font-black transition-all ${
               activeTab === "salary"
-                ? "border-b-2 border-indigo-600 text-indigo-600"
-                : "text-slate-500 hover:text-slate-700"
+                ? "border-b-2 border-cyan-500 text-cyan-700 bg-cyan-50/50"
+                : "text-slate-500 hover:bg-white hover:text-slate-800"
             }`}
           >
             Salary Summary
@@ -489,7 +489,7 @@ export default function StaffPerformancePage() {
 
         </div>
 
-        <div className="p-6">
+        <div className="p-5 sm:p-6">
                     {activeTab === "pending" && (
 <PendingBills
   bills={staffPendingBills}

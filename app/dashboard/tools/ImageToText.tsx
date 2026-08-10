@@ -105,12 +105,12 @@ if (work) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5 border-b">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-slate-950/70 p-2 backdrop-blur-md sm:p-3">
+      <div className="flex h-[calc(100vh-1rem)] max-h-[760px] w-full max-w-6xl flex-col overflow-hidden rounded-[24px] border border-white/80 bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.28)] backdrop-blur-2xl sm:h-[calc(100vh-1.5rem)] sm:rounded-[28px]">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 py-3.5 backdrop-blur-xl sm:px-6 sm:py-4">
           <div>
-            <h3 className="text-2xl font-bold text-slate-800">Image & PDF To Text</h3>
-            <p className="text-sm text-slate-500">Extract text from images or PDF files instantly</p>
+            <h3 className="text-lg font-black tracking-tight text-slate-800 sm:text-xl">Image & PDF To Text</h3>
+            <p className="mt-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">Extract text from images or PDF files instantly</p>
           </div>
           <button
             onClick={() => {
@@ -119,18 +119,18 @@ if (work) {
               setOcrText("");
               setOcrProgress(0);
             }}
-            className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center font-bold"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-all hover:-translate-y-0.5 hover:bg-slate-100 hover:text-slate-900"
           >
             ✕
           </button>
         </div>
 
-        <div className="p-6">
-          <div className="space-y-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-5">
+          <div className="space-y-4">
             <div>
-              <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-orange-300 rounded-xl py-6 px-3 cursor-pointer hover:bg-orange-50 transition">
-                <p className="text-base font-semibold text-slate-700">Browse Image or PDF</p>
-                <p className="text-xs text-slate-500 mt-1">JPG • PNG • WEBP • PDF</p>
+              <label className="group flex min-h-16 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-300/80 bg-orange-50/40 px-3 py-2 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-400 hover:bg-orange-50 hover:shadow-[0_14px_35px_rgba(249,115,22,0.12)] sm:min-h-20">
+                <p className="text-base font-black text-slate-800">Browse Image or PDF</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">JPG • PNG • WEBP • PDF</p>
                 <input
                   type="file"
                   accept="image/*,.pdf,application/pdf"
@@ -146,18 +146,18 @@ if (work) {
             </div>
 
             {ocrLoading && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-slate-700">
+              <div className="space-y-2 rounded-3xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+                <div className="flex justify-between text-sm font-bold text-slate-700">
                   <span>Processing File & Extracting Text...</span>
                   <span>{ocrProgress}%</span>
                 </div>
-                <div className="w-full h-3 rounded-full bg-slate-200 overflow-hidden">
-                  <div className="h-full bg-orange-500 transition-all" style={{ width: `${ocrProgress}%` }} />
+                <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all" style={{ width: `${ocrProgress}%` }} />
                 </div>
               </div>
             )}
 
-            <div className="text-xs text-slate-500 border rounded-xl px-4 py-2 bg-slate-50">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-xs font-semibold text-slate-500 shadow-sm">
               {ocrText.length} Characters &nbsp;&nbsp; | &nbsp;&nbsp;
               {ocrText.trim() === "" ? 0 : ocrText.trim().split(/\s+/).length} Words &nbsp;&nbsp; | &nbsp;&nbsp;
               {ocrText.split("\n").length} Lines
@@ -167,17 +167,17 @@ if (work) {
               value={ocrText}
               onChange={(e) => setOcrText(e.target.value)}
               placeholder="Extracted text will appear here..."
-              className="w-full h-[300px] rounded-2xl border border-slate-300 p-4 outline-none resize-none text-slate-800"
+              className="h-[180px] w-full resize-none rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-800 shadow-inner outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 sm:h-[210px] lg:h-[240px]"
             />
 
-            <div className="flex justify-end gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:flex sm:justify-end">
               <button
                 type="button"
                 onClick={() => {
                   navigator.clipboard.writeText(ocrText);
                   alert("Text copied successfully.");
                 }}
-                className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition flex items-center gap-2"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 font-black sm:px-5 sm:py-3.5 text-white shadow-[0_12px_30px_rgba(37,99,235,0.2)] transition-all hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <Copy size={18} />
                 Copy Text
@@ -196,7 +196,7 @@ if (work) {
                   document.body.removeChild(link);
                   URL.revokeObjectURL(url);
                 }}
-                className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition"
+                className="rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 font-black sm:px-5 sm:py-3.5 text-white shadow-[0_12px_30px_rgba(16,185,129,0.2)] transition-all hover:-translate-y-0.5 hover:shadow-lg"
               >
                 Download TXT
               </button>

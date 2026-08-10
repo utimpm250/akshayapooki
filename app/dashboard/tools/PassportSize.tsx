@@ -100,25 +100,25 @@ export default function PassportSize({
 
   return (
     <>
-      <div className="fixed inset-0 z-[99999] bg-black/40 backdrop-blur-sm overflow-auto">
-        <div className="min-h-screen p-6 flex items-center justify-center">
-          <div className="w-full max-w-[950px] rounded-[24px] overflow-hidden bg-[#f5f7fb] shadow-2xl">
+      <div className="fixed inset-0 z-[99999] overflow-auto bg-slate-950/65 backdrop-blur-md">
+        <div className="flex min-h-screen items-center justify-center p-3 sm:p-5">
+          <div className="w-full max-w-6xl overflow-hidden rounded-[30px] border border-white/70 bg-slate-50/95 shadow-[0_30px_100px_rgba(15,23,42,0.3)] backdrop-blur-2xl">
             
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#ef3b5d] to-[#c7174d] px-8 py-6 flex items-center justify-between text-white">
+            <div className="flex items-center justify-between border-b border-white/10 bg-gradient-to-br from-rose-600 via-pink-600 to-fuchsia-700 px-5 py-5 text-white shadow-lg sm:px-7 sm:py-6">
               <div>
-                <h1 className="text-[28px] font-black leading-none">
+                <h1 className="text-2xl font-black leading-none tracking-tight sm:text-[28px]">
                   Passport Photo Creator
                 </h1>
-                <p className="mt-3 text-white/90 text-sm">
+                <p className="mt-2 text-sm text-white/80">
                   Generate and print multi-photo sheets
                 </p>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3">
                 <button
                   onClick={openFilePicker}
-                  className="w-12 h-12 rounded-2xl bg-white/15 hover:bg-white/25 transition flex items-center justify-center"
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 transition-all hover:-translate-y-0.5 hover:bg-white/20 sm:h-12 sm:w-12"
                 >
                   <Camera size={24} />
                 </button>
@@ -126,7 +126,7 @@ export default function PassportSize({
                 {onClose && (
                   <button
                     onClick={onClose}
-                    className="w-14 h-14 rounded-2xl bg-white/15 hover:bg-white/25 transition flex items-center justify-center"
+                    className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 transition-all hover:-translate-y-0.5 hover:bg-white/20 sm:h-12 sm:w-12"
                   >
                     <X size={22} />
                   </button>
@@ -142,24 +142,24 @@ export default function PassportSize({
               onChange={handleSelectImage}
             />
 
-            <div className="grid grid-cols-1 xl:grid-cols-[1.4fr_0.8fr] gap-6 p-6">
+            <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 lg:gap-5 lg:p-6 xl:grid-cols-[1.35fr_0.85fr]">
               
               {/* ===========================
                   LEFT PANEL (Live Preview)
               =========================== */}
-              <div className="rounded-[20px] bg-white border border-slate-200 overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-                  <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <div className="overflow-hidden rounded-[26px] border border-white/80 bg-white/90 shadow-[0_12px_40px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 px-4 py-4 sm:px-5">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
                     Live Preview
                   </h3>
-                  <span className="text-[11px] font-semibold text-slate-500">
+                  <span className="text-[10px] font-bold text-slate-500 sm:text-[11px]">
                     {paperType === "A4"
                       ? "A4 Paper (210 × 297 mm)"
                       : '6" × 4" Paper (152 × 102 mm)'}
                   </span>
                 </div>
 
-                <div className="p-6">
+                <div className="p-4 sm:p-5">
                   <div
                     ref={previewContainerRef}
                     onDrop={handleDrop}
@@ -168,10 +168,10 @@ export default function PassportSize({
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseLeave}
-                    className="min-h-[520px] rounded-xl bg-[#f5f7fb] border border-slate-200 flex items-center justify-center overflow-hidden"
+                    className="flex min-h-[420px] items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 p-3 sm:min-h-[500px] lg:min-h-[520px]"
                   >
                     <div
-                      className={`bg-white border border-slate-300 shadow-sm flex items-center justify-center overflow-hidden ${
+                      className={`flex items-center justify-center overflow-hidden rounded-xl border border-slate-300 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.12)] ${
                         paperType === "A4"
                           ? "w-[360px] h-[510px]"
                           : "w-[430px] h-[286px]"
@@ -184,12 +184,12 @@ export default function PassportSize({
                     </div>
                   </div>
 
-                  <div className="flex justify-center pt-7">
+                  <div className="flex justify-center pt-5 sm:pt-7">
                     <button
                       type="button"
                       disabled={!image}
                       onClick={handleDownload}
-                      className="w-[300px] h-12 rounded-xl bg-slate-200 text-white font-semibold enabled:bg-[#ef174f] enabled:hover:bg-[#db1348] transition flex items-center justify-center gap-2"
+                      className="flex h-12 w-full max-w-[320px] items-center justify-center gap-2 rounded-2xl bg-slate-200 font-black text-white shadow-sm transition-all enabled:bg-gradient-to-r enabled:from-rose-600 enabled:to-pink-600 enabled:hover:-translate-y-0.5 enabled:hover:shadow-lg"
                     >
                       <Download size={18} />
                       Download Sheet
@@ -201,34 +201,34 @@ export default function PassportSize({
               {/* ===========================
                   RIGHT PANEL
               =========================== */}
-              <div className="space-y-5">
+              <div className="space-y-4 sm:space-y-5">
                 
                 {/* Initial Source & Background */}
-                <div className="rounded-[18px] border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="rounded-3xl border border-white/80 bg-white/90 p-5 shadow-[0_10px_32px_rgba(15,23,42,0.06)] backdrop-blur-xl">
                   <h3 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-500">
                     Initial Source & Background
                   </h3>
 
                   <div
                     onClick={openFilePicker}
-                    className="mt-5 h-[92px] rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition"
+                    className="group mt-5 flex h-[92px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/70 transition-all duration-200 hover:-translate-y-0.5 hover:border-rose-300 hover:bg-rose-50/40 hover:shadow-md"
                   >
                     <Upload size={20} className="text-slate-500 mb-2" />
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs font-semibold text-slate-600">
                       Choose Photo or Drag & Drop
                     </p>
                   </div>
                 </div>
 
                 {/* Print Parameters */}
-                <div className="rounded-[18px] border border-slate-200 bg-white p-5 shadow-sm">
-                  <h3 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-500 mb-5">
+                <div className="rounded-3xl border border-white/80 bg-white/90 p-5 shadow-[0_10px_32px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+                  <h3 className="mb-5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
                     Print Parameters
                   </h3>
 
                   <div className="grid grid-cols-[1fr_auto] gap-4">
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-500">
+                      <label className="text-[10px] font-bold text-slate-500 sm:text-[11px]">
                         Paper Size
                       </label>
                       <select
@@ -236,7 +236,7 @@ export default function PassportSize({
                         onChange={(e) =>
                           setPaperType(e.target.value as "A4" | "6x4")
                         }
-                        className="mt-2 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                        className="mt-2 h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm font-semibold outline-none transition focus:border-rose-400 focus:bg-white focus:ring-4 focus:ring-rose-500/10"
                       >
                         <option value="A4">A4 Paper</option>
                         <option value="6x4">6 × 4 Paper</option>
@@ -244,21 +244,21 @@ export default function PassportSize({
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-500">
+                      <label className="text-[10px] font-bold text-slate-500 sm:text-[11px]">
                         Bg Color
                       </label>
                       <input
                         type="color"
                         value={backgroundColor}
                         onChange={(e) => setBackgroundColor(e.target.value)}
-                        className="mt-2 h-10 w-10 rounded-lg cursor-pointer"
+                        className="mt-2 h-10 w-10 cursor-pointer rounded-xl border border-slate-300 shadow-sm"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mt-5">
+                  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-500">
+                      <label className="text-[10px] font-bold text-slate-500 sm:text-[11px]">
                         Number of Copies
                       </label>
                       <input
@@ -267,12 +267,12 @@ export default function PassportSize({
                         max={24}
                         value={copies}
                         onChange={(e) => setCopies(Number(e.target.value))}
-                        className="mt-2 h-10 w-full rounded-lg border border-slate-300 px-3"
+                        className="mt-2 h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 font-semibold outline-none transition focus:border-rose-400 focus:bg-white focus:ring-4 focus:ring-rose-500/10"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-500">
+                      <label className="text-[10px] font-bold text-slate-500 sm:text-[11px]">
                         Border Size (px)
                       </label>
                       <input
@@ -281,46 +281,46 @@ export default function PassportSize({
                         max={20}
                         value={borderSize}
                         onChange={(e) => setBorderSize(Number(e.target.value))}
-                        className="mt-2 h-10 w-full rounded-lg border border-slate-300 px-3"
+                        className="mt-2 h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 font-semibold outline-none transition focus:border-rose-400 focus:bg-white focus:ring-4 focus:ring-rose-500/10"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Fine Tuning */}
-                <div className="rounded-[18px] border border-slate-200 bg-white p-5 shadow-sm">
-                  <h3 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-500 mb-5">
+                <div className="rounded-3xl border border-white/80 bg-white/90 p-5 shadow-[0_10px_32px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+                  <h3 className="mb-5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
                     Fine Tuning Adjustments
                   </h3>
 
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-500">Brightness</label>
-                      <input type="range" min={0} max={200} value={brightness} onChange={(e) => setBrightness(Number(e.target.value))} className="mt-1 w-full" />
+                      <label className="text-[10px] font-bold text-slate-500 sm:text-[11px]">Brightness</label>
+                      <input type="range" min={0} max={200} value={brightness} onChange={(e) => setBrightness(Number(e.target.value))} className="mt-2 w-full accent-rose-600" />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-500">Contrast</label>
-                      <input type="range" min={0} max={200} value={contrast} onChange={(e) => setContrast(Number(e.target.value))} className="mt-1 w-full" />
+                      <label className="text-[10px] font-bold text-slate-500 sm:text-[11px]">Contrast</label>
+                      <input type="range" min={0} max={200} value={contrast} onChange={(e) => setContrast(Number(e.target.value))} className="mt-2 w-full accent-rose-600" />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-500">Saturation</label>
-                      <input type="range" min={0} max={200} value={saturation} onChange={(e) => setSaturation(Number(e.target.value))} className="mt-1 w-full" />
+                      <label className="text-[10px] font-bold text-slate-500 sm:text-[11px]">Saturation</label>
+                      <input type="range" min={0} max={200} value={saturation} onChange={(e) => setSaturation(Number(e.target.value))} className="mt-2 w-full accent-rose-600" />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-500">Zoom</label>
-                      <input type="range" min={50} max={250} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="mt-1 w-full" />
+                      <label className="text-[10px] font-bold text-slate-500 sm:text-[11px]">Zoom</label>
+                      <input type="range" min={50} max={250} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="mt-2 w-full accent-rose-600" />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-500">Rotation</label>
-                      <input type="range" min={-180} max={180} value={rotation} onChange={(e) => setRotation(Number(e.target.value))} className="mt-1 w-full" />
+                      <label className="text-[10px] font-bold text-slate-500 sm:text-[11px]">Rotation</label>
+                      <input type="range" min={-180} max={180} value={rotation} onChange={(e) => setRotation(Number(e.target.value))} className="mt-2 w-full accent-rose-600" />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 mt-6">
+                  <div className="mt-6 grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={resetAll}
-                      className="h-11 rounded-xl border border-slate-300 hover:bg-slate-50 flex items-center justify-center gap-2 font-semibold"
+                      className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white font-black text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md"
                     >
                       <RefreshCcw size={16} />
                       Reset
@@ -329,7 +329,7 @@ export default function PassportSize({
                       type="button"
                       onClick={handleDownload}
                       disabled={!image}
-                      className="h-11 rounded-xl bg-[#ef174f] hover:bg-[#da1448] disabled:bg-slate-300 disabled:cursor-not-allowed text-white flex items-center justify-center gap-2 font-semibold"
+                      className="flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 font-black text-white shadow-lg shadow-rose-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:bg-slate-300 disabled:from-slate-300 disabled:to-slate-300"
                     >
                       <Download size={16} />
                       Download

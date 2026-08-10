@@ -316,35 +316,35 @@ setShowEditModal(true);
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 relative min-h-screen pb-20">
+    <div className="relative mx-auto min-h-screen w-full max-w-[1500px] space-y-5 bg-gradient-to-br from-slate-50 via-white to-cyan-50/30 p-4 pb-24 sm:p-5 sm:pb-24 lg:p-6">
       
       {/* Top Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-slate-800">Staff Management</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Staff Management</h1>
       </div>
 
       {/* Top Gradient Banner Card */}
-      <div className="bg-gradient-to-r from-orange-500 via-rose-500 to-pink-500 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+      <div className="relative flex flex-col items-start justify-between gap-5 overflow-hidden rounded-[30px] border border-cyan-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-6 text-white shadow-[0_22px_55px_rgba(15,23,42,0.18)] md:flex-row md:items-center sm:p-7">
         <div>
-          <p className="text-xs uppercase tracking-wider font-semibold text-orange-100">Staff Profiles</p>
-          <h2 className="text-5xl font-black mt-1">{staffList.length}</h2>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">Staff Profiles</p>
+          <h2 className="mt-1 text-4xl font-black tracking-tight sm:text-5xl">{staffList.length}</h2>
         </div>
-        <div className="bg-white/15 backdrop-blur-md rounded-2xl px-5 py-3 flex items-center gap-3 border border-white/20">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-5 py-3 backdrop-blur-xl">
           <Users size={24} className="text-white" />
           <div>
-            <p className="text-[10px] tracking-wider uppercase text-orange-100 font-bold">Active Accounts</p>
+            <p className="text-[10px] font-black uppercase tracking-wider text-cyan-200">Active Accounts</p>
             <p className="text-sm font-black">{staffList.length}</p>
           </div>
         </div>
       </div>
 
       {/* Staff Directory Header & Search Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2">
+      <div className="flex flex-col items-start justify-between gap-4 pt-1 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
-          <h3 className="font-bold text-slate-800 text-base">Staff Directory</h3>
+          <h3 className="text-lg font-black tracking-tight text-slate-800">Staff Directory</h3>
           <button 
             onClick={() => window.location.reload()} 
-            className="text-slate-400 hover:text-slate-600 transition"
+            className="rounded-xl p-2 text-slate-400 transition-all hover:bg-cyan-50 hover:text-cyan-700"
             title="Refresh"
           >
             <RefreshCw size={14} />
@@ -356,7 +356,7 @@ setShowEditModal(true);
           <input
             type="text"
             placeholder="Search by name, ID or email..."
-            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500 shadow-sm"
+            className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-xs font-semibold outline-none shadow-sm transition-all focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -364,16 +364,16 @@ setShowEditModal(true);
       </div>
 
       {/* Staff Table Section */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_12px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider bg-slate-50/50">
-                <th className="py-4 px-6 font-bold">Staff ID</th>
-                <th className="py-4 px-6 font-bold">Name</th>
-                <th className="py-4 px-6 font-bold">Contact</th>
-                <th className="py-4 px-6 font-bold">Role</th>
-                <th className="py-4 px-6 font-bold">Salary</th>
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-400 uppercase tracking-wider">
+                <th className="px-6 py-4 font-black">Staff ID</th>
+                <th className="px-6 py-4 font-black">Name</th>
+                <th className="px-6 py-4 font-black">Contact</th>
+                <th className="px-6 py-4 font-black">Role</th>
+                <th className="px-6 py-4 font-black">Salary</th>
                 <th className="py-4 px-6 font-bold text-right">Actions</th>
               </tr>
             </thead>
@@ -386,17 +386,17 @@ setShowEditModal(true);
                 </tr>
               ) : (
                 filteredStaff.map((staff) => (
-                  <tr key={staff.id} className="hover:bg-slate-50/80 transition text-slate-700">
-                    <td className="py-4 px-6 font-bold text-slate-500">{staff.staffId}</td>
-                    <td className="py-4 px-6 font-extrabold text-slate-900">
+                  <tr key={staff.id} className="text-slate-700 transition-all hover:bg-cyan-50/30">
+                    <td className="px-6 py-4 font-black text-slate-500">{staff.staffId}</td>
+                    <td className="px-6 py-4 font-black text-slate-900">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-100 to-blue-100 text-xs font-black text-cyan-700">
                           {staff.name.charAt(0).toUpperCase()}
                         </div>
                         <span>{staff.name}</span>
                       </div>
                     </td>
-                    <td className="py-4 px-6 space-y-0.5">
+                    <td className="space-y-1 px-6 py-4">
                       <div className="flex items-center gap-1.5 text-slate-500">
                         <Mail size={12} className="text-slate-400" />
                         <span>{staff.email}</span>
@@ -406,7 +406,7 @@ setShowEditModal(true);
                         <span>{staff.phone}</span>
                       </div>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                         staff.role.toLowerCase() === 'admin' 
                           ? 'bg-blue-50 text-blue-600 border border-blue-200' 
@@ -421,14 +421,14 @@ setShowEditModal(true);
                     <td className="py-4 px-6 text-right space-x-2">
                       <button 
                         onClick={() => handleOpenEdit(staff)}
-                        className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition inline-flex items-center justify-center"
+                        className="inline-flex items-center justify-center rounded-xl bg-cyan-50 p-2 text-cyan-700 transition-all hover:-translate-y-0.5 hover:bg-cyan-100"
                         title="Edit"
                       >
                         <Edit2 size={14} />
                       </button>
                       <button 
                         onClick={() => handleDeleteStaff(staff.id)}
-                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition inline-flex items-center justify-center"
+                        className="inline-flex items-center justify-center rounded-xl bg-rose-50 p-2 text-rose-600 transition-all hover:-translate-y-0.5 hover:bg-rose-100"
                         title="Delete"
                       >
                         <Trash2 size={14} />
@@ -445,7 +445,7 @@ setShowEditModal(true);
       {/* Floating Action Button (FAB) */}
       <button 
         onClick={() => setShowAddModal(true)}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-rose-500 hover:bg-rose-600 text-white rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 z-50"
+        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-[0_15px_35px_rgba(6,182,212,0.28)] transition-all hover:-translate-y-1 hover:shadow-xl active:scale-95"
         title="Add Staff"
       >
         <Plus size={24} />
@@ -453,14 +453,14 @@ setShowEditModal(true);
 
       {/* Add New Staff Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md">
+          <div className="w-full max-w-lg space-y-5 rounded-3xl border border-white/80 bg-white/95 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.2)] backdrop-blur-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-center border-b pb-3">
               <div className="flex items-center gap-2">
                 <Users size={18} className="text-rose-500" />
-                <h3 className="font-bold text-slate-800 text-base">Add New Staff</h3>
+                <h3 className="text-lg font-black tracking-tight text-slate-800">Add New Staff</h3>
               </div>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+              <button onClick={() => setShowAddModal(false)} className="rounded-xl p-1 text-sm font-black text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">✕</button>
             </div>
 
             <form onSubmit={handleAddStaff} className="space-y-4">
@@ -472,7 +472,7 @@ setShowEditModal(true);
                     type="text"
                     required
                     placeholder="e.g. John Doe"
-                    className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                   />
@@ -488,7 +488,7 @@ setShowEditModal(true);
                       type="text"
                       required
                       placeholder="10-digit number"
-                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                       value={newPhone}
                       onChange={(e) => setNewPhone(e.target.value)}
                     />
@@ -503,7 +503,7 @@ setShowEditModal(true);
                       type="email"
                       required
                       placeholder="name@mail.com"
-                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
                     />
@@ -517,7 +517,7 @@ setShowEditModal(true);
                   <div className="relative mt-1.5">
                     <Shield size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <select
-                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none bg-white appearance-none"
+                      className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                       value={newRole}
                       onChange={(e) => setNewRole(e.target.value)}
                     >
@@ -532,7 +532,7 @@ setShowEditModal(true);
                   <label className="text-xs font-bold uppercase text-slate-500">Basic Salary</label>
                   <input
                     type="number"
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 mt-1.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                     value={newSalary}
                     onChange={(e) => setNewSalary(Number(e.target.value))}
                   />
@@ -545,7 +545,7 @@ setShowEditModal(true);
                   <button 
                     type="button" 
                     onClick={() => handleAutoGeneratePassword(false)} 
-                    className="text-xs text-blue-600 font-semibold hover:underline"
+                    className="text-xs font-black text-cyan-700 hover:underline"
                   >
                     Auto Generate
                   </button>
@@ -563,17 +563,17 @@ setShowEditModal(true);
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition"
+                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-black text-slate-600 transition hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-md transition"
+                  className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-6 py-2.5 text-xs font-black text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl"
                 >
                   Add Staff
                 </button>
@@ -585,14 +585,14 @@ setShowEditModal(true);
 
       {/* Edit Staff Profile Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md">
+          <div className="w-full max-w-lg space-y-5 rounded-3xl border border-white/80 bg-white/95 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.2)] backdrop-blur-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-center border-b pb-3">
               <div className="flex items-center gap-2">
                 <Users size={18} className="text-rose-500" />
-                <h3 className="font-bold text-slate-800 text-base">Edit Staff Profile</h3>
+                <h3 className="text-lg font-black tracking-tight text-slate-800">Edit Staff Profile</h3>
               </div>
-              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+              <button onClick={() => setShowEditModal(false)} className="rounded-xl p-1 text-sm font-black text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">✕</button>
             </div>
 
             <form onSubmit={handleUpdateStaff} className="space-y-4">
@@ -603,7 +603,7 @@ setShowEditModal(true);
                   <input
                     type="text"
                     required
-                    className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                   />
@@ -618,7 +618,7 @@ setShowEditModal(true);
                     <input
                       type="text"
                       required
-                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                       value={editPhone}
                       onChange={(e) => setEditPhone(e.target.value)}
                     />
@@ -632,7 +632,7 @@ setShowEditModal(true);
                     <input
                       type="email"
                       required
-                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
                     />
@@ -646,7 +646,7 @@ setShowEditModal(true);
                   <div className="relative mt-1.5">
                     <Shield size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <select
-                      className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none bg-white appearance-none"
+                      className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                       value={editRole}
                       onChange={(e) => setEditRole(e.target.value)}
                     >
@@ -661,7 +661,7 @@ setShowEditModal(true);
                   <label className="text-xs font-bold uppercase text-slate-500">Basic Salary</label>
                   <input
                     type="number"
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 mt-1.5 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                     value={editSalary}
                     onChange={(e) => setEditSalary(Number(e.target.value))}
                   />
@@ -671,7 +671,7 @@ setShowEditModal(true);
               <div>
                 <div className="flex justify-between items-center mt-2">
                   <label className="text-xs font-bold uppercase text-slate-500">Password</label>
-                  <button type="button" onClick={() => alert("Password auto-generated!")} className="text-xs text-blue-600 font-semibold hover:underline">
+                  <button type="button" onClick={() => alert("Password auto-generated!")} className="text-xs font-black text-cyan-700 hover:underline">
                     Auto Generate
                   </button>
                 </div>
@@ -688,17 +688,17 @@ setShowEditModal(true);
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition"
+                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-black text-slate-600 transition hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-md transition"
+                  className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-6 py-2.5 text-xs font-black text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl"
                 >
                   Save Changes
                 </button>

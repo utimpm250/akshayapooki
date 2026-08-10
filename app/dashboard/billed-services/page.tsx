@@ -101,76 +101,76 @@ export default function BilledServicesPage() {
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
+    <div className="mx-auto min-h-screen w-full max-w-[1500px] space-y-5 bg-gradient-to-br from-slate-50 via-white to-cyan-50/30 p-4 sm:p-5 lg:p-6">
       
       {/* Page Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-slate-800">Billed Services</h1>
-        <button onClick={loadBilledData} className="text-slate-500 hover:text-slate-700 transition flex items-center gap-1.5 text-xs font-semibold bg-white border px-3 py-1.5 rounded-lg shadow-xs">
+      <div className="flex flex-col items-start justify-between gap-3 rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:flex-row sm:items-center">
+        <h1 className="text-2xl font-black tracking-tight text-slate-900">Billed Services</h1>
+        <button onClick={loadBilledData} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-cyan-200 hover:text-cyan-700">
           <RefreshCw size={14} /> Sync Data
         </button>
       </div>
 
       {/* TOP BLUE BANNER */}
-      <div className="bg-blue-600 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="relative flex flex-col items-start justify-between gap-6 overflow-hidden rounded-[30px] border border-cyan-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-6 text-white shadow-[0_22px_55px_rgba(15,23,42,0.2)] md:flex-row md:items-center md:p-8">
         <div className="flex flex-wrap items-center gap-8 md:gap-12">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-blue-200">TOTAL REVENUE</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mt-1">₹{totalRevenue.toFixed(2)}</h2>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">TOTAL REVENUE</p>
+            <h2 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">₹{totalRevenue.toFixed(2)}</h2>
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-200">RECEIVED</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">RECEIVED</p>
             <p className="text-xl font-bold mt-1">₹{totalReceived.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-200">PENDING</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">PENDING</p>
             <p className="text-xl font-bold mt-1">₹{totalPending.toFixed(2)}</p>
           </div>
         </div>
 
-        <div className="bg-blue-500/50 border border-blue-400/30 rounded-xl px-5 py-3 flex items-center gap-3">
-          <div className="p-2 bg-blue-400/30 rounded-lg">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-5 py-3 backdrop-blur-xl">
+          <div className="rounded-xl border border-white/10 bg-white/10 p-2.5">
             <Briefcase size={22} className="text-white" />
           </div>
           <div>
             <p className="text-2xl font-black leading-none">{completedCount}</p>
-            <p className="text-[10px] uppercase font-bold text-blue-200 tracking-wider mt-1">COMPLETED SERVICES</p>
+            <p className="mt-1 text-[10px] font-black uppercase tracking-wider text-cyan-200">COMPLETED SERVICES</p>
           </div>
         </div>
       </div>
 
       {/* CONTROLS */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-        <h2 className="text-lg font-bold text-slate-800">Service Entries</h2>
+      <div className="flex flex-col items-start justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-sm backdrop-blur-xl lg:flex-row lg:items-center">
+        <h2 className="text-lg font-black tracking-tight text-slate-800">Service Entries</h2>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2 bg-white text-xs w-full sm:w-64 focus-within:ring-2 focus-within:ring-blue-500 shadow-xs">
+        <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto">
+          <div className="flex w-full items-center rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs shadow-sm transition-all focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10 sm:w-72">
             <Search size={16} className="text-slate-400 mr-2 shrink-0" />
             <input 
               type="text" 
               placeholder="Search name, mobile, service..." 
-              className="bg-transparent outline-none w-full text-slate-700"
+              className="w-full bg-transparent font-semibold text-slate-700 outline-none placeholder:text-slate-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-1.5 bg-white text-xs text-slate-500 shadow-xs">
+          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-500 shadow-sm">
             <Calendar size={14} className="text-slate-400" />
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="outline-none bg-transparent" />
             <span>→</span>
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="outline-none bg-transparent" />
           </div>
 
-          <button onClick={() => alert("Exporting...")} className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-xs">
+          <button onClick={() => alert("Exporting...")} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-cyan-200 hover:bg-cyan-50/40">
             <Download size={14} /> Export
           </button>
         </div>
       </div>
 
       {/* TABLE */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="hidden md:grid grid-cols-12 bg-slate-50/80 border-b border-slate-200 py-3 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+      <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_12px_35px_rgba(15,23,42,0.06)]">
+        <div className="hidden grid-cols-12 border-b border-slate-200 bg-slate-50/80 px-6 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 md:grid">
           <div className="col-span-2">DATE / TIME</div>
           <div className="col-span-3">CUSTOMER</div>
           <div className="col-span-3">SERVICES</div>
@@ -189,41 +189,41 @@ export default function BilledServicesPage() {
 
               return (
                 <div key={item.id} className="transition">
-                  <div className="grid grid-cols-1 md:grid-cols-12 items-center py-4 px-6 text-xs text-slate-700 gap-2 md:gap-0">
+                  <div className="grid grid-cols-1 items-center gap-2 px-5 py-4 text-xs text-slate-700 transition-all hover:bg-cyan-50/25 md:grid-cols-12 md:gap-0 md:px-6">
                     <div className="col-span-2 text-slate-500 font-medium">{item.dateTime}</div>
                     <div className="col-span-3">
-                      <p className="font-bold text-slate-800">{item.customerName}</p>
+                      <p className="font-black text-slate-800">{item.customerName}</p>
                       <p className="text-[11px] text-slate-400">📞 {item.customerPhone}</p>
                     </div>
                     <div className="col-span-3 font-medium text-slate-700">{item.quantity}x {item.serviceName}</div>
-                    <div className="col-span-1 text-right font-bold text-slate-800">₹{item.totalAmount.toFixed(2)}</div>
-                    <div className="col-span-1 text-right font-bold text-emerald-600">₹{item.receivedAmount.toFixed(2)}</div>
+                    <div className="col-span-1 text-right font-black text-slate-800">₹{item.totalAmount.toFixed(2)}</div>
+                    <div className="col-span-1 text-right font-black text-emerald-600">₹{item.receivedAmount.toFixed(2)}</div>
                     <div className="col-span-1 text-center">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700">
                         {item.status}
                       </span>
                     </div>
                     <div className="col-span-1 flex items-center justify-end gap-1.5">
-                      <button onClick={() => setExpandedId(isExpanded ? null : item.id)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold px-2.5 py-1 rounded-lg transition flex items-center gap-1 text-[11px]">
+                      <button onClick={() => setExpandedId(isExpanded ? null : item.id)} className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-black text-slate-600 transition-all hover:bg-cyan-50 hover:text-cyan-700">
                         {isExpanded ? <>Hide <ChevronUp size={12} /></> : <>View <ChevronDown size={12} /></>}
                       </button>
-                      <button onClick={() => handleDelete(item.id)} className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition">
+                      <button onClick={() => handleDelete(item.id)} className="rounded-xl p-1.5 text-rose-500 transition-all hover:bg-rose-50 hover:text-rose-700">
                         <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div className="bg-slate-50/50 border-t border-b border-slate-100 p-5 mx-4 my-2 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                    <div className="mx-4 my-2 grid grid-cols-1 gap-6 rounded-2xl border border-cyan-100 bg-gradient-to-br from-slate-50 to-cyan-50/40 p-5 text-xs shadow-sm md:grid-cols-2">
                       <div className="space-y-2 border-r-0 md:border-r border-slate-200 pr-0 md:pr-6">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">TRANSACTION DETAILS</p>
                         <div className="flex justify-between items-center py-1">
                           <span className="text-slate-500">Cash Received:</span>
-                          <span className="font-bold text-slate-800">₹{item.cashReceived.toFixed(2)}</span>
+                          <span className="font-black text-slate-800">₹{item.cashReceived.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between items-center py-1">
                           <span className="text-slate-500">GPay/UPI:</span>
-                          <span className="font-bold text-slate-800">₹{item.gpayAmount.toFixed(2)}</span>
+                          <span className="font-black text-slate-800">₹{item.gpayAmount.toFixed(2)}</span>
                         </div>
                         <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
                           <span className="text-slate-500">Pending Balance:</span>
@@ -232,7 +232,7 @@ export default function BilledServicesPage() {
                       </div>
                       <div className="space-y-3">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SERVICE DESCRIPTION</p>
-                        <div className="bg-slate-100/70 rounded-lg p-3 text-slate-700 font-medium">{item.quantity}x {item.serviceName}</div>
+                        <div className="rounded-xl border border-slate-200 bg-white/80 p-3 font-semibold text-slate-700">{item.quantity}x {item.serviceName}</div>
                         <div className="flex items-center gap-6 text-slate-500 text-[11px] pt-1">
                           <span>Staff: <strong className="text-slate-700">{item.staffName}</strong></span>
                         </div>
