@@ -36,6 +36,24 @@ interface WalletItem {
   lastUpdated: string;
 }
 
+const DEFAULT_WALLETS: WalletItem[] = [
+  { id: "1", name: "Cash", openingBalance: 0, currentBalance: 0, lastUpdated: "" },
+  { id: "2", name: "BANK", openingBalance: 50717.21, currentBalance: 0, lastUpdated: "" },
+  { id: "3", name: "Edistrict", openingBalance: 1767, currentBalance: 0, lastUpdated: "" },
+  { id: "4", name: "CSC", openingBalance: 70, currentBalance: 0, lastUpdated: "" },
+];
+
+const DEFAULT_SERVICE_LINKS: ServiceItem[] = [
+  { id: "4", title: "Aadhaar online Demographic Update", url: "https://myaadhaar.uidai.gov.in/", note: "myaadhaar.uidai.gov.in" },
+  { id: "15", title: "Caste Certificate", url: "https://e-district.kerala.gov.in/", note: "e-district.kerala.gov.in" },
+  { id: "16", title: "Driving Licence Application", url: "https://parivahan.gov.in/", note: "parivahan.gov.in" },
+  { id: "17", title: "Electricity Bill Payment", url: "https://kseb.in/", note: "kseb.in" },
+  { id: "19", title: "PAN Card Application", url: "https://www.protean.in/", note: "protean.in" },
+  { id: "20", title: "Ration Card Services", url: "https://civilsupplieskerala.gov.in/", note: "civilsupplieskerala.gov.in" },
+  { id: "22", title: "Passport Application", url: "https://www.passportindia.gov.in/", note: "passportindia.gov.in" },
+  { id: "23", title: "Voter ID Registration", url: "https://voters.eci.gov.in/", note: "voters.eci.gov.in" },
+];
+
 interface ServiceItem {
   id?: string;
   title?: string;
@@ -181,15 +199,22 @@ const loadDashboardData = () => {
     if (savedWallets) {
       const parsedWallets = JSON.parse(savedWallets);
 
-      setWallets(
-        parsedWallets.map((wallet: any) => ({
-          ...wallet,
-          openingBalance: Number(wallet.openingBalance || 0),
-          currentBalance: Number(wallet.currentBalance || 0),
-        }))
-      );
+      if (Array.isArray(parsedWallets)) {
+        setWallets(
+          parsedWallets.map((wallet: any) => ({
+            ...wallet,
+            openingBalance: Number(wallet.openingBalance || 0),
+            currentBalance: Number(wallet.currentBalance || 0),
+          }))
+        );
+      } else {
+        setWallets(DEFAULT_WALLETS);
+        localStorage.setItem("managedWallets", JSON.stringify(DEFAULT_WALLETS));
+      }
     } else {
-      setWallets([]);
+      // Keep Dashboard and Wallet Management consistent on first load.
+      setWallets(DEFAULT_WALLETS);
+      localStorage.setItem("managedWallets", JSON.stringify(DEFAULT_WALLETS));
     }
   } catch (err) {
     console.error("Wallet load failed:", err);
@@ -240,77 +265,47 @@ const loadDashboardData = () => {
         setQuickLinks(baseTools);
       }
 
-// REPLACE ONLY THIS BLOCK
+      let loadedServices: any[] = [];
 
-let loadedServices: any[] = [];
+      const savedManagedServices = localStorage.getItem("managedServices");
 
-const savedManagedServices = localStorage.getItem("managedServices");
+      if (savedManagedServices) {
+        try {
+          const parsedServices = JSON.parse(savedManagedServices);
+          if (Array.isArray(parsedServices)) {
+            loadedServices = parsedServices;
+          }
+        } catch (err) {
+          console.error("Error loading managedServices:", err);
+        }
+      }
 
-if (savedManagedServices) {
-  try {
-    const parsedServices = JSON.parse(savedManagedServices);
+      const sourceServices =
+        loadedServices.length > 0 ? loadedServices : DEFAULT_SERVICE_LINKS;
 
-    if (Array.isArray(parsedServices)) {
-      loadedServices = parsedServices;
-    }
-  } catch (err) {
-    console.error("Error loading managedServices:", err);
-  }
-}
+      const filteredWithUrls: ServiceItem[] = sourceServices
+        .map((service: any) => {
+          const url = String(
+            service.portalUrl ??
+            service.url ??
+            service.webUrl ??
+            service.link ??
+            ""
+          ).trim();
 
-const filteredWithUrls = loadedServices
-  .map((service: any) => {
-    const serviceUrl = String(
-      service.portalUrl ??
-      service.url ??
-      service.webUrl ??
-      service.link ??
-      ""
-    ).trim();
+          return {
+            id: service.id,
+            title: service.title ?? service.name ?? service.serviceName ?? "Untitled Service",
+            url,
+            note: url.replace(/^https?:\/\//, ""),
+          };
+        })
+        .filter((service: ServiceItem) => Boolean(service.url));
 
-    return {
-      id: service.id,
-      title: service.name ?? service.title ?? service.serviceName ?? "Service",
-      url: serviceUrl,
-      note: serviceUrl.replace(/^https?:\/\//, ""),
-    };
-  })
-  .filter((service: ServiceItem) => Boolean(service.url));
-
-setServiceDirectory(filteredWithUrls);
+      setServiceDirectory(filteredWithUrls);
     };
 
     loadDashboardData();
-
-    // Keep dashboard wallet/service data synchronized with changes made
-    // in Wallet Management / Service Management without changing the UI.
-    const refreshDashboardData = () => {
-      loadDashboardData();
-    };
-
-    const handleStorageChange = (event: StorageEvent) => {
-      if (
-        event.key === "managedWallets" ||
-        event.key === "managedServices" ||
-        event.key === null
-      ) {
-        refreshDashboardData();
-      }
-    };
-
-    const handleWindowFocus = () => {
-      refreshDashboardData();
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        refreshDashboardData();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("focus", handleWindowFocus);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     const updateDateTime = () => {
       const now = new Date();
@@ -369,10 +364,38 @@ setServiceDirectory(filteredWithUrls);
     };
     document.addEventListener("mousedown", handleClickOutside);
 
+    const refreshDashboardData = () => {
+      loadDashboardData();
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (
+        event.key === "managedWallets" ||
+        event.key === "managedServices" ||
+        event.key === null
+      ) {
+        refreshDashboardData();
+      }
+    };
+
+    const handleFocus = () => {
+      refreshDashboardData();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshDashboardData();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("focus", handleWindowFocus);
+      window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(timer);
     };
