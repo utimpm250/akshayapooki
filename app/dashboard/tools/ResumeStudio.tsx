@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   BriefcaseBusiness,
   FileDown,
@@ -287,6 +287,10 @@ export default function ResumeStudio({ onClose }: ResumeStudioProps) {
   const [headingColor, setHeadingColor] = useState("#0f766e");
   const [photoBorderColor, setPhotoBorderColor] = useState("#ffffff");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingJpeg, setIsDownloadingJpeg] = useState(false);
+  const [previewScale, setPreviewScale] = useState(1);
+  const previewFrameRef = React.useRef<HTMLDivElement | null>(null);
+  const previewContentRef = React.useRef<HTMLDivElement | null>(null);
   const [photoZoom, setPhotoZoom] = useState(1);
   const [photoOffsetX, setPhotoOffsetX] = useState(0);
   const [photoOffsetY, setPhotoOffsetY] = useState(0);
@@ -560,44 +564,213 @@ export default function ResumeStudio({ onClose }: ResumeStudioProps) {
       ]);
 
       const canvas = await toCanvas(element, {
-        pixelRatio: 2,
+        width: 794,
+        height: 1123,
+        pixelRatio: 4,
         cacheBust: true,
         backgroundColor: "#ffffff",
       });
 
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-      const pageWidth = 210;
-      const pageHeight = 297;
-      const pageHeightPx = Math.floor(canvas.width * (pageHeight / pageWidth));
-      let offsetY = 0;
-      let page = 0;
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: true,
+      });
 
-      while (offsetY < canvas.height) {
-        const sliceHeight = Math.min(pageHeightPx, canvas.height - offsetY);
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sliceHeight;
-        const ctx = pageCanvas.getContext("2d");
-        if (!ctx) break;
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-        ctx.drawImage(canvas, 0, offsetY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+      pdf.addImage(
+        canvas.toDataURL("image/jpeg", 0.98),
+        "JPEG",
+        0,
+        0,
+        210,
+        297,
+        undefined,
+        "FAST"
+      );
 
-        if (page > 0) pdf.addPage();
-        pdf.addImage(pageCanvas.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, pageWidth, (sliceHeight / canvas.width) * pageWidth, undefined, "FAST");
-        offsetY += sliceHeight;
-        page += 1;
-      }
+      const safeName =
+        (name || "resume")
+          .replace(/[^a-z0-9-_]+/gi, "-")
+          .replace(/^-+|-+$/g, "") || "resume";
 
-      const safeName = (name || "resume").replace(/[^a-z0-9-_]+/gi, "-").replace(/^-+|-+$/g, "") || "resume";
       pdf.save(`${safeName}-resume.pdf`);
     } catch (error) {
       console.error("PDF download failed", error);
-      window.alert("PDF download failed. Please try again after the resume preview finishes rendering.");
+      window.alert(
+        "PDF download failed. Please try again after the resume preview finishes rendering."
+      );
     } finally {
       setIsDownloading(false);
     }
   };
+
+  const downloadJpeg = async () => {
+    const element = document.getElementById("resume-print");
+    if (!element) return;
+
+    try {
+      setIsDownloadingJpeg(true);
+      const { toCanvas } = await import("html-to-image");
+
+      const sourceCanvas = await toCanvas(element, {
+        width: 794,
+        height: 1123,
+        pixelRatio: 4,
+        cacheBust: true,
+        backgroundColor: "#ffffff",
+      });
+
+      const output = document.createElement("canvas");
+      output.width = 2480;
+      output.height = 3508;
+      const ctx = output.getContext("2d");
+      if (!ctx) throw new Error("Unable to create JPEG canvas.");
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, output.width, output.height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(sourceCanvas, 0, 0, output.width, output.height);
+
+      const safeName =
+        (name || "resume")
+          .replace(/[^a-z0-9-_]+/gi, "-")
+          .replace(/^-+|-+$/g, "") || "resume";
+
+      const link = document.createElement("a");
+      link.download = `${safeName}-A4-resume.jpg`;
+      link.href = output.toDataURL("image/jpeg", 0.98);
+      link.click();
+    } catch (error) {
+      console.error("A4 JPEG download failed", error);
+      window.alert("A4 JPEG download failed. Please try again after the preview finishes rendering.");
+    } finally {
+      setIsDownloadingJpeg(false);
+    }
+  };
+
+  React.useLayoutEffect(() => {
+    const frame = previewFrameRef.current;
+    const content = previewContentRef.current;
+    if (!frame || !content) return;
+
+    const updateScale = () => {
+      const A4_WIDTH = 794;
+      const A4_HEIGHT = 1123;
+      const availableWidth = Math.max(1, frame.clientWidth);
+      const naturalHeight = Math.max(1, content.scrollHeight);
+      const widthScale = availableWidth / A4_WIDTH;
+      const heightScale = A4_HEIGHT / naturalHeight;
+      setPreviewScale(Math.min(1, widthScale, heightScale));
+    };
+
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(frame);
+    observer.observe(content);
+    window.addEventListener("resize", updateScale);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateScale);
+    };
+  }, [
+    selectedTemplate, name, jobTitle, email, phone, location, fatherName, gender, dob,
+    maritalStatus, nationality, religion, passport, photo, summary, skills,
+    languages, projects, education, experience, hobbies, strengths, qualifications,
+    declaration, compactLayout, photoShape, customAccent, fontFamily, textScale,
+    headerAlignment, showPhoto, showContact, paperTone, headingColor, photoBorderColor,
+    photoZoom, photoOffsetX, photoOffsetY, showSidebar,
+  ]);
+
+  const editorPanelsRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const root = editorPanelsRef.current;
+    if (!root) return;
+
+    const closeOtherPanels = (current: HTMLDetailsElement) => {
+      root.querySelectorAll<HTMLDetailsElement>("details").forEach((panel) => {
+        if (panel !== current) {
+          panel.open = false;
+          panel.dataset.pinned = "false";
+        }
+      });
+    };
+
+    const isInside = (node: EventTarget | null, panel: HTMLElement) =>
+      node instanceof Node && panel.contains(node);
+
+    const handleMouseOver = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const panel = target?.closest("details") as HTMLDetailsElement | null;
+      if (!panel || !root.contains(panel)) return;
+
+      const summary = target?.closest("summary");
+      if (!summary || !panel.contains(summary)) return;
+
+      const from = event.relatedTarget;
+      if (isInside(from, summary)) return;
+
+      closeOtherPanels(panel);
+      panel.open = true;
+      panel.dataset.pinned = panel.dataset.pinned === "true" ? "true" : "false";
+    };
+
+    const handleMouseOut = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const panel = target?.closest("details") as HTMLDetailsElement | null;
+      if (!panel || !root.contains(panel)) return;
+
+      const to = event.relatedTarget;
+      if (isInside(to, panel)) return;
+
+      if (panel.dataset.pinned !== "true") {
+        panel.open = false;
+      }
+    };
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target as HTMLElement | null;
+      const panel = target?.closest("details") as HTMLDetailsElement | null;
+      if (!panel || !root.contains(panel)) return;
+
+      closeOtherPanels(panel);
+      panel.open = true;
+      // Once the user starts typing/selecting inside a panel, keep it open
+      // until the user moves to another editor section.
+      if (target !== panel.querySelector("summary")) {
+        panel.dataset.pinned = "true";
+      }
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const panel = target?.closest("details") as HTMLDetailsElement | null;
+      if (!panel || !root.contains(panel)) return;
+
+      // Hover controls the section visibility. Clicking a heading should not
+      // fight the hover behavior or unexpectedly collapse the section.
+      if (target?.closest("summary")) {
+        event.preventDefault();
+        closeOtherPanels(panel);
+        panel.open = true;
+        panel.dataset.pinned = "false";
+      }
+    };
+
+    root.addEventListener("mouseover", handleMouseOver);
+    root.addEventListener("mouseout", handleMouseOut);
+    root.addEventListener("focusin", handleFocusIn);
+    root.addEventListener("click", handleClick);
+
+    return () => {
+      root.removeEventListener("mouseover", handleMouseOver);
+      root.removeEventListener("mouseout", handleMouseOut);
+      root.removeEventListener("focusin", handleFocusIn);
+      root.removeEventListener("click", handleClick);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 text-slate-800 dark:bg-slate-950 dark:text-slate-100 sm:p-6">
@@ -614,7 +787,11 @@ export default function ResumeStudio({ onClose }: ResumeStudioProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={downloadPdf} disabled={isDownloading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-blue-700 shadow-lg transition hover:bg-blue-50 disabled:cursor-wait disabled:opacity-70">
+            <button type="button" onClick={downloadJpeg} disabled={isDownloadingJpeg} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-blue-700 shadow-lg transition hover:bg-blue-50 disabled:cursor-wait disabled:opacity-70">
+              <FileDown size={17} />
+              {isDownloadingJpeg ? "Preparing A4 JPEG…" : "Download A4 JPEG"}
+            </button>
+            <button type="button" onClick={downloadPdf} disabled={isDownloading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-sm font-black text-white ring-1 ring-white/40 transition hover:bg-white/25 disabled:cursor-wait disabled:opacity-70">
               <FileDown size={17} />
               {isDownloading ? "Preparing PDF…" : "Download PDF"}
             </button>
@@ -622,13 +799,11 @@ export default function ResumeStudio({ onClose }: ResumeStudioProps) {
               <Printer size={17} />
               Print
             </button>
-
-
           </div>
         </div>
 
         <div className="grid items-start gap-5 lg:grid-cols-[420px_minmax(0,1fr)]">
-          <div className="space-y-4">
+          <div ref={editorPanelsRef} className="space-y-4">
             <details className="rounded-2xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50 p-4 shadow-sm dark:border-cyan-900 dark:from-slate-900 dark:to-slate-900">
               <summary className="mb-3 flex cursor-pointer list-none items-center justify-between gap-3 font-black marker:hidden">
                 <span>Resume Category</span><span className="rounded-full bg-white px-2 py-1 text-[9px] font-black text-cyan-700 shadow-sm">AUTO FILL</span>
@@ -739,8 +914,6 @@ export default function ResumeStudio({ onClose }: ResumeStudioProps) {
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none transition focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-800"
               />
             </details>
-
-            
 
             <details className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <summary className="mb-3 flex cursor-pointer list-none items-center justify-between gap-3 font-black marker:hidden">
@@ -1054,10 +1227,10 @@ export default function ResumeStudio({ onClose }: ResumeStudioProps) {
               </div>
             </details>
 
-<details className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <details className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <summary className="flex cursor-pointer list-none items-center gap-2 font-black marker:hidden">
                 <Palette size={18} className="text-cyan-600" />
-                  <span>Resume Templates</span>
+                <span>Resume Templates</span>
                 <span className="ml-auto text-[11px] font-medium text-slate-400">Choose a design — preview updates instantly</span>
               </summary>
 
@@ -1112,16 +1285,18 @@ export default function ResumeStudio({ onClose }: ResumeStudioProps) {
             </details>
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 lg:sticky lg:top-4">
             <div className="rounded-2xl bg-slate-300 p-3 shadow-inner dark:bg-slate-800">
               <article
                 id="resume-print"
-                className={`mx-auto min-h-[900px] max-w-[800px] bg-white text-slate-800 shadow-2xl ${
-                  selectedTemplate === "ats"
-                    ? "p-8 sm:p-10"
-                    : "p-0"
-                }`}
+                ref={previewFrameRef}
+                className="resume-a4-frame mx-auto overflow-hidden bg-white text-slate-800 shadow-2xl"
               >
+                <div
+                  ref={previewContentRef}
+                  className="resume-a4-content"
+                  style={{ transform: `scale(${previewScale})` }}
+                >
                 <ResumeDesign
                   template={selectedTemplate}
                   name={name}
@@ -1166,6 +1341,7 @@ export default function ResumeStudio({ onClose }: ResumeStudioProps) {
                   onOffsetX={setPhotoOffsetX}
                   onOffsetY={setPhotoOffsetY}
                 />
+                </div>
               </article>
             </div>
           </div>
@@ -1173,6 +1349,35 @@ export default function ResumeStudio({ onClose }: ResumeStudioProps) {
       </div>
 
       <style jsx global>{`
+.resume-a4-frame {
+          width: 794px;
+          height: 1123px;
+          max-width: 100%;
+          position: relative;
+          page-break-after: always;
+          overflow: hidden;
+        }
+        .resume-a4-content {
+          width: 794px;
+          height: 1123px;
+          transform-origin: top left;
+          will-change: transform;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+        #resume-print img {
+          max-width: none;
+        }
+        @media (max-width: 1023px) {
+          .resume-a4-frame {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 210 / 297;
+          }
+          .resume-a4-content {
+            min-height: 1123px;
+          }
+        }
         @page { size: A4; margin: 0; }
         @media print {
           body {
@@ -1192,9 +1397,10 @@ export default function ResumeStudio({ onClose }: ResumeStudioProps) {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
+            width: 210mm;
+            height: 297mm;
             max-width: none;
-            min-height: auto;
+            min-height: 0;
             box-shadow: none !important;
           }
         }
@@ -1289,8 +1495,8 @@ function ResumeDesign({
   }
 
   return <div className={`min-h-[900px] ${paperClass} ${fontClass} ${scaleClass}`}>
-    <header className={`p-8 text-white sm:p-10 ${headerClass}`}><div className="flex items-center justify-between gap-5">{title}{photoEl}</div></header>
-    <main className={`${template === "creative" && showSidebar ? "grid gap-8 sm:grid-cols-[1fr_220px]" : ""} p-8 sm:p-10`}>
+    <header className={`h-[176px] px-8 py-2 text-white ${headerClass}`}><div className="flex h-full items-center justify-between gap-5">{title}{photoEl}</div></header>
+    <main className={`${template === "creative" && showSidebar ? "grid gap-5 sm:grid-cols-[1fr_220px]" : ""} px-8 py-5`}>
       <div>{body}</div>
       {template === "creative" && showSidebar && <aside className="rounded-2xl bg-violet-50 p-5"><SideTitle dark>Skills</SideTitle><SkillCloud skills={skillsList} /></aside>}
     </main>
@@ -1318,14 +1524,18 @@ function PhotoControls({ zoom, onZoom, onReset }: {
   onZoom: (value: number) => void;
   onReset: () => void;
 }) {
-  return <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800">
-    <div className="flex items-center gap-2">
-      <span className="text-[10px] font-black text-slate-500">Zoom</span>
-      <button type="button" onClick={() => onZoom(Math.max(1, Number((zoom - 0.1).toFixed(2))))} className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-sm font-black dark:border-slate-700 dark:bg-slate-900">−</button>
-      <input type="range" min="1" max="3" step="0.05" value={zoom} onChange={(e) => onZoom(Number(e.target.value))} className="min-w-0 flex-1" aria-label="Photo zoom" />
-      <button type="button" onClick={() => onZoom(Math.min(3, Number((zoom + 0.1).toFixed(2))))} className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-sm font-black dark:border-slate-700 dark:bg-slate-900">+</button>
-      <span className="w-10 text-right text-[10px] font-bold">{zoom.toFixed(2)}×</span>
-      <button type="button" onClick={onReset} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[10px] font-black dark:border-slate-700 dark:bg-slate-900">Reset</button>
+  return <div className="rounded-xl border border-slate-200 bg-white/70 px-3 py-3 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-800/70">
+    <div className="grid gap-2.5">
+      <div className="flex items-center gap-2">
+        <span className="w-10 text-[10px] font-black text-slate-500">Zoom</span>
+        <button type="button" onClick={() => onZoom(Math.max(1, Number((zoom - 0.1).toFixed(2))))} className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-sm font-black shadow-sm dark:border-slate-700 dark:bg-slate-900">−</button>
+        <input type="range" min="1" max="3" step="0.05" value={zoom} onChange={(e) => onZoom(Number(e.target.value))} className="min-w-0 flex-1" aria-label="Photo zoom" />
+        <button type="button" onClick={() => onZoom(Math.min(3, Number((zoom + 0.1).toFixed(2))))} className="h-7 w-7 rounded-lg border border-slate-200 bg-white text-sm font-black shadow-sm dark:border-slate-700 dark:bg-slate-900">+</button>
+        <span className="w-10 text-right text-[10px] font-bold">{zoom.toFixed(2)}×</span>
+      </div>
+      <div className="flex justify-end">
+        <button type="button" onClick={onReset} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black shadow-sm dark:border-slate-700 dark:bg-slate-900">Reset Photo</button>
+      </div>
     </div>
   </div>;
 }
@@ -1417,7 +1627,7 @@ function ResumeBody({
 }) {
   const list = (v: string) => v.split(/[,\n•]+/).map((x) => x.trim()).filter(Boolean);
   const hasPersonal = [fatherName, gender, dob, maritalStatus, nationality, religion, passport].some(Boolean);
-  return <div className={compact ? "space-y-5" : "space-y-7"}>
+  return <div className={compact ? "space-y-3" : "space-y-4"}>
     {hasPersonal && <ResumeSection title="Personal Information" accent={accent} headingBorder={headingBorder} headingColor={headingColor}>
       <div className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
         {fatherName && <InfoRow label="Father's Name" value={fatherName} />}{gender && <InfoRow label="Gender" value={gender} />}
@@ -1427,31 +1637,31 @@ function ResumeBody({
       </div>
     </ResumeSection>}
 
-    {summary && <ResumeSection title="Objective" accent={accent} headingBorder={headingBorder} headingColor={headingColor}><p className="whitespace-pre-line text-sm leading-6 text-slate-600">{summary}</p></ResumeSection>}
+    {summary && <ResumeSection title="Objective" accent={accent} headingBorder={headingBorder} headingColor={headingColor}><p className="whitespace-pre-line text-[12px] leading-5 text-slate-600">{summary}</p></ResumeSection>}
 
     {experience.some((x) => x.role || x.company || x.description) && <ResumeSection title="Work Experience" accent={accent} headingBorder={headingBorder} headingColor={headingColor}>
-      <div className={timeline ? "space-y-5 border-l-2 border-emerald-200 pl-5" : "space-y-5"}>
+      <div className={timeline ? "space-y-3 border-l-2 border-emerald-200 pl-4" : "space-y-3"}>
         {experience.filter((x) => x.role || x.company || x.description).map((item) => <div key={item.id} className="relative">
           {timeline && <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full bg-emerald-600" />}
           <div className="flex flex-wrap items-baseline justify-between gap-2"><div><h3 className="font-black text-slate-900">{item.role || "Role"}</h3>{item.company && <p className={`text-sm font-bold ${accent}`}>{item.company}</p>}</div>{item.period && <span className="text-xs font-semibold text-slate-400">{item.period}</span>}</div>
-          {item.description && <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">{item.description}</p>}
+          {item.description && <p className="mt-1 whitespace-pre-line text-[12px] leading-5 text-slate-600">{item.description}</p>}
         </div>)}
       </div>
     </ResumeSection>}
 
     {education.some((x) => x.degree || x.institution) && <ResumeSection title="Education / Academic Qualification" accent={accent} headingBorder={headingBorder} headingColor={headingColor}>
-      <div className="space-y-3">{education.filter((x) => x.degree || x.institution).map((item) => <div key={item.id} className="flex justify-between gap-4">
+      <div className="space-y-2">{education.filter((x) => x.degree || x.institution).map((item) => <div key={item.id} className="flex justify-between gap-4">
         <div><h3 className="font-black text-slate-900">{item.degree || "Degree / Course"}</h3>{item.institution && <p className="text-sm text-slate-600">{item.institution}</p>}</div>
         {item.year && <span className="text-xs font-semibold text-slate-400">{item.year}</span>}
       </div>)}</div>
     </ResumeSection>}
 
     {qualifications.some((x) => x.title || x.description) && <ResumeSection title="Additional Qualifications / Certifications" accent={accent} headingBorder={headingBorder} headingColor={headingColor}>
-      <div className="space-y-2">{qualifications.filter((x) => x.title || x.description).map((x) => <div key={x.id} className="text-sm"><b>• {x.title}</b>{x.description && <span className="text-slate-600"> — {x.description}</span>}</div>)}</div>
+      <div className="space-y-1">{qualifications.filter((x) => x.title || x.description).map((x) => <div key={x.id} className="text-sm"><b>• {x.title}</b>{x.description && <span className="text-slate-600"> — {x.description}</span>}</div>)}</div>
     </ResumeSection>}
 
     {projects.some((x) => x.title || x.description) && <ResumeSection title="Projects" accent={accent} headingBorder={headingBorder} headingColor={headingColor}>
-      <div className="space-y-4">{projects.filter((x) => x.title || x.description).map((x) => <div key={x.id}><h3 className="font-black text-slate-900">{x.title || "Project"}</h3>{x.description && <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-600">{x.description}</p>}</div>)}</div>
+      <div className="space-y-2">{projects.filter((x) => x.title || x.description).map((x) => <div key={x.id}><h3 className="font-black text-slate-900">{x.title || "Project"}</h3>{x.description && <p className="mt-1 whitespace-pre-line text-[12px] leading-5 text-slate-600">{x.description}</p>}</div>)}</div>
     </ResumeSection>}
 
     {languages.some((x) => x.language) && <ResumeSection title="Languages Known" accent={accent} headingBorder={headingBorder} headingColor={headingColor}>
@@ -1464,7 +1674,7 @@ function ResumeBody({
 
     {list(hobbies).length > 0 && <ResumeSection title="Hobbies & Interests" accent={accent} headingBorder={headingBorder} headingColor={headingColor}><div className="flex flex-wrap gap-2">{list(hobbies).map((x, i) => <span key={`hobby-${i}-${x}`} className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600">{x}</span>)}</div></ResumeSection>}
 
-    {declaration && <ResumeSection title="Declaration" accent={accent} headingBorder={headingBorder} headingColor={headingColor}><p className="text-sm leading-6 text-slate-600">{declaration}</p></ResumeSection>}
+    {declaration && <ResumeSection title="Declaration" accent={accent} headingBorder={headingBorder} headingColor={headingColor}><p className="text-[12px] leading-5 text-slate-600">{declaration}</p></ResumeSection>}
   </div>;
 }
 
@@ -1489,7 +1699,7 @@ function SideTitle({ children, dark = false }: { children: React.ReactNode; dark
 function ResumeSection({ title, children, accent, headingBorder, headingColor }: {
   title: string; children: React.ReactNode; accent: string; headingBorder: string; headingColor?: string;
 }) {
-  return <section><h3 style={headingColor ? { color: headingColor } : undefined} className={`mb-3 border-b pb-2 text-xs font-black uppercase tracking-[0.16em] ${headingColor ? "" : accent} ${headingBorder}`}>{title}</h3>{children}</section>;
+  return <section><h3 style={headingColor ? { color: headingColor } : undefined} className={`mb-2 border-b pb-1.5 text-[10px] font-black uppercase tracking-[0.16em] ${headingColor ? "" : accent} ${headingBorder}`}>{title}</h3>{children}</section>;
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
