@@ -11,6 +11,31 @@ interface ExpenseItem {
   amount: number;
 }
 
+const EXPENSE_CATEGORY_SUGGESTIONS = [
+  "Tea",
+  "A4",
+  "Electricity Bill",
+  "Rent",
+  "Owner Expense",
+  "Stationery",
+  "Travel",
+  "Fuel",
+  "Internet Bill",
+  "Water Bill",
+  "Maintenance",
+  "Office Expense",
+];
+
+const getCurrentMonth = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+};
+
+const getToday = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
+
 const DEFAULT_EXPENSES: ExpenseItem[] = [
   {
     id: "1",
@@ -39,20 +64,21 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [isMounted, setIsMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("2026-07");
+  const [selectedMonth, setSelectedMonth] = useState("");
 
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseItem | null>(null);
 
   // Form inputs
-  const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
+  const [formDate, setFormDate] = useState(getToday());
   const [formCategory, setFormCategory] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formAmount, setFormAmount] = useState("");
 
   useEffect(() => {
     setIsMounted(true);
+    setSelectedMonth(getCurrentMonth());
     const saved = localStorage.getItem("expensesData");
     if (saved) {
       try {
@@ -72,7 +98,7 @@ export default function ExpensesPage() {
   };
 
   const resetForm = () => {
-    setFormDate(new Date().toISOString().split("T")[0]);
+    setFormDate(getToday());
     setFormCategory("");
     setFormDescription("");
     setFormAmount("");
@@ -322,12 +348,18 @@ export default function ExpensesPage() {
                 <label className="text-xs font-bold text-slate-600">Category *</label>
                 <input
                   type="text"
+                  list="expense-category-suggestions"
                   required
-                  placeholder="e.g. electricity, a4, rent"
+                  placeholder="Select a category or type a new one"
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value)}
                 />
+                <datalist id="expense-category-suggestions">
+                  {EXPENSE_CATEGORY_SUGGESTIONS.map((category) => (
+                    <option key={category} value={category} />
+                  ))}
+                </datalist>
               </div>
 
               <div>

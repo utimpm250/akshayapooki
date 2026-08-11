@@ -14,6 +14,7 @@ interface Staff {
   phone: string;
   role: string;
   salary: number;
+  upiId?: string;
   password?: string;
 }
 
@@ -41,6 +42,7 @@ export default function StaffManagementPage() {
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState('Staff');
   const [newSalary, setNewSalary] = useState(10000);
+  const [newUpiId, setNewUpiId] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
   // Edit Staff Form State
@@ -49,6 +51,7 @@ export default function StaffManagementPage() {
   const [editPhone, setEditPhone] = useState('');
   const [editRole, setEditRole] = useState('');
   const [editSalary, setEditSalary] = useState(0);
+  const [editUpiId, setEditUpiId] = useState('');
 const [editPassword, setEditPassword] = useState("");
 
   useEffect(() => {
@@ -72,6 +75,7 @@ const [editPassword, setEditPassword] = useState("");
         phone: String(row.phone ?? ""),
         role: String(row.role ?? "Staff"),
         salary: Number(row.salary ?? 0),
+        upiId: String(row.upi_id ?? ""),
         password: String(row.password ?? ""),
       });
 
@@ -102,6 +106,7 @@ const [editPassword, setEditPassword] = useState("");
                     phone: String(s.phone ?? "N/A"),
                     role: String(s.role ?? "Staff"),
                     salary: Number(s.salary ?? 0),
+                    upi_id: String(s.upiId ?? s.upi_id ?? ""),
                     password: await hashPassword(plainPassword),
                   };
                 })
@@ -136,6 +141,7 @@ const [editPassword, setEditPassword] = useState("");
             phone: s.phone,
             role: s.role,
             salary: s.salary,
+            upi_id: s.upiId ?? "",
             password: await hashPassword(
               `${s.name.trim().split(" ")[0].toLowerCase()}akshaya`
             ),
@@ -189,6 +195,7 @@ const [editPassword, setEditPassword] = useState("");
       phone: newPhone || 'N/A',
       role: newRole,
       salary: Number(newSalary) || 0,
+      upi_id: newUpiId.trim(),
       password: await hashPassword(finalPassword),
     };
 
@@ -213,6 +220,7 @@ const [editPassword, setEditPassword] = useState("");
         phone: String(insertedStaff.phone ?? ""),
         role: String(insertedStaff.role ?? "Staff"),
         salary: Number(insertedStaff.salary ?? 0),
+        upiId: String(insertedStaff.upi_id ?? ""),
         password: String(insertedStaff.password ?? ""),
       },
       ...current,
@@ -223,6 +231,7 @@ const [editPassword, setEditPassword] = useState("");
     setNewPhone('');
     setNewRole('Staff');
     setNewSalary(10000);
+    setNewUpiId('');
     setNewPassword('');
     setShowAddModal(false);
   };
@@ -234,6 +243,7 @@ const [editPassword, setEditPassword] = useState("");
     setEditPhone(staff.phone);
     setEditRole(staff.role);
 setEditSalary(staff.salary);
+setEditUpiId(staff.upiId || "");
 setEditPassword((staff as any).password || "");
 setShowEditModal(true);
   };
@@ -249,6 +259,7 @@ setShowEditModal(true);
       phone: editPhone,
       role: editRole,
       salary: Number(editSalary) || 0,
+      upi_id: editUpiId.trim(),
     };
 
     if (editPassword.trim()) {
@@ -279,6 +290,7 @@ setShowEditModal(true);
               phone: String(updatedStaff.phone ?? ""),
               role: String(updatedStaff.role ?? "Staff"),
               salary: Number(updatedStaff.salary ?? 0),
+              upiId: String(updatedStaff.upi_id ?? ""),
               password: String(updatedStaff.password ?? ""),
             }
           : s
@@ -374,13 +386,14 @@ setShowEditModal(true);
                 <th className="px-6 py-4 font-black">Contact</th>
                 <th className="px-6 py-4 font-black">Role</th>
                 <th className="px-6 py-4 font-black">Salary</th>
+                <th className="px-6 py-4 font-black">UPI</th>
                 <th className="py-4 px-6 font-bold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredStaff.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-slate-400 font-medium">
+                  <td colSpan={7} className="text-center py-8 text-slate-400 font-medium">
                     No staff members found.
                   </td>
                 </tr>
@@ -418,6 +431,9 @@ setShowEditModal(true);
                       </span>
                     </td>
                     <td className="py-4 px-6 font-bold text-slate-800">₹{staff.salary}</td>
+                    <td className="px-6 py-4 text-xs font-semibold text-slate-500">
+                      {staff.upiId || <span className="text-slate-300">Not set</span>}
+                    </td>
                     <td className="py-4 px-6 text-right space-x-2">
                       <button 
                         onClick={() => handleOpenEdit(staff)}
@@ -538,6 +554,20 @@ setShowEditModal(true);
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-500">UPI ID</label>
+                <input
+                  type="text"
+                  inputMode="email"
+                  placeholder="example@upi"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                  value={newUpiId}
+                  onChange={(e) => setNewUpiId(e.target.value)}
+                />
+                <p className="mt-1 text-[10px] text-slate-400">Used automatically for the salary payment QR.</p>
+              </div>
+
 
               <div>
                 <div className="flex justify-between items-center mt-2">
@@ -669,9 +699,24 @@ setShowEditModal(true);
               </div>
 
               <div>
+                <label className="text-xs font-bold uppercase text-slate-500">UPI ID</label>
+                <input
+                  type="text"
+                  inputMode="email"
+                  placeholder="example@upi"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                  value={editUpiId}
+                  onChange={(e) => setEditUpiId(e.target.value)}
+                />
+                <p className="mt-1 text-[10px] text-slate-400">
+                  Used automatically for the salary payment QR.
+                </p>
+              </div>
+
+              <div>
                 <div className="flex justify-between items-center mt-2">
                   <label className="text-xs font-bold uppercase text-slate-500">Password</label>
-                  <button type="button" onClick={() => alert("Password auto-generated!")} className="text-xs font-black text-cyan-700 hover:underline">
+                  <button type="button" onClick={() => handleAutoGeneratePassword(true)} className="text-xs font-black text-cyan-700 hover:underline">
                     Auto Generate
                   </button>
                 </div>

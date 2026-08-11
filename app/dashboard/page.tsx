@@ -259,22 +259,58 @@ if (savedManagedServices) {
 }
 
 const filteredWithUrls = loadedServices
-  .filter(
-    (service: any) =>
-      service.portalUrl &&
-      service.portalUrl.trim() !== ""
-  )
-  .map((service: any) => ({
-    id: service.id,
-    title: service.name,
-    url: service.portalUrl,
-    note: service.portalUrl.replace(/^https?:\/\//, ""),
-  }));
+  .map((service: any) => {
+    const serviceUrl = String(
+      service.portalUrl ??
+      service.url ??
+      service.webUrl ??
+      service.link ??
+      ""
+    ).trim();
+
+    return {
+      id: service.id,
+      title: service.name ?? service.title ?? service.serviceName ?? "Service",
+      url: serviceUrl,
+      note: serviceUrl.replace(/^https?:\/\//, ""),
+    };
+  })
+  .filter((service: ServiceItem) => Boolean(service.url));
 
 setServiceDirectory(filteredWithUrls);
     };
 
     loadDashboardData();
+
+    // Keep dashboard wallet/service data synchronized with changes made
+    // in Wallet Management / Service Management without changing the UI.
+    const refreshDashboardData = () => {
+      loadDashboardData();
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (
+        event.key === "managedWallets" ||
+        event.key === "managedServices" ||
+        event.key === null
+      ) {
+        refreshDashboardData();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      refreshDashboardData();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshDashboardData();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     const updateDateTime = () => {
       const now = new Date();
@@ -335,6 +371,9 @@ setServiceDirectory(filteredWithUrls);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(timer);
     };
   }, []);

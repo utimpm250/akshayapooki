@@ -39,6 +39,11 @@ export default function StaffPerformancePage() {
   const [salaryHistory, setSalaryHistory] =
     useState<SalaryHistory[]>([]);
 
+  /* ---------------- LOGIN ATTENDANCE LOGS ---------------- */
+
+  const [attendanceLogs, setAttendanceLogs] =
+    useState<any[]>([]);
+
   /* ---------------- CURRENT USER ---------------- */
 
   const [currentUser, setCurrentUser] =
@@ -107,6 +112,29 @@ export default function StaffPerformancePage() {
     setHolidays(loadHolidays());
 
     setSalaryHistory(loadSalaryHistory());
+
+    // Dashboard login attendance is stored separately from performance records.
+    // Load it here so the Attendance tab counts the actual Present marks.
+    try {
+      const savedAttendance = localStorage.getItem(
+        "staff_attendance_logs"
+      );
+      const parsedAttendance = savedAttendance
+        ? JSON.parse(savedAttendance)
+        : [];
+
+      setAttendanceLogs(
+        Array.isArray(parsedAttendance)
+          ? parsedAttendance
+          : []
+      );
+    } catch (error) {
+      console.error(
+        "Error loading staff attendance logs:",
+        error
+      );
+      setAttendanceLogs([]);
+    }
 
     if (typeof window === "undefined") return;
 
@@ -266,9 +294,17 @@ export default function StaffPerformancePage() {
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
 
-    const attendance = getAttendanceRecord(
-      filteredRecords,
-      date
+    // IMPORTANT: Attendance logs are stored using the user's local date.
+    // Do not use toISOString() here because it can shift an IST date
+    // to the previous UTC date (e.g. Aug 11 -> Aug 10).
+    const localDateKey = `${date.getFullYear()}-${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}-${String(
+      date.getDate()
+    ).padStart(2, "0")}`;
+
+    const attendance = attendanceRecords.find(
+      (record) => record.date === localDateKey
     );
 
     const holiday = getHoliday(
@@ -337,11 +373,60 @@ export default function StaffPerformancePage() {
 
   const attendanceRecords =
     useMemo(() => {
+      // Dashboard attendance is saved when the staff member clicks Present.
+      // Convert those logs to the existing PerformanceRecord shape so the
+      // current Attendance UI can use them without changing the UI.
+      const loginAttendanceRecords = attendanceLogs
+        .map((log: any) => {
+          const timestamp = log?.timestamp || log?.date;
+          if (!timestamp || !log?.staffName) return null;
+
+          const parsedDate = new Date(timestamp);
+          if (Number.isNaN(parsedDate.getTime())) return null;
+
+          const date = `${parsedDate.getFullYear()}-${String(
+            parsedDate.getMonth() + 1
+          ).padStart(2, "0")}-${String(
+            parsedDate.getDate()
+          ).padStart(2, "0")}`;
+
+          return {
+            id: log.id || `${log.staffName}-${date}`,
+            date,
+            staffName: log.staffName,
+            loginTime: log.loginTime || "--",
+            logoutTime: log.logoutTime || "--",
+            totalServices: Number(log.totalServices || 0),
+            departmentFee: Number(log.departmentFee || 0),
+            serviceCharge: Number(log.serviceCharge || 0),
+            cashAmount: Number(log.cashAmount || 0),
+            gpayUpiAmount: Number(log.gpayUpiAmount || 0),
+            commission: Number(log.commission || 0),
+          } as PerformanceRecord;
+        })
+        .filter(Boolean) as PerformanceRecord[];
+
+      // Preserve existing performance records as a fallback.
+      const merged = [
+        ...loginAttendanceRecords,
+        ...records,
+      ];
+
+      const unique = new Map<string, PerformanceRecord>();
+      merged.forEach((record) => {
+        const key = `${(record.staffName || "").toLowerCase().trim()}|${record.date}`;
+        if (!unique.has(key)) {
+          unique.set(key, record);
+        }
+      });
+
+      const allAttendance = Array.from(unique.values());
+
       if (selectedStaff === "All") {
-        return records;
+        return allAttendance;
       }
 
-      return records.filter(
+      return allAttendance.filter(
         (record) =>
           record.staffName
             ?.toLowerCase()
@@ -351,6 +436,7 @@ export default function StaffPerformancePage() {
             .trim()
       );
     }, [
+      attendanceLogs,
       records,
       selectedStaff,
     ]);

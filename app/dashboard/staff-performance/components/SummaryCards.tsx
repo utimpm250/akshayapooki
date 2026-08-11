@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 import { PerformanceRecord } from "../types";
 
@@ -85,32 +86,47 @@ export default function SummaryCards({
   const [staffRecords, setStaffRecords] =
     useState<StaffRecord[]>([]);
 
-  useEffect(() => {
+ useEffect(() => {
+  const loadStaffData = async () => {
     try {
       const bills = JSON.parse(
-        localStorage.getItem(
-          "smart_akshaya_bills"
-        ) || "[]"
+        localStorage.getItem("smart_akshaya_bills") || "[]"
       );
 
-      const staff = JSON.parse(
-        localStorage.getItem(
-          "smart_akshaya_staff"
-        ) || "[]"
-      );
+      setBillRecords(Array.isArray(bills) ? bills : []);
 
-      setBillRecords(
-        Array.isArray(bills) ? bills : []
-      );
+      const { data, error } = await supabase
+        .from("staff")
+        .select("*")
+        .order("created_at", { ascending: true });
 
-      setStaffRecords(
-        Array.isArray(staff) ? staff : []
-      );
-    } catch {
-      setBillRecords([]);
+      if (error) {
+        console.error("Failed to load staff from Supabase:", error);
+        setStaffRecords([]);
+        return;
+      }
+
+      const mappedStaff = (data ?? []).map((row: any) => ({
+        ...row,
+        id: String(row.id ?? ""),
+        staffName: String(row.staffName ?? row.name ?? ""),
+        name: String(row.name ?? ""),
+        email: String(row.email ?? ""),
+        phone: String(row.phone ?? ""),
+        role: String(row.role ?? "Staff"),
+        salary: Number(row.salary ?? 0),
+        upiId: String(row.upiId ?? row.upi_id ?? "").trim(),
+      }));
+
+      setStaffRecords(mappedStaff as StaffRecord[]);
+    } catch (error) {
+      console.error("Failed to load staff data:", error);
       setStaffRecords([]);
     }
-  }, []);
+  };
+
+  loadStaffData();
+}, []);
 
   const dailyRecords = useMemo(
     () =>
@@ -327,6 +343,7 @@ console.log({
         finalMonthlySalary={
           finalMonthlySalary
         }
+        upiId={String((staff as any)?.upiId ?? (staff as any)?.upi_id ?? "")}
       />
 
       <YearlyCard
