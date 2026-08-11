@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, RefreshCw, Check } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface PermissionItem {
   id: string;
@@ -112,40 +113,136 @@ const initialPermissions: PermissionItem[] = [
 export default function FeaturePermissionsPage() {
   const [permissions, setPermissions] = useState<PermissionItem[]>(initialPermissions);
 
-  // Load saved permissions from localStorage on mount
+  // Permissions are stored centrally in Supabase so every computer/browser
+  // sees the same Staff/Accountant access settings.
   useEffect(() => {
-  const saved = localStorage.getItem("role_feature_permissions");
+    let cancelled = false;
 
-  if (saved) {
-    try {
-      setPermissions(JSON.parse(saved));
-    } catch (e) {
-      console.error("Error loading permissions", e);
-    }
-  } else {
-    localStorage.setItem(
-      "role_feature_permissions",
-      JSON.stringify(initialPermissions)
-    );
+    const loadPermissions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("feature_permissions")
+          .select("permissions")
+          .eq("id", 1)
+          .maybeSingle();
 
-    setPermissions(initialPermissions);
-  }
-}, []);
+        if (error) throw error;
 
-  const handleToggle = (id: string, roleType: 'accountantAccess' | 'staffAccess') => {
-    const updated = permissions.map(item => {
+        if (!cancelled && data?.permissions) {
+          const savedPermissions = Array.isArray(data.permissions)
+            ? (data.permissions as PermissionItem[])
+            : initialPermissions;
+
+          setPermissions(savedPermissions);
+          localStorage.setItem(
+            "role_feature_permissions",
+            JSON.stringify(savedPermissions)
+          );
+          return;
+        }
+
+        // First-time setup: create the central permissions row.
+        const { error: insertError } = await supabase
+          .from("feature_permissions")
+          .upsert(
+            {
+              id: 1,
+              permissions: initialPermissions,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "id" }
+          );
+
+        if (insertError) throw insertError;
+
+        if (!cancelled) {
+          setPermissions(initialPermissions);
+          localStorage.setItem(
+            "role_feature_permissions",
+            JSON.stringify(initialPermissions)
+          );
+        }
+      } catch (error) {
+        console.error("Error loading central feature permissions:", error);
+
+        // Keep the existing local cache as a fallback if Supabase is
+        // temporarily unavailable.
+        if (!cancelled) {
+          try {
+            const cached = localStorage.getItem("role_feature_permissions");
+            setPermissions(cached ? JSON.parse(cached) : initialPermissions);
+          } catch {
+            setPermissions(initialPermissions);
+          }
+        }
+      }
+    };
+
+    loadPermissions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleToggle = async (
+    id: string,
+    roleType: 'accountantAccess' | 'staffAccess'
+  ) => {
+    const updated = permissions.map((item) => {
       if (item.id === id) {
         return { ...item, [roleType]: !item[roleType] };
       }
       return item;
     });
+
+    // Update the UI immediately.
     setPermissions(updated);
-    localStorage.setItem('role_feature_permissions', JSON.stringify(updated));
+    localStorage.setItem("role_feature_permissions", JSON.stringify(updated));
+
+    const { error } = await supabase
+      .from("feature_permissions")
+      .upsert(
+        {
+          id: 1,
+          permissions: updated,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" }
+      );
+
+    if (error) {
+      console.error("Error saving central feature permissions:", error);
+      alert(
+        "Permissions could not be saved to the central database. Please check your internet connection and Supabase permissions."
+      );
+    }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setPermissions(initialPermissions);
-    localStorage.setItem('role_feature_permissions', JSON.stringify(initialPermissions));
+    localStorage.setItem(
+      "role_feature_permissions",
+      JSON.stringify(initialPermissions)
+    );
+
+    const { error } = await supabase
+      .from("feature_permissions")
+      .upsert(
+        {
+          id: 1,
+          permissions: initialPermissions,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" }
+      );
+
+    if (error) {
+      console.error("Error resetting central feature permissions:", error);
+      alert(
+        "Permissions reset locally, but the central database update failed."
+      );
+    }
   };
 
   return (

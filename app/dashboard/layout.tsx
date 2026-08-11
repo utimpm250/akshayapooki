@@ -27,6 +27,7 @@ import {
   Home,
   ClipboardList,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 
 const APP_VERSION = "1.0.9";
@@ -195,83 +196,127 @@ export default function DashboardLayout({
   };
 
   useEffect(() => {
-    // Theme Loader from LocalStorage
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-      setIsDarkMode(true);
-      document.documentElement.classList.add("dark");
-    } else {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove("dark");
-    }
+    let cancelled = false;
 
-    const storedUser = JSON.parse(
-      localStorage.getItem("loggedInUser") || "{}"
-    );
-
-    const username = (storedUser.username || "User").trim();
-    const role = (storedUser.role || "staff").toLowerCase();
-
-    setCurrentUser({
-      username,
-      role,
-    });
-
-    const versionKey = `app_version_${username.toLowerCase()}`;
-    const savedVersion = localStorage.getItem(versionKey);
-
-    if (savedVersion !== APP_VERSION) {
-      setTimeout(() => {
-        setShowUpdate(true);
-      }, 500);
-    }
-
-    const pinKey = `sidebar_pinned_${username.toLowerCase()}`;
-    const savedPin = localStorage.getItem(pinKey);
-
-    if (savedPin !== null) {
-      const pinned = savedPin === "true";
-      setSidebarPinned(pinned);
-      setSidebarOpen(pinned);
-    }
-
-    if (role === "admin") {
-      setAllowedMenus(allMenuItems);
-      return;
-    }
-
-    const permissions = JSON.parse(
-      localStorage.getItem("role_feature_permissions") || "[]"
-    );
-
-    const filteredMenus = allMenuItems.filter((menu) => {
-      if (menu.permissionKey === "Feature Permissions") {
-        return false;
+    const loadLayout = async () => {
+      // Theme Loader from LocalStorage
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "dark") {
+        setIsDarkMode(true);
+        document.documentElement.classList.add("dark");
+      } else {
+        setIsDarkMode(false);
+        document.documentElement.classList.remove("dark");
       }
 
-      const permission = permissions.find(
-        (p: any) => p.featureName === menu.permissionKey
+      const storedUser = JSON.parse(
+        localStorage.getItem("loggedInUser") || "{}"
       );
 
-      if (!permission) return false;
+      const username = (storedUser.username || "User").trim();
+      const role = (storedUser.role || "staff").toLowerCase();
 
-      if (role === "accountant") {
-        return permission.accountantAccess;
+      setCurrentUser({
+        username,
+        role,
+      });
+
+      const versionKey = `app_version_${username.toLowerCase()}`;
+      const savedVersion = localStorage.getItem(versionKey);
+
+      if (savedVersion !== APP_VERSION) {
+        setTimeout(() => {
+          if (!cancelled) {
+            setShowUpdate(true);
+          }
+        }, 500);
       }
 
-      return permission.staffAccess;
-    });
+      const pinKey = `sidebar_pinned_${username.toLowerCase()}`;
+      const savedPin = localStorage.getItem(pinKey);
 
-    setAllowedMenus(filteredMenus);
+      if (savedPin !== null) {
+        const pinned = savedPin === "true";
+        setSidebarPinned(pinned);
+        setSidebarOpen(pinned);
+      }
 
-    const allowed =
-      pathname === "/dashboard" ||
-      filteredMenus.some((m) => m.path === pathname);
+      if (role === "admin") {
+        setAllowedMenus(allMenuItems);
+        return;
+      }
 
-    if (!allowed) {
-      router.replace("/dashboard");
-    }
+      let permissions: any[] = [];
+
+      try {
+        // IMPORTANT: permissions are now loaded from Supabase instead of
+        // relying on the local browser's localStorage.
+        const { data, error } = await supabase
+          .from("feature_permissions")
+          .select("permissions")
+          .eq("id", 1)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (Array.isArray(data?.permissions)) {
+          permissions = data.permissions;
+          // Keep a local cache only as a temporary offline fallback.
+          localStorage.setItem(
+            "role_feature_permissions",
+            JSON.stringify(permissions)
+          );
+        }
+      } catch (error) {
+        console.error("Error loading central feature permissions:", error);
+
+        try {
+          permissions = JSON.parse(
+            localStorage.getItem("role_feature_permissions") || "[]"
+          );
+        } catch {
+          permissions = [];
+        }
+      }
+
+      if (cancelled) return;
+
+      const filteredMenus = allMenuItems.filter((menu) => {
+        if (menu.permissionKey === "Feature Permissions") {
+          return false;
+        }
+
+        const permission = permissions.find(
+          (p: any) => p.featureName === menu.permissionKey
+        );
+
+        if (!permission) return false;
+
+        if (role === "accountant") {
+          return Boolean(permission.accountantAccess);
+        }
+
+        return Boolean(permission.staffAccess);
+      });
+
+      setAllowedMenus(filteredMenus);
+
+      const allowed =
+        pathname === "/dashboard" ||
+        filteredMenus.some((m) => m.path === pathname);
+
+      if (!allowed) {
+        router.replace("/dashboard");
+      }
+    };
+
+    loadLayout();
+
+    return () => {
+      cancelled = true;
+    };
   }, [pathname, router]);
+
 
   // Theme Toggle Function
   const toggleTheme = () => {
