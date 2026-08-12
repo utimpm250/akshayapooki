@@ -26,6 +26,7 @@ import {
   Moon,
   Home,
   ClipboardList,
+  Menu,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -318,6 +319,19 @@ export default function DashboardLayout({
   }, [pathname, router]);
 
 
+  // Keep mobile drawer behavior separate from desktop hover behavior.
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(sidebarPinned);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [sidebarPinned]);
+
   // Theme Toggle Function
   const toggleTheme = () => {
     if (isDarkMode) {
@@ -455,7 +469,7 @@ export default function DashboardLayout({
       </div>
 
       <div
-        className="fixed left-0 top-0 z-40 h-screen w-3"
+        className="fixed left-0 top-0 z-40 hidden h-screen w-3 md:block"
         onMouseEnter={openSidebar}
       />
 
@@ -471,8 +485,9 @@ export default function DashboardLayout({
             h-[calc(100vh-24px)]
             bg-slate-950/90 dark:bg-slate-900/85
             text-slate-300
-            hidden md:flex flex-col justify-between p-4
+            flex flex-col justify-between p-4
             rounded-[28px] border border-white/10
+            w-[min(86vw,272px)] md:w-[272px]
             shadow-[0_24px_80px_rgba(15,23,42,0.28)]
             backdrop-blur-2xl
             transition-transform duration-300
@@ -543,9 +558,10 @@ export default function DashboardLayout({
                         return (
                           <li
                             key={item.path}
-                            onClick={() =>
-                              router.push(item.path)
-                            }
+                            onClick={() => {
+                              router.push(item.path);
+                              setSidebarOpen(false);
+                            }}
                             className={`group flex cursor-pointer items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                               isActive(item.path)
                                 ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-900/20"
@@ -589,6 +605,25 @@ export default function DashboardLayout({
           </div>
         </aside>
 
+        {/* Mobile navigation */}
+        {sidebarOpen && (
+          <button
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] md:hidden"
+          />
+        )}
+
+        <button
+          type="button"
+          aria-label="Open navigation"
+          onClick={openSidebar}
+          className="fixed left-3 top-3 z-30 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/20 bg-slate-950/90 text-white shadow-xl backdrop-blur-xl transition active:scale-95 md:hidden"
+        >
+          <Menu size={21} />
+        </button>
+
         <main
           style={
             {
@@ -596,8 +631,8 @@ export default function DashboardLayout({
             } as React.CSSProperties
           }
           className={`
-            relative z-10 flex-1 min-h-screen overflow-y-auto bg-transparent
-            p-3 sm:p-4 lg:p-5 xl:p-6 transition-all duration-300
+            relative z-10 flex-1 min-w-0 min-h-screen overflow-y-auto overflow-x-hidden bg-transparent
+            p-3 pt-16 sm:p-4 sm:pt-16 lg:p-5 xl:p-6 transition-all duration-300
             ${sidebarOpen ? "md:ml-[288px]" : "ml-0"}
           `}
         >
