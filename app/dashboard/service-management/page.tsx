@@ -215,28 +215,84 @@ export default function ServiceManagementPage() {
 const fetchServices = () => {
   console.log("=== fetchServices START ===");
 
-  if (typeof window !== "undefined") {
+  if (typeof window === "undefined") return;
+
+  try {
     const data = localStorage.getItem("managedServices");
 
-    console.log("Current data:", data);
-    console.log("Initial services count:", initialServices.length);
+    console.log("Current managedServices:", data);
+    console.log("Default services count:", initialServices.length);
+
+    let storedServices: ServiceItem[] = [];
 
     if (data) {
-      console.log("Loading from localStorage");
-      setServices(JSON.parse(data));
-    } else {
-      console.log("Creating managedServices...");
+      const parsed = JSON.parse(data);
 
-      localStorage.setItem(
-        "managedServices",
-        JSON.stringify(initialServices)
+      if (Array.isArray(parsed)) {
+        storedServices = parsed;
+      }
+    }
+
+    /*
+     * Keep existing saved services/edits.
+     * Add any missing default services from initialServices.
+     */
+    const storedById = new Map(
+      storedServices.map((service: ServiceItem) => [
+        String(service.id),
+        service,
+      ])
+    );
+
+    const storedByName = new Map(
+      storedServices.map((service: ServiceItem) => [
+        service.name.trim().toLowerCase(),
+        service,
+      ])
+    );
+
+    const mergedServices: ServiceItem[] = [...storedServices];
+
+    initialServices.forEach((defaultService) => {
+      const existsById = storedById.has(String(defaultService.id));
+      const existsByName = storedByName.has(
+        defaultService.name.trim().toLowerCase()
       );
 
-      const verify = localStorage.getItem("managedServices");
-      console.log("Saved successfully:", verify !== null);
+      if (!existsById && !existsByName) {
+        mergedServices.push(defaultService);
+      }
+    });
 
-      setServices(initialServices);
+    /*
+     * If old/corrupted localStorage contained only a small
+     * subset of the default service list, repair it automatically.
+     */
+    if (
+      storedServices.length === 0 ||
+      mergedServices.length !== storedServices.length
+    ) {
+      localStorage.setItem(
+        "managedServices",
+        JSON.stringify(mergedServices)
+      );
     }
+
+    console.log(
+      "Final managedServices count:",
+      mergedServices.length
+    );
+
+    setServices(mergedServices);
+  } catch (error) {
+    console.error("Error loading managedServices:", error);
+
+    localStorage.setItem(
+      "managedServices",
+      JSON.stringify(initialServices)
+    );
+
+    setServices(initialServices);
   }
 };
 useEffect(() => {
