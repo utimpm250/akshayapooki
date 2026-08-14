@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import QuickReceiptScan from "./components/QuickReceiptScan";
+import { supabase } from '@/lib/supabase';
 import { 
   Calendar, User, Phone, Search, Plus, Trash2, 
   ReceiptText, CreditCard, Calculator, Printer, Share2, QrCode, Lock, ShieldCheck, X, Palette
@@ -50,6 +51,199 @@ const DEFAULT_STAFF_MEMBERS: StaffUser[] = [
   { id: '4', name: 'SHEEJA', pin: '1234', role: 'Staff' },
   { id: '5', name: 'SAHLA', pin: '1234', role: 'Staff' },
 ];
+
+const CENTRAL_STORAGE_ROW_ID = 999999;
+const CENTRAL_STORAGE_VERSION = 1;
+const CENTRAL_STORAGE_KEY = "__smart_akshaya_shared_storage__";
+
+const SHARED_STORAGE_KEYS = [
+  "managedServices",
+  "managedWallets",
+  "walletTransactions",
+  "managedCustomers",
+  "savedBillsList",
+  "serviceEntries",
+  "smart_akshaya_bills",
+  "performanceRecords",
+  "billedServicesData",
+] as const;
+
+type SharedStorageKey = (typeof SHARED_STORAGE_KEYS)[number];
+type SharedStorage = Partial<Record<SharedStorageKey, any[]>>;
+
+const safeParseArray = (key: SharedStorageKey): any[] => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const recordIdentity = (item: any, key: SharedStorageKey): string => {
+  const id = item?.id ?? item?.billId ?? item?.staffId;
+  if (id !== undefined && id !== null && String(id).trim() !== "") {
+    return `id:${String(id)}`;
+  }
+
+  if (key === "managedCustomers") {
+    return `customer:${String(item?.mobile ?? "").trim()}:${String(item?.name ?? "").trim().toLowerCase()}`;
+  }
+
+  if (key === "managedServices") {
+    return `service:${String(item?.name ?? "").trim().toLowerCase()}`;
+  }
+
+  return `value:${JSON.stringify(item)}`;
+};
+
+const mergeSharedArrays = (
+  remote: any[] = [],
+  local: any[] = [],
+  key: SharedStorageKey,
+): any[] => {
+  const merged = new Map<string, any>();
+
+  for (const item of remote) {
+    if (item && typeof item === "object") {
+      merged.set(recordIdentity(item, key), item);
+    }
+  }
+
+  const storedUser =
+    typeof window !== "undefined"
+      ? (() => {
+          try {
+            return JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+          } catch {
+            return {};
+          }
+        })()
+      : {};
+  const isAdmin = String(storedUser?.role || "").toLowerCase() === "admin";
+
+  // Services are managed centrally. Admin changes can be migrated from the
+  // current browser, while staff browsers do not overwrite an existing
+  // central service definition with stale local data. New local services are
+  // still added. Other business records keep the existing local-write flow so
+  // bills/credits/wallet transactions created by the current user are retained.
+  const localWins = key !== "managedServices" || isAdmin;
+
+  for (const item of local) {
+    if (!item || typeof item !== "object") continue;
+    const identity = recordIdentity(item, key);
+    if (localWins || !merged.has(identity)) {
+      merged.set(identity, item);
+    }
+  }
+
+  return Array.from(merged.values());
+};
+
+const readLocalSharedStore = (): SharedStorage => {
+  const result: SharedStorage = {};
+  for (const key of SHARED_STORAGE_KEYS) {
+    result[key] = safeParseArray(key);
+  }
+  return result;
+};
+
+const writeLocalSharedStore = (store: SharedStorage) => {
+  if (typeof window === "undefined") return;
+
+  for (const key of SHARED_STORAGE_KEYS) {
+    const value = store[key];
+    if (Array.isArray(value)) {
+      // Do not replace a still-available service-management list with an
+      // empty snapshot while the central store is being initialized.
+      if (key === "managedServices" && value.length === 0) continue;
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+  }
+};
+
+const loadCentralSharedStore = async (): Promise<SharedStorage | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("feature_permissions")
+      .select("permissions")
+      .eq("id", CENTRAL_STORAGE_ROW_ID)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const payload = data?.permissions;
+    if (!payload || payload.storageKey !== CENTRAL_STORAGE_KEY) {
+      return null;
+    }
+
+    const remoteStore = payload.data as SharedStorage | undefined;
+    if (!remoteStore || typeof remoteStore !== "object") return null;
+
+    return remoteStore;
+  } catch (error) {
+    console.error("Central shared storage read failed:", error);
+    return null;
+  }
+};
+
+const saveCentralSharedStore = async (store: SharedStorage): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from("feature_permissions")
+      .upsert(
+        {
+          id: CENTRAL_STORAGE_ROW_ID,
+          permissions: {
+            storageKey: CENTRAL_STORAGE_KEY,
+            version: CENTRAL_STORAGE_VERSION,
+            data: store,
+          },
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" },
+      );
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Central shared storage write failed:", error);
+    return false;
+  }
+};
+
+const syncCentralStorage = async (): Promise<SharedStorage> => {
+  const localStore = readLocalSharedStore();
+  const remoteStore = await loadCentralSharedStore();
+
+  const merged: SharedStorage = {};
+
+  for (const key of SHARED_STORAGE_KEYS) {
+    merged[key] = mergeSharedArrays(
+      Array.isArray(remoteStore?.[key]) ? remoteStore?.[key] : [],
+      Array.isArray(localStore[key]) ? localStore[key] : [],
+      key,
+    );
+  }
+
+  writeLocalSharedStore(merged);
+
+  // Always push the merged snapshot back. This both migrates existing
+  // localhost data after deployment and makes later staff/admin sessions share
+  // the same central data without changing the existing page structure.
+  await saveCentralSharedStore(merged);
+
+  return merged;
+};
+
+const pushCurrentLocalStorageToCentral = async () => {
+  const localStore = readLocalSharedStore();
+  await saveCentralSharedStore(localStore);
+};
 
 function ServiceEntryForm() {
   const router = useRouter();
@@ -104,6 +298,7 @@ function ServiceEntryForm() {
   const paymentQrBoxRef = useRef<HTMLDivElement>(null);
   const [billCompleted, setBillCompleted] = useState(false);
   const [customerPaidInput, setCustomerPaidInput] = useState<string>('');
+  const [centralStorageReady, setCentralStorageReady] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const customerDropdownRef = useRef<HTMLDivElement>(null);
@@ -142,8 +337,38 @@ function ServiceEntryForm() {
   };
 
   useEffect(() => {
-    loadWallets();
-    loadSavedCustomers();
+    let cancelled = false;
+
+    const initialiseSharedStorage = async () => {
+      // Keep the UI responsive with the current browser cache first.
+      loadWallets();
+      loadSavedCustomers();
+
+      const merged = await syncCentralStorage();
+      if (cancelled) return;
+
+      writeLocalSharedStore(merged);
+      loadWallets();
+      loadSavedCustomers();
+      loadManagedServices();
+      setCentralStorageReady(true);
+    };
+
+    void initialiseSharedStorage();
+
+    const handleFocus = () => {
+      void syncCentralStorage().then(() => {
+        if (!cancelled) {
+          loadWallets();
+          loadSavedCustomers();
+          loadManagedServices();
+        }
+      });
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
@@ -154,7 +379,12 @@ function ServiceEntryForm() {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+    };
   }, []);
 
   useEffect(() => {
@@ -169,8 +399,6 @@ function ServiceEntryForm() {
           console.error("Error parsing loggedInUser", e);
         }
       }
-
-      loadManagedServices();
 
       const savedStaff = localStorage.getItem('managedStaff');
       if (savedStaff) {
@@ -203,6 +431,67 @@ function ServiceEntryForm() {
     }
   };
 
+
+  // Resume a previously saved draft bill with the exact saved customer,
+  // service items, quantities and payment values.
+  useEffect(() => {
+    if (!resumeId || typeof window === 'undefined') return;
+
+    try {
+      const savedBills = JSON.parse(localStorage.getItem('savedBillsList') || '[]');
+      const savedBill = Array.isArray(savedBills)
+        ? savedBills.find((bill: any) =>
+            String(bill.id || bill.billId || '') === String(resumeId)
+          )
+        : null;
+
+      const creditBills = JSON.parse(localStorage.getItem('smart_akshaya_bills') || '[]');
+      const creditBill = !savedBill && Array.isArray(creditBills)
+        ? creditBills.find((bill: any) =>
+            String(bill.id || bill.billId || '') === String(resumeId)
+          )
+        : null;
+
+      const bill = savedBill || creditBill;
+      if (!bill) return;
+
+      setCustomerName(String(bill.customerName || bill.name || ''));
+      setMobile(String(bill.mobile || bill.mobileNumber || bill.customerPhone || ''));
+      setGpay(Number(bill.gpay ?? bill.gpayAmount ?? 0));
+      setCash(Number(bill.cash ?? bill.cashReceived ?? 0));
+      setPreviousBalance(Number(bill.previousBalance ?? 0));
+
+      const restoredItems = Array.isArray(bill.items)
+        ? bill.items.map((item: any, index: number) => ({
+            id: String(item.id || `RESUME-${Date.now()}-${index}`),
+            name: String(item.name || item.serviceName || item.service || 'Service'),
+            wallet: String(item.wallet || 'Select Wallet'),
+            walletChg: Number(item.walletChg ?? item.deptChg ?? item.deptFee ?? 0),
+            srvChg: Number(item.srvChg ?? item.srvCharge ?? item.serviceCharge ?? 0),
+            qty: Number(item.qty ?? item.quantity ?? 1) > 0
+              ? Number(item.qty ?? item.quantity ?? 1)
+              : 1,
+            status: String(item.status || 'In Progress') === 'Completed'
+              ? 'Completed'
+              : 'In Progress',
+          }))
+        : [];
+
+      setItems(restoredItems);
+      setSearchService('');
+      setSelectedService(null);
+      setWallet('Select Wallet');
+      setWalletChg(0);
+      setSrvChg(0);
+      setQty(1);
+      setShowDropdown(false);
+
+      setTimeout(() => serviceInputRef.current?.focus(), 150);
+    } catch (error) {
+      console.error('Failed to resume saved bill:', error);
+    }
+  }, [resumeId, centralStorageReady]);
+
   const registerNewServicesIfNeeded = () => {
     try {
       const storedServices = localStorage.getItem('managedServices');
@@ -231,6 +520,7 @@ function ServiceEntryForm() {
       if (updated) {
         localStorage.setItem('managedServices', JSON.stringify(managedList));
         loadManagedServices();
+        void pushCurrentLocalStorageToCentral();
       }
     } catch (e) {
       console.error("Error registering new services", e);
@@ -714,72 +1004,182 @@ function ServiceEntryForm() {
     loadWallets();
   };
 
-  const handleSaveBill = () => {
+  const handleSaveBill = async () => {
     if (hasCompletedItems) {
       alert("⚠️ 'Completed' സ്റ്റാറ്റസ് ഉള്ള ബില്ലുകൾ സേവ് ചെയ്യാൻ കഴിയില്ല. 'Complete Bill' ചെയ്യുക!");
       return;
     }
+
     if (!customerName && !mobile && items.length === 0) {
       alert("Please enter customer details or add items before saving!");
       return;
     }
+
     registerNewServicesIfNeeded();
-    processWalletUpdates();
-    saveCustomerToDirectory();
-    
+
+    // Save is only a draft. Do not create a billed-service transaction yet.
+    const billId = resumeId || ("SB-" + Date.now());
+    const billTimestamp = new Date().toLocaleString();
     const savedBillsList = JSON.parse(localStorage.getItem('savedBillsList') || '[]');
-    savedBillsList.unshift({
-      id: "SB-" + Date.now(),
+
+    const savedBill = {
+      id: billId,
+      billId,
       customerName: customerName || 'Walk-in',
       mobile,
-      items,
+      items: items.map(item => ({ ...item })),
       totalAmount,
-      date: new Date().toLocaleString()
-    });
-    localStorage.setItem('savedBillsList', JSON.stringify(savedBillsList));
+      totalPaid,
+      balance,
+      gpay: Number(gpay),
+      cash: Number(cash),
+      previousBalance: Number(previousBalance),
+      date: billTimestamp,
+      dateTime: billTimestamp,
+      staffName: currentStaff,
+      status: 'draft',
+    };
+
+    const withoutCurrent = Array.isArray(savedBillsList)
+      ? savedBillsList.filter(
+          (bill: any) => String(bill.id || bill.billId || '') !== String(billId)
+        )
+      : [];
+
+    withoutCurrent.unshift(savedBill);
+    localStorage.setItem('savedBillsList', JSON.stringify(withoutCurrent));
+    await pushCurrentLocalStorageToCentral();
 
     alert('Bill saved successfully to Saved Bills & Customer Directory!');
-    handleClearForm();
-    router.push('/dashboard/saved-bills');
+
+    // Always return to a fresh Service Entry form after saving.
+    setItems([]);
+    setGpay(0);
+    setCash(0);
+    setMobile('');
+    setCustomerName('');
+    setPreviousBalance(0);
+    setSearchService('');
+    setSelectedService(null);
+    setWallet('Select Wallet');
+    setWalletChg(0);
+    setSrvChg(0);
+    setQty(1);
+    setShowDropdown(false);
+    setBillCompleted(false);
+
+    router.push('/dashboard/service-entry');
+    setTimeout(() => serviceInputRef.current?.focus(), 150);
   };
 
-  const handleCompleteBill = () => {
+
+  const handleCompleteBill = async () => {
     if (hasInProgressItems) {
       alert("⚠️ 'In Progress' സ്റ്റാറ്റസ് ഉള്ളതിനാൽ കംപ്ലീറ്റ് ചെയ്യാനാകില്ല. സേവ് (Save) ചെയ്യുക!");
       return;
     }
+
     const isCredit = balance > 0;
     if (isCredit && (!customerName.trim() || !mobile.trim())) {
       alert("⚠️ പേരും മൊബൈൽ നമ്പറും നിർബന്ധമായും നൽകണം!");
       return;
     }
+
     registerNewServicesIfNeeded();
     processWalletUpdates();
     saveCustomerToDirectory();
 
-    const existingRecords = JSON.parse(localStorage.getItem("performanceRecords") || "[]");
+    const billId = resumeId || ("BILL-" + Date.now());
+    const billDate = new Date().toLocaleDateString('en-GB');
+    const billTimestamp = new Date().toLocaleString();
+
+    // Create the real billed-service records only now.
+    const serviceEntries = JSON.parse(localStorage.getItem('serviceEntries') || '[]');
+    const entriesWithoutThisBill = Array.isArray(serviceEntries)
+      ? serviceEntries.filter(
+          (entry: any) => String(entry.billId || '') !== String(billId)
+        )
+      : [];
+
+    items.forEach((item) => {
+      const itemQty = Number(item.qty) || 1;
+      const itemTotal =
+        (Number(item.walletChg || 0) + Number(item.srvChg || 0)) * itemQty;
+      const paidShare =
+        totalAmount > 0 ? (Number(totalPaid) * itemTotal) / totalAmount : 0;
+      const pendingShare =
+        totalAmount > 0 ? (Number(balance) * itemTotal) / totalAmount : 0;
+
+      entriesWithoutThisBill.unshift({
+        id: "SE-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+        billId,
+        dateTime: billTimestamp,
+        customerName: customerName || 'Walk-in',
+        customerPhone: mobile || '',
+        serviceName: item.name,
+        quantity: itemQty,
+        totalAmount: Number(itemTotal.toFixed(2)),
+        receivedAmount: Number(paidShare.toFixed(2)),
+        cashReceived: Number(
+          (totalAmount > 0 ? (Number(cash) * itemTotal) / totalAmount : 0).toFixed(2)
+        ),
+        gpayAmount: Number(
+          (totalAmount > 0 ? (Number(gpay) * itemTotal) / totalAmount : 0).toFixed(2)
+        ),
+        pendingAmount: Number(pendingShare.toFixed(2)),
+        staffName: currentStaff,
+        status: isCredit ? 'credit' : 'completed',
+      });
+    });
+
+    localStorage.setItem('serviceEntries', JSON.stringify(entriesWithoutThisBill));
+
     if (isCredit) {
       const creditBills = JSON.parse(localStorage.getItem("smart_akshaya_bills") || "[]");
-      creditBills.unshift({
-        id: "BILL-" + Date.now(),
-        customerName: customerName,
+      const creditWithoutThisBill = Array.isArray(creditBills)
+        ? creditBills.filter(
+            (bill: any) => String(bill.id || bill.billId || '') !== String(billId)
+          )
+        : [];
+
+      creditWithoutThisBill.unshift({
+        id: billId,
+        billNumber: billId,
+        customerName,
         mobileNumber: mobile,
-        date: new Date().toISOString().split("T")[0],
+        date: billDate,
+        dateTime: billTimestamp,
         staffName: currentStaff,
         status: "Credit",
-        totalAmount: totalAmount,
+        totalAmount,
         paidAmount: totalPaid,
         owedAmount: balance,
+        items: [...items],
       });
-      localStorage.setItem("smart_akshaya_bills", JSON.stringify(creditBills));
+
+      localStorage.setItem(
+        "smart_akshaya_bills",
+        JSON.stringify(creditWithoutThisBill)
+      );
     }
 
-    const departmentFee = items.reduce((sum, item) => sum + (Number(item.walletChg) * Number(item.qty)), 0);
-    const serviceCharge = items.reduce((sum, item) => sum + (Number(item.srvChg) * Number(item.qty)), 0);
+    const existingRecords = JSON.parse(
+      localStorage.getItem("performanceRecords") || "[]"
+    );
 
-    const performanceRecord = {
+    const departmentFee = items.reduce(
+      (sum, item) => sum + Number(item.walletChg || 0) * Number(item.qty || 1),
+      0
+    );
+    const serviceCharge = items.reduce(
+      (sum, item) => sum + Number(item.srvChg || 0) * Number(item.qty || 1),
+      0
+    );
+
+    existingRecords.unshift({
       id: "PERF-" + Date.now(),
-      date: new Date().toISOString().split("T")[0],
+      billId,
+      date: billDate,
       timestamp: new Date().toISOString(),
       staffName: currentStaff,
       customerName: customerName || "Walk-in",
@@ -794,12 +1194,32 @@ function ServiceEntryForm() {
       commission: 0,
       loginTime: "",
       logoutTime: ""
-    };
+    });
 
-    existingRecords.unshift(performanceRecord);
     localStorage.setItem("performanceRecords", JSON.stringify(existingRecords));
 
-    const completedBillData = {
+    // Once a Saved Bill is completed, remove only that draft from Saved Bills.
+    if (resumeId) {
+      try {
+        const savedBills = JSON.parse(
+          localStorage.getItem('savedBillsList') || '[]'
+        );
+
+        if (Array.isArray(savedBills)) {
+          const remaining = savedBills.filter(
+            (bill: any) =>
+              String(bill.id || bill.billId || '') !== String(resumeId)
+          );
+          localStorage.setItem('savedBillsList', JSON.stringify(remaining));
+        }
+      } catch (error) {
+        console.error('Failed to remove completed Saved Bill:', error);
+      }
+    }
+
+    await pushCurrentLocalStorageToCentral();
+
+    setLastCompletedBill({
       customerName,
       mobile,
       items: [...items],
@@ -808,16 +1228,32 @@ function ServiceEntryForm() {
       balance,
       gpay,
       cash,
-      date: new Date().toLocaleString(),
-    };
+      date: billTimestamp,
+    });
 
-    setLastCompletedBill(completedBillData);
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 3000);
 
-    handleClearForm();
+    // Always finish on a fresh Service Entry form.
+    setItems([]);
+    setGpay(0);
+    setCash(0);
+    setMobile('');
+    setCustomerName('');
+    setPreviousBalance(0);
+    setSearchService('');
+    setSelectedService(null);
+    setWallet('Select Wallet');
+    setWalletChg(0);
+    setSrvChg(0);
+    setQty(1);
+    setShowDropdown(false);
     setBillCompleted(true);
+
+    router.push('/dashboard/service-entry');
+    setTimeout(() => serviceInputRef.current?.focus(), 150);
   };
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
