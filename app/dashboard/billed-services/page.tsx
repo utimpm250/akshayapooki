@@ -21,7 +21,9 @@ interface BilledServiceItem {
   pendingAmount: number;
   staffName: string;
   status: 'completed' | 'pending' | 'credit' | 'paid';
-  originalData?: any;
+  originalData?: any[];
+  billId?: string;
+  serviceCount?: number;
 }
 
 export default function BilledServicesPage() {
@@ -109,69 +111,101 @@ export default function BilledServicesPage() {
         return isCredit || isCompleted;
       });
 
-      const formattedEntries = billedEntries.map((item: any, index: number) => {
-        const billKey = String(
-          item.billId || item.billID || item.invoiceId || item.id || ''
+      // One displayed row must represent one complete bill.
+      // serviceEntries intentionally stores one record per service, so group
+      // those records by billId for the Billed Services UI only.
+      const groupedBills = new Map<string, any[]>();
+      billedEntries.forEach((entry: any) => {
+        const key = String(
+          entry.billId || entry.billID || entry.invoiceId || entry.id || ''
         ).trim();
-        const savedBill = savedBillsById.get(billKey);
-
-        const pending = Number(
-          savedBill?.balance ??
-          savedBill?.owedAmount ??
-          savedBill?.pendingAmount ??
-          item.pendingAmount ??
-          item.balance ??
-          0
-        );
-
-        const rawStatus = String(
-          savedBill?.status ?? item.status ?? ''
-        ).trim().toLowerCase();
-
-        const displayStatus =
-          rawStatus === 'credit' || rawStatus === 'pending' || pending > 0
-            ? 'credit'
-            : 'completed';
-
-        return {
-          id: item.id || `entry-${index}-${Date.now()}`,
-          dateTime:
-            savedBill?.dateTime ||
-            item.dateTime ||
-            item.date ||
-            new Date().toLocaleString(),
-          customerName:
-            savedBill?.customerName ||
-            item.customerName ||
-            item.name ||
-            'Customer',
-          customerPhone:
-            savedBill?.mobile ||
-            savedBill?.mobileNumber ||
-            item.customerPhone ||
-            item.phone ||
-            item.mobile ||
-            'N/A',
-          serviceName: item.serviceName || item.service || 'Service',
-          quantity: Number(item.quantity) || 1,
-          totalAmount:
-            Number(savedBill?.totalAmount ?? item.totalAmount ?? item.total) || 0,
-          receivedAmount:
-            Number(savedBill?.totalPaid ?? item.receivedAmount ?? item.received) || 0,
-          cashReceived:
-            Number(savedBill?.cash ?? item.cashReceived) || 0,
-          gpayAmount:
-            Number(savedBill?.gpay ?? item.gpayAmount ?? item.gpay) || 0,
-          pendingAmount: pending,
-          staffName:
-            savedBill?.staffName ||
-            item.staffName ||
-            item.staff ||
-            'Admin',
-          status: displayStatus as 'completed' | 'credit',
-          originalData: item,
-        };
+        const existing = groupedBills.get(key) || [];
+        existing.push(entry);
+        groupedBills.set(key, existing);
       });
+
+      const formattedEntries = Array.from(groupedBills.entries()).map(
+        ([billKey, billItems], index) => {
+          const firstItem = billItems[0] || {};
+          const savedBill = savedBillsById.get(billKey);
+
+          const totalAmount = billItems.reduce(
+            (sum: number, entry: any) => sum + Number(entry.totalAmount ?? entry.total ?? 0),
+            0
+          );
+          const receivedAmount = billItems.reduce(
+            (sum: number, entry: any) => sum + Number(entry.receivedAmount ?? entry.received ?? 0),
+            0
+          );
+          const cashReceived = billItems.reduce(
+            (sum: number, entry: any) => sum + Number(entry.cashReceived ?? 0),
+            0
+          );
+          const gpayAmount = billItems.reduce(
+            (sum: number, entry: any) => sum + Number(entry.gpayAmount ?? entry.gpay ?? 0),
+            0
+          );
+          const entryPending = billItems.reduce(
+            (sum: number, entry: any) => sum + Number(entry.pendingAmount ?? entry.balance ?? 0),
+            0
+          );
+          const pendingAmount = Number(
+            savedBill?.balance ?? savedBill?.owedAmount ?? savedBill?.pendingAmount ?? entryPending
+          ) || 0;
+
+          const rawStatus = String(
+            savedBill?.status ?? firstItem.status ?? ''
+          ).trim().toLowerCase();
+          const displayStatus =
+            rawStatus === 'credit' || rawStatus === 'pending' || pendingAmount > 0
+              ? 'credit'
+              : 'completed';
+
+          const serviceNames = billItems.map((entry: any) => ({
+            name: String(entry.serviceName || entry.service || 'Service'),
+            quantity: Number(entry.quantity) || 1,
+          }));
+
+          return {
+            id: billKey || firstItem.id || `bill-${index}-${Date.now()}`,
+            billId: billKey,
+            dateTime:
+              savedBill?.dateTime ||
+              firstItem.dateTime ||
+              firstItem.date ||
+              new Date().toLocaleString(),
+            customerName:
+              savedBill?.customerName ||
+              firstItem.customerName ||
+              firstItem.name ||
+              'Customer',
+            customerPhone:
+              savedBill?.mobile ||
+              savedBill?.mobileNumber ||
+              firstItem.customerPhone ||
+              firstItem.phone ||
+              firstItem.mobile ||
+              'N/A',
+            // Keep the first service in the compact row. The complete list is
+            // shown inside View, so one bill never becomes multiple rows.
+            serviceName: serviceNames[0]?.name || 'Service',
+            quantity: serviceNames[0]?.quantity || 1,
+            serviceCount: serviceNames.length,
+            totalAmount: Number(savedBill?.totalAmount ?? totalAmount) || 0,
+            receivedAmount: Number(savedBill?.totalPaid ?? receivedAmount) || 0,
+            cashReceived: Number(savedBill?.cash ?? cashReceived) || 0,
+            gpayAmount: Number(savedBill?.gpay ?? gpayAmount) || 0,
+            pendingAmount,
+            staffName:
+              savedBill?.staffName ||
+              firstItem.staffName ||
+              firstItem.staff ||
+              'Admin',
+            status: displayStatus as 'completed' | 'credit',
+            originalData: billItems,
+          };
+        }
+      );
 
       setServices(formattedEntries);
     } catch (e) {
@@ -324,16 +358,26 @@ export default function BilledServicesPage() {
       return;
     }
 
-    if (confirm("Are you sure you want to delete this entry?")) {
-      const updated = services.filter(s => s.id !== id);
-      setServices(updated);
+    if (!confirm("Are you sure you want to delete this bill?")) return;
 
-      if (typeof window !== 'undefined') {
-        const jsonVal = JSON.stringify(updated);
-        localStorage.setItem('serviceEntries', jsonVal);
-        localStorage.setItem('savedBills', jsonVal);
-        localStorage.setItem('billedServicesData', jsonVal);
-      }
+    try {
+      const rawEntries = JSON.parse(localStorage.getItem('serviceEntries') || '[]');
+      const billKey = String(item.billId || item.id || '').trim();
+      const updatedEntries = Array.isArray(rawEntries)
+        ? rawEntries.filter((entry: any) => {
+            const entryBillKey = String(
+              entry.billId || entry.billID || entry.invoiceId || entry.id || ''
+            ).trim();
+            return entryBillKey !== billKey;
+          })
+        : [];
+
+      localStorage.setItem('serviceEntries', JSON.stringify(updatedEntries));
+      localStorage.setItem('billedServicesData', JSON.stringify(updatedEntries));
+      setServices((current) => current.filter((service) => service.id !== id));
+    } catch (error) {
+      console.error('Failed to delete billed bill:', error);
+      alert('Unable to delete this bill.');
     }
   };
 
@@ -348,183 +392,34 @@ export default function BilledServicesPage() {
     }
 
     try {
-      const source = item.originalData || {};
-      const billId = String(
-        source.billId ||
-        source.billID ||
-        source.invoiceId ||
-        item.id
-      );
-
-      const allEntries = JSON.parse(
-        localStorage.getItem('serviceEntries') || '[]'
-      );
-
-      const billEntries = Array.isArray(allEntries)
-        ? allEntries.filter((entry: any) =>
-            String(
-              entry.billId ||
-              entry.billID ||
-              entry.invoiceId ||
-              entry.id ||
-              ''
-            ) === billId
-          )
-        : [];
-
-      const savedBills = JSON.parse(
-        localStorage.getItem('savedBillsList') || '[]'
-      );
-      const savedBill = Array.isArray(savedBills)
-        ? savedBills.find((bill: any) =>
-            String(bill.id || bill.billId || '') === billId
-          )
-        : null;
-
-      const creditBills = JSON.parse(
-        localStorage.getItem('smart_akshaya_bills') || '[]'
-      );
-      const creditBill = Array.isArray(creditBills)
-        ? creditBills.find((bill: any) =>
-            String(bill.id || bill.billId || '') === billId
-          )
-        : null;
-
-      const sourceItems =
-        Array.isArray(savedBill?.items) && savedBill.items.length > 0
-          ? savedBill.items
-          : Array.isArray(creditBill?.items) && creditBill.items.length > 0
-            ? creditBill.items
-            : billEntries;
-
-      const restoredItems = sourceItems.map((entry: any, index: number) => {
-        const entryTotal = Number(
-          entry.totalAmount ?? entry.total ?? 0
-        ) || 0;
-
-        return {
-          id: String(entry.id || `EDIT-${billId}-${index}`),
-          name: String(
-            entry.name ||
-            entry.serviceName ||
-            entry.service ||
-            'Service'
-          ),
-          wallet: String(
-            entry.wallet ||
-            entry.walletName ||
-            'Select Wallet'
-          ),
-          walletChg: Number(
-            entry.walletChg ??
-            entry.deptChg ??
-            entry.deptFee ??
-            0
-          ) || 0,
-          srvChg: Number(
-            entry.srvChg ??
-            entry.srvCharge ??
-            entry.serviceCharge ??
-            // Older billed records stored only the combined item total.
-            entryTotal
-          ) || 0,
-          qty: Math.max(
-            1,
-            Number(entry.qty ?? entry.quantity ?? 1) || 1
-          ),
-          status: 'Completed',
-        };
-      });
-
-      const totalAmount = Number(
-        savedBill?.totalAmount ??
-        creditBill?.totalAmount ??
-        billEntries.reduce(
-          (sum: number, entry: any) => sum + (Number(entry.totalAmount) || 0),
-          0
-        ) ??
-        item.totalAmount
-      ) || 0;
-
-      const totalPaid = Number(
-        savedBill?.totalPaid ??
-        creditBill?.paidAmount ??
-        billEntries.reduce(
-          (sum: number, entry: any) => sum + (Number(entry.receivedAmount) || 0),
-          0
-        )
-      ) || 0;
-
-      const cashReceived = Number(
-        savedBill?.cash ??
-        billEntries.reduce(
-          (sum: number, entry: any) => sum + (Number(entry.cashReceived) || 0),
-          0
-        )
-      ) || 0;
-
-      const gpayAmount = Number(
-        savedBill?.gpay ??
-        billEntries.reduce(
-          (sum: number, entry: any) => sum + (Number(entry.gpayAmount) || 0),
-          0
-        )
-      ) || 0;
-
       localStorage.setItem(
         'serviceEntryEditData',
         JSON.stringify({
-          id: billId,
-          billId,
-          customerName:
-            savedBill?.customerName ||
-            creditBill?.customerName ||
-            item.customerName,
-          mobile:
-            savedBill?.mobile ||
-            creditBill?.mobileNumber ||
-            item.customerPhone,
+          id: item.id,
+          billId: item.billId || item.id,
+          customerName: item.customerName,
+          mobile: item.customerPhone,
           customerPhone: item.customerPhone,
-          items: restoredItems,
-          totalAmount,
-          totalPaid,
-          receivedAmount: totalPaid,
-          cash: cashReceived,
-          cashReceived,
-          gpay: gpayAmount,
-          gpayAmount,
-          previousBalance: Number(
-            savedBill?.previousBalance ??
-            creditBill?.previousBalance ??
-            0
-          ),
-          pendingAmount: Number(
-            savedBill?.balance ??
-            creditBill?.owedAmount ??
-            item.pendingAmount ??
-            0
-          ),
-          staffName:
-            savedBill?.staffName ||
-            creditBill?.staffName ||
-            item.staffName,
-          dateTime:
-            savedBill?.dateTime ||
-            creditBill?.dateTime ||
-            item.dateTime,
+          totalAmount: item.totalAmount,
+          receivedAmount: item.receivedAmount,
+          cashReceived: item.cashReceived,
+          gpayAmount: item.gpayAmount,
+          pendingAmount: item.pendingAmount,
+          staffName: item.staffName,
+          dateTime: item.dateTime,
           status: item.status,
+          items: Array.isArray(item.originalData) ? item.originalData : [],
+          serviceName: item.serviceName,
+          quantity: item.quantity,
         })
       );
 
-      router.push(
-        `/dashboard/service-entry?edit=${encodeURIComponent(billId)}`
-      );
+      router.push(`/dashboard/service-entry?edit=${encodeURIComponent(item.id)}`);
     } catch (error) {
       console.error('Failed to prepare service edit', error);
       alert('Unable to open this bill for editing.');
     }
   };
-
 
   const handleExportExcel = () => {
     const rows = filteredServices.map((item) => ({
@@ -604,7 +499,10 @@ export default function BilledServicesPage() {
     const matchesSearch =
       s.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.customerPhone.includes(searchTerm) ||
-      s.serviceName.toLowerCase().includes(searchTerm.toLowerCase());
+      s.serviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (Array.isArray(s.originalData) && s.originalData.some((entry: any) =>
+        String(entry.serviceName || entry.service || '').toLowerCase().includes(searchTerm.toLowerCase())
+      ));
 
     const serviceDate = new Date(s.dateTime).getTime();
     const matchesStart =
@@ -749,7 +647,14 @@ export default function BilledServicesPage() {
                       <p className="font-bold text-slate-800">{item.customerName}</p>
                       <p className="text-[11px] text-slate-400">📞 {item.customerPhone}</p>
                     </div>
-                    <div className="col-span-2 font-medium text-slate-700">{item.quantity}x {item.serviceName}</div>
+                    <div className="col-span-2 font-medium text-slate-700">
+                      {item.quantity}x {item.serviceName}
+                      {Number(item.serviceCount || 1) > 1 && (
+                        <span className="ml-1 text-[10px] font-bold text-slate-400">
+                          +{Number(item.serviceCount) - 1} more
+                        </span>
+                      )}
+                    </div>
                     <div className="col-span-1">
                       <span
                         className="inline-flex max-w-full truncate rounded-full border border-blue-100 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700"
@@ -821,9 +726,17 @@ export default function BilledServicesPage() {
                       </div>
                       <div className="space-y-3">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SERVICE DESCRIPTION</p>
-                        <div className="bg-slate-100/70 rounded-lg p-3 text-slate-700 font-medium">{item.quantity}x {item.serviceName}</div>
+                        <div className="space-y-2">
+                          {(Array.isArray(item.originalData) ? item.originalData : []).map((entry: any, serviceIndex: number) => (
+                            <div key={`${item.id}-service-${serviceIndex}`} className="bg-slate-100/70 rounded-lg p-3 text-slate-700 font-medium flex items-center justify-between gap-3">
+                              <span>{Number(entry.quantity) || 1}x {entry.serviceName || entry.service || 'Service'}</span>
+                              <span className="text-slate-500 whitespace-nowrap">₹{Number(entry.totalAmount || entry.total || 0).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
                         <div className="flex items-center gap-6 text-slate-500 text-[11px] pt-1">
                           <span>Staff: <strong className="text-slate-700">{item.staffName}</strong></span>
+                          <span>Services: <strong className="text-slate-700">{item.serviceCount || 1}</strong></span>
                         </div>
                       </div>
                     </div>
