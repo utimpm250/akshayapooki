@@ -2,16 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Search,
-  Download,
-  Briefcase,
-  ChevronDown,
-  ChevronUp,
-  Trash2,
-  Calendar,
-  RefreshCw,
-  Pencil,
+import { 
+  Search, Download, Briefcase, ChevronDown, ChevronUp, 
+  Pencil, Trash2, Calendar, RefreshCw
 } from "lucide-react";
 
 interface BilledServiceItem {
@@ -29,6 +22,8 @@ interface BilledServiceItem {
   staffName: string;
   status: 'completed' | 'pending' | 'credit' | 'paid';
   originalData?: any;
+  billId?: string;
+  items?: any[];
 }
 
 export default function BilledServicesPage() {
@@ -40,62 +35,306 @@ export default function BilledServicesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currentStaff, setCurrentStaff] = useState('');
   const [currentRole, setCurrentRole] = useState('');
+  const [selectedStaff, setSelectedStaff] = useState('ALL');
+  const [staffList, setStaffList] = useState<string[]>([]);
 
   // localStorage-ൽ നിന്ന് ലൈവ് ഡാറ്റ വായിക്കുന്നു
   const loadBilledData = () => {
-    if (typeof window !== 'undefined') {
-      const savedData = localStorage.getItem('serviceEntries') || 
-                        localStorage.getItem('savedBills') || 
-                        localStorage.getItem('billedServicesData');
+    if (typeof window === 'undefined') return;
 
-      if (savedData) {
-        try {
-          const parsed = JSON.parse(savedData);
-          if (Array.isArray(parsed)) {
-            const formattedEntries = parsed.map((item: any, index: number) => ({
-              id: item.id || `entry-${index}-${Date.now()}`,
-              dateTime: item.dateTime || item.date || new Date().toLocaleString(),
-              customerName: item.customerName || item.name || 'Customer',
-              customerPhone: item.customerPhone || item.phone || item.mobile || 'N/A',
-              serviceName: item.serviceName || item.service || 'Service',
-              quantity: Number(item.quantity) || 1,
-              totalAmount: Number(item.totalAmount) || Number(item.total) || 0,
-              receivedAmount: Number(item.receivedAmount) || Number(item.received) || 0,
-              cashReceived: Number(item.cashReceived) || 0,
-              gpayAmount: Number(item.gpayAmount) || Number(item.gpay) || 0,
-              pendingAmount: Number(item.pendingAmount) || Number(item.balance) || 0,
-              staffName: item.staffName || item.staff || 'Admin',
-              status: item.status || (Number(item.pendingAmount ?? item.balance ?? 0) > 0 ? 'credit' : 'paid'),
-              originalData: item
-            }));
-            setServices(formattedEntries);
-          } else {
-            setServices([]);
-          }
-        } catch (e) {
-          console.error("Error parsing entries", e);
-          setServices([]);
-        }
-      } else {
-        setServices([]);
+    try {
+      // serviceEntries is the source for actual billed/credit entries.
+      // savedBillsList is used only to identify a bill that is still a draft.
+      const serviceEntries = JSON.parse(localStorage.getItem('serviceEntries') || '[]');
+      const savedBillsList = JSON.parse(localStorage.getItem('savedBillsList') || '[]');
+
+      const savedBillsById = new Map<string, any>();
+      if (Array.isArray(savedBillsList)) {
+        savedBillsList.forEach((bill: any) => {
+          const key = String(bill.billId || bill.id || '').trim();
+          if (key) savedBillsById.set(key, bill);
+        });
       }
+
+      if (!Array.isArray(serviceEntries)) {
+        setServices([]);
+        return;
+      }
+
+      const billedEntries = serviceEntries.filter((item: any) => {
+        const billKey = String(
+          item.billId || item.billID || item.invoiceId || item.id || ''
+        ).trim();
+        const savedBill = savedBillsById.get(billKey);
+
+        const itemStatus = String(item.status ?? '').trim().toLowerCase();
+        const pending = Number(item.pendingAmount ?? item.balance ?? 0);
+
+        // IMPORTANT:
+        // A Save Bill creates a serviceEntries record too, but it is only a
+        // draft until the user later opens it and chooses Complete Bill.
+        // Therefore, when a matching saved bill exists, its current status
+        // decides whether it belongs in Billed Services.
+        if (savedBill) {
+          const savedStatus = String(savedBill.status ?? '').trim().toLowerCase();
+          const savedBalance = Number(
+            savedBill.balance ?? savedBill.owedAmount ?? savedBill.pendingAmount ?? 0
+          );
+
+          const savedIsCredit =
+            savedStatus === 'credit' ||
+            savedStatus === 'pending' ||
+            savedBalance > 0;
+
+          const savedIsCompleted =
+            savedStatus === 'completed' ||
+            savedStatus === 'paid' ||
+            (savedStatus !== '' && savedBalance <= 0 && savedStatus !== 'pending' && savedStatus !== 'credit');
+
+          // Still only a Saved Bill / draft -> do NOT show it here.
+          if (!savedIsCredit && !savedIsCompleted) return false;
+
+          // Saved Bill was later completed or converted to credit -> show it.
+          return savedIsCredit || savedIsCompleted;
+        }
+
+        // Bills that were never saved: show both completed/paid and credit.
+        const isCredit =
+          itemStatus === 'credit' ||
+          itemStatus === 'pending' ||
+          pending > 0;
+
+        const isCompleted =
+          itemStatus === 'completed' ||
+          itemStatus === 'paid';
+
+        return isCredit || isCompleted;
+      });
+
+      // One Service Entry bill can contain several service rows. Group all rows
+      // with the same billId so Billed Services shows one bill with one action set.
+      const grouped = new Map<string, any[]>();
+      billedEntries.forEach((item: any) => {
+        const key = String(
+          item.billId || item.billID || item.invoiceId || item.id || ''
+        ).trim();
+        const bucket = grouped.get(key) || [];
+        bucket.push(item);
+        grouped.set(key, bucket);
+      });
+
+      const formattedEntries = Array.from(grouped.entries()).map(([billKey, billItems], index) => {
+        const firstItem = billItems[0] || {};
+        const savedBill = savedBillsById.get(billKey);
+
+        const pending = Number(
+          savedBill?.balance ??
+          savedBill?.owedAmount ??
+          savedBill?.pendingAmount ??
+          billItems.reduce((sum, row) => sum + Number(row.pendingAmount ?? row.balance ?? 0), 0)
+        );
+
+        const rawStatus = String(
+          savedBill?.status ?? firstItem.status ?? ''
+        ).trim().toLowerCase();
+
+        const displayStatus =
+          rawStatus === 'credit' || rawStatus === 'pending' || pending > 0
+            ? 'credit'
+            : 'completed';
+
+        const totalAmount = Number(
+          savedBill?.totalAmount ??
+          billItems.reduce((sum, row) => sum + Number(row.totalAmount ?? row.total ?? 0), 0)
+        ) || 0;
+
+        const receivedAmount = Number(
+          savedBill?.totalPaid ??
+          billItems.reduce((sum, row) => sum + Number(row.receivedAmount ?? row.received ?? 0), 0)
+        ) || 0;
+
+        const cashReceived = Number(
+          savedBill?.cash ??
+          billItems.reduce((sum, row) => sum + Number(row.cashReceived ?? 0), 0)
+        ) || 0;
+
+        const gpayAmount = Number(
+          savedBill?.gpay ??
+          billItems.reduce((sum, row) => sum + Number(row.gpayAmount ?? row.gpay ?? 0), 0)
+        ) || 0;
+
+        return {
+          id: billKey || firstItem.id || `bill-${index}-${Date.now()}`,
+          billId: billKey,
+          dateTime:
+            savedBill?.dateTime ||
+            firstItem.dateTime ||
+            firstItem.date ||
+            new Date().toLocaleString(),
+          customerName:
+            savedBill?.customerName ||
+            firstItem.customerName ||
+            firstItem.name ||
+            'Customer',
+          customerPhone:
+            savedBill?.mobile ||
+            savedBill?.mobileNumber ||
+            firstItem.customerPhone ||
+            firstItem.phone ||
+            firstItem.mobile ||
+            'N/A',
+          serviceName:
+            billItems.length > 1
+              ? `${billItems.length} Services`
+              : firstItem.serviceName || firstItem.service || 'Service',
+          quantity: billItems.length > 1
+            ? billItems.reduce((sum, row) => sum + (Number(row.quantity) || 1), 0)
+            : Number(firstItem.quantity) || 1,
+          totalAmount,
+          receivedAmount,
+          cashReceived,
+          gpayAmount,
+          pendingAmount: pending,
+          staffName:
+            savedBill?.staffName ||
+            firstItem.staffName ||
+            firstItem.staff ||
+            'Admin',
+          status: displayStatus as 'completed' | 'credit',
+          originalData: {
+            ...firstItem,
+            billId: billKey,
+            items: billItems.map((row: any) => ({ ...row })),
+          },
+          items: billItems.map((row: any) => ({ ...row })),
+        };
+      });
+
+      setServices(formattedEntries);
+    } catch (e) {
+      console.error('Error loading billed services', e);
+      setServices([]);
     }
   };
 
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('loggedInUser');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setCurrentStaff(String(parsedUser.username || parsedUser.name || ''));
-        setCurrentRole(String(parsedUser.role || '').toLowerCase());
-      }
-    } catch (error) {
-      console.error('Failed to read loggedInUser', error);
-    }
+    const loadUserAndStaff = async () => {
+      if (typeof window === 'undefined') return;
 
-    loadBilledData();
+      let loggedStaff = '';
+      let loggedRole = '';
+
+      try {
+        const storedUser = localStorage.getItem('loggedInUser');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          loggedStaff = String(parsedUser.username || parsedUser.name || '').trim();
+          loggedRole = String(parsedUser.role || '').toLowerCase().trim();
+        }
+      } catch (error) {
+        console.error('Failed to read loggedInUser', error);
+      }
+
+      setCurrentStaff(loggedStaff);
+      setCurrentRole(loggedRole);
+
+      const loggedIsAdmin =
+        loggedRole.includes('admin') ||
+        loggedStaff.toLowerCase() === 'admin' ||
+        loggedStaff.toLowerCase() === 'admin user';
+
+      if (!loggedIsAdmin && loggedStaff) {
+        setSelectedStaff(loggedStaff);
+      }
+
+      // Read all known staff storage keys so the dropdown contains the
+      // actual Staff Management list instead of only "All Staff".
+      const possibleKeys = [
+        'smart_akshaya_staff',
+        'managedStaff',
+        'staff_members',
+        'users',
+        'akshaya_staffs',
+        'smart_akshaya_staffs',
+      ];
+
+      const loadedNames: string[] = [];
+
+      for (const key of possibleKeys) {
+        try {
+          const raw = localStorage.getItem(key);
+          if (!raw) continue;
+
+          const parsed = JSON.parse(raw);
+          const staffArray =
+            Array.isArray(parsed)
+              ? parsed
+              : Array.isArray(parsed?.staff)
+                ? parsed.staff
+                : Array.isArray(parsed?.staffs)
+                  ? parsed.staffs
+                  : Array.isArray(parsed?.data)
+                    ? parsed.data
+                    : [];
+
+          staffArray.forEach((staff: any) => {
+            const name = String(
+              staff?.name ??
+              staff?.staffName ??
+              staff?.username ??
+              staff?.userName ??
+              staff?.firstName ??
+              ''
+            ).trim();
+
+            if (name) loadedNames.push(name);
+          });
+        } catch (error) {
+          console.error(`Failed to read staff key "${key}"`, error);
+        }
+      }
+
+      try {
+        const serviceEntries = JSON.parse(
+          localStorage.getItem('serviceEntries') || '[]'
+        );
+        if (Array.isArray(serviceEntries)) {
+          serviceEntries.forEach((item: any) => {
+            const name = String(item?.staffName || item?.staff || '').trim();
+            if (name) loadedNames.push(name);
+          });
+        }
+
+        const savedBills = JSON.parse(
+          localStorage.getItem('savedBillsList') || '[]'
+        );
+        if (Array.isArray(savedBills)) {
+          savedBills.forEach((bill: any) => {
+            const name = String(bill?.staffName || bill?.staff || '').trim();
+            if (name) loadedNames.push(name);
+          });
+        }
+      } catch (error) {
+        console.error('Failed to read staff names from bill data', error);
+      }
+
+      if (loggedStaff) loadedNames.push(loggedStaff);
+
+      const uniqueNames = Array.from(
+        new Set(loadedNames.filter(Boolean))
+      ).sort((a, b) => a.localeCompare(b));
+
+      const finalStaffList = uniqueNames.length > 0
+        ? uniqueNames
+        : ['Admin User', 'FASNIL', 'SUMAYYA', 'SHEEJA', 'SAHLA'];
+
+      setStaffList(finalStaffList);
+      loadBilledData();
+    };
+
+    loadUserAndStaff();
   }, []);
+
 
   const normalizedRole = String(currentRole || '').trim().toLowerCase();
   const normalizedStaff = String(currentStaff || '').trim().toLowerCase();
@@ -104,13 +343,46 @@ export default function BilledServicesPage() {
     normalizedStaff === 'admin' ||
     normalizedStaff === 'admin user';
 
+  const parseBillDate = (value: unknown): number => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return NaN;
+
+    const direct = new Date(raw).getTime();
+    if (Number.isFinite(direct)) return direct;
+
+    // Handles common Indian/European localStorage strings such as
+    // "14/08/2026, 3:45:12 pm", which Date.parse may reject in some browsers.
+    const match = raw.match(
+      /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})(?:,?\s+)(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?$/i
+    );
+    if (!match) return NaN;
+
+    const [, dd, mm, yyyy, hhRaw, min, secRaw, meridiem] = match;
+    let hh = Number(hhRaw);
+    if (meridiem) {
+      const lower = meridiem.toLowerCase();
+      if (lower === 'pm' && hh < 12) hh += 12;
+      if (lower === 'am' && hh === 12) hh = 0;
+    }
+
+    return new Date(
+      Number(yyyy),
+      Number(mm) - 1,
+      Number(dd),
+      hh,
+      Number(min),
+      Number(secRaw || 0)
+    ).getTime();
+  };
+
   const canModifyService = (item: BilledServiceItem) => {
     if (isAdmin) return true;
 
-    const createdAt = new Date(item.dateTime).getTime();
+    const createdAt = parseBillDate(item.dateTime);
     if (!Number.isFinite(createdAt)) return false;
 
-    return Date.now() - createdAt <= 5 * 60 * 1000;
+    const age = Date.now() - createdAt;
+    return age >= 0 && age <= 5 * 60 * 1000;
   };
 
   const handleDelete = (id: string) => {
@@ -118,19 +390,58 @@ export default function BilledServicesPage() {
     if (!item) return;
 
     if (!isAdmin && !canModifyService(item)) {
-      alert('The 5-minute edit/delete time limit has expired. Only Admin can modify this entry now.');
+      alert('The 5-minute edit/delete time limit has expired. Only Admin can modify this bill now.');
       return;
     }
 
-    if (confirm("Are you sure you want to delete this entry?")) {
-      const updated = services.filter(s => s.id !== id);
-      setServices(updated);
+    if (!confirm('Are you sure you want to delete this entire bill and all its services?')) {
+      return;
+    }
 
-      if (typeof window !== 'undefined') {
-        const jsonVal = JSON.stringify(updated);
-        localStorage.setItem('serviceEntries', jsonVal);
-        localStorage.setItem('savedBills', jsonVal);
-        localStorage.setItem('billedServicesData', jsonVal);
+    if (typeof window !== 'undefined') {
+      try {
+        const billId = String(item.billId || item.id || '').trim();
+        const serviceEntries = JSON.parse(localStorage.getItem('serviceEntries') || '[]');
+        const remainingEntries = Array.isArray(serviceEntries)
+          ? serviceEntries.filter((row: any) => {
+              const rowBillId = String(
+                row.billId || row.billID || row.invoiceId || row.id || ''
+              ).trim();
+              return rowBillId !== billId;
+            })
+          : [];
+
+        localStorage.setItem('serviceEntries', JSON.stringify(remainingEntries));
+
+        const creditBills = JSON.parse(localStorage.getItem('smart_akshaya_bills') || '[]');
+        if (Array.isArray(creditBills)) {
+          localStorage.setItem(
+            'smart_akshaya_bills',
+            JSON.stringify(
+              creditBills.filter(
+                (bill: any) =>
+                  String(bill.id || bill.billId || '').trim() !== billId
+              )
+            )
+          );
+        }
+
+        const performanceRecords = JSON.parse(localStorage.getItem('performanceRecords') || '[]');
+        if (Array.isArray(performanceRecords)) {
+          localStorage.setItem(
+            'performanceRecords',
+            JSON.stringify(
+              performanceRecords.filter(
+                (record: any) => String(record.billId || '').trim() !== billId
+              )
+            )
+          );
+        }
+
+        loadBilledData();
+      } catch (error) {
+        console.error('Failed to delete billed bill:', error);
+        alert('Unable to delete this bill.');
       }
     }
   };
@@ -141,21 +452,24 @@ export default function BilledServicesPage() {
   // recalculate together.
   const handleOpenEdit = (item: BilledServiceItem) => {
     if (!isAdmin && !canModifyService(item)) {
-      alert('The 5-minute edit time limit has expired. Only Admin can edit this entry now.');
+      alert('The 5-minute edit time limit has expired. Only Admin can edit this bill now.');
       return;
     }
 
     try {
+      const billId = String(item.billId || item.id || '').trim();
+      const billItems = Array.isArray(item.items) ? item.items : [];
+
+      // Keep the complete bill payload together so the Service Entry editor can
+      // restore all services instead of only the first service row.
       localStorage.setItem(
         'serviceEntryEditData',
         JSON.stringify({
-          id: item.id,
-          ...item.originalData,
+          id: billId,
+          billId,
           customerName: item.customerName,
           mobile: item.customerPhone,
           customerPhone: item.customerPhone,
-          serviceName: item.serviceName,
-          quantity: item.quantity,
           totalAmount: item.totalAmount,
           receivedAmount: item.receivedAmount,
           cashReceived: item.cashReceived,
@@ -164,12 +478,17 @@ export default function BilledServicesPage() {
           staffName: item.staffName,
           dateTime: item.dateTime,
           status: item.status,
+          items: billItems.map((row: any) => ({ ...row })),
+          originalItems: billItems.map((row: any) => ({ ...row })),
         })
       );
 
-      router.push(`/dashboard/service-entry?edit=${encodeURIComponent(item.id)}`);
+      // Existing Service Entry versions use ?resume=... for restoring bills.
+      // The edit payload remains in storage so the editor can use the full
+      // grouped bill without losing any service rows.
+      router.push(`/dashboard/service-entry?edit=${encodeURIComponent(billId)}&resume=${encodeURIComponent(billId)}`);
     } catch (error) {
-      console.error('Failed to prepare service edit', error);
+      console.error('Failed to prepare service edit:', error);
       alert('Unable to open this bill for editing.');
     }
   };
@@ -238,17 +557,14 @@ export default function BilledServicesPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Summary Calculations
-  const totalRevenue = services.reduce((sum, s) => sum + s.totalAmount, 0);
-  const totalReceived = services.reduce((sum, s) => sum + Math.abs(s.receivedAmount), 0);
-  const totalPending = services.reduce((sum, s) => sum + s.pendingAmount, 0);
-  const completedCount = services.filter(s => s.status === 'completed').length;
+  const effectiveStaffFilter = isAdmin ? selectedStaff : currentStaff;
 
   const filteredServices = services.filter(s => {
-    const matchesStaff = isAdmin
-      ? true
-      : String(s.staffName || '').trim().toLowerCase() ===
-        String(currentStaff || '').trim().toLowerCase();
+    const matchesStaff =
+      effectiveStaffFilter === 'ALL'
+        ? true
+        : String(s.staffName || '').trim().toLowerCase() ===
+          String(effectiveStaffFilter || '').trim().toLowerCase();
 
     if (!matchesStaff) return false;
 
@@ -270,6 +586,21 @@ export default function BilledServicesPage() {
 
     return matchesSearch && matchesStart && matchesEnd;
   });
+
+  const selectedStaffHistory = selectedStaff !== 'ALL'
+    ? filteredServices.filter(
+        (item) =>
+          String(item.staffName || '').trim().toLowerCase() ===
+          String(selectedStaff || '').trim().toLowerCase()
+      )
+    : [];
+
+  // Summary Calculations
+  const totalRevenue = filteredServices.reduce((sum, s) => sum + s.totalAmount, 0);
+  const totalReceived = filteredServices.reduce((sum, s) => sum + Math.abs(s.receivedAmount), 0);
+  const totalPending = filteredServices.reduce((sum, s) => sum + s.pendingAmount, 0);
+  const completedCount = filteredServices.filter(s => s.status === 'completed' || s.status === 'paid').length;
+
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
@@ -333,22 +664,70 @@ export default function BilledServicesPage() {
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="outline-none bg-transparent" />
           </div>
 
+          <div className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs shadow-xs">
+            <span className="font-semibold text-blue-500">Staff</span>
+
+            {isAdmin ? (
+              <select
+                value={selectedStaff}
+                onChange={(e) => setSelectedStaff(e.target.value)}
+                className="bg-transparent font-bold text-blue-800 outline-none cursor-pointer"
+                aria-label="Filter billed services by staff"
+              >
+                <option value="ALL">All Staff</option>
+                {staffList
+                  .filter((name) => name.trim().toLowerCase() !== 'admin user')
+                  .map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+              </select>
+            ) : (
+              <span className="font-bold text-blue-800">
+                {currentStaff || 'Current Staff'}
+              </span>
+            )}
+          </div>
+
           <button onClick={handleExportExcel} className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-xs">
             <Download size={14} /> Export Excel
           </button>
         </div>
       </div>
 
+      {isAdmin && selectedStaff !== 'ALL' && (
+        <div className="bg-white border border-blue-100 rounded-2xl px-5 py-4 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500">STAFF BILL HISTORY</p>
+              <p className="text-lg font-black text-slate-800 mt-1">{selectedStaff}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Showing {selectedStaffHistory.length} bill(s) for this staff member.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedStaff('ALL')}
+              className="text-xs font-bold text-blue-600 hover:bg-blue-50 border border-blue-100 rounded-lg px-3 py-2"
+            >
+              Back to All Staff
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* TABLE */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="hidden md:grid grid-cols-12 bg-slate-50/80 border-b border-slate-200 py-3 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
           <div className="col-span-2">DATE / TIME</div>
-          <div className="col-span-3">CUSTOMER</div>
+          <div className="col-span-2">CUSTOMER</div>
           <div className="col-span-2">SERVICES</div>
+          <div className="col-span-1">STAFF</div>
           <div className="col-span-1 text-right">TOTAL</div>
           <div className="col-span-1 text-right">RECEIVED</div>
           <div className="col-span-1 text-center">STATUS</div>
-          <div className="col-span-1 text-right">ACTIONS</div>
+          <div className="col-span-2 text-right">ACTIONS</div>
         </div>
 
         {filteredServices.length === 0 ? (
@@ -362,11 +741,26 @@ export default function BilledServicesPage() {
                 <div key={item.id} className="transition">
                   <div className="grid grid-cols-1 md:grid-cols-12 items-center py-4 px-6 text-xs text-slate-700 gap-2 md:gap-0">
                     <div className="col-span-2 text-slate-500 font-medium">{item.dateTime}</div>
-                    <div className="col-span-3">
+                    <div className="col-span-2">
                       <p className="font-bold text-slate-800">{item.customerName}</p>
                       <p className="text-[11px] text-slate-400">📞 {item.customerPhone}</p>
                     </div>
-                    <div className="col-span-2 font-medium text-slate-700">{item.quantity}x {item.serviceName}</div>
+                    <div className="col-span-2 font-medium text-slate-700">
+                      {item.serviceName}
+                      {Array.isArray(item.items) && item.items.length > 1 && (
+                        <span className="ml-2 text-[10px] text-slate-400">
+                          ({item.items.length} services)
+                        </span>
+                      )}
+                    </div>
+                    <div className="col-span-1">
+                      <span
+                        className="inline-flex max-w-full truncate rounded-full border border-blue-100 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700"
+                        title={item.staffName || 'Not Assigned'}
+                      >
+                        {item.staffName || 'Not Assigned'}
+                      </span>
+                    </div>
                     <div className="col-span-1 text-right font-bold text-slate-800">₹{item.totalAmount.toFixed(2)}</div>
                     <div className="col-span-1 text-right font-bold text-emerald-600">₹{item.receivedAmount.toFixed(2)}</div>
                     <div className="col-span-1 text-center">
@@ -430,9 +824,32 @@ export default function BilledServicesPage() {
                       </div>
                       <div className="space-y-3">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SERVICE DESCRIPTION</p>
-                        <div className="bg-slate-100/70 rounded-lg p-3 text-slate-700 font-medium">{item.quantity}x {item.serviceName}</div>
+                        <div className="bg-slate-100/70 rounded-lg p-3 text-slate-700 font-medium">
+                          {Array.isArray(item.items) && item.items.length > 0 ? (
+                            <div className="space-y-2">
+                              {item.items.map((row: any, serviceIndex: number) => (
+                                <div
+                                  key={`${String(row.id || serviceIndex)}`}
+                                  className="flex items-center justify-between gap-3 border-b border-slate-200 last:border-0 pb-2 last:pb-0"
+                                >
+                                  <span>
+                                    {Number(row.quantity ?? row.qty ?? 1) || 1}x {String(row.serviceName || row.service || row.name || 'Service')}
+                                  </span>
+                                  <span className="font-bold">
+                                    ₹{Number(row.totalAmount ?? row.total ?? 0).toFixed(2)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            `${item.quantity}x ${item.serviceName}`
+                          )}
+                        </div>
                         <div className="flex items-center gap-6 text-slate-500 text-[11px] pt-1">
                           <span>Staff: <strong className="text-slate-700">{item.staffName}</strong></span>
+                          {isAdmin && selectedStaff !== 'ALL' && (
+                            <span>Staff History: <strong className="text-slate-700">{selectedStaffHistory.length} bill(s)</strong></span>
+                          )}
                         </div>
                       </div>
                     </div>
