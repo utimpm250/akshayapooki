@@ -22,8 +22,6 @@ interface BilledServiceItem {
   staffName: string;
   status: 'completed' | 'pending' | 'credit' | 'paid';
   originalData?: any;
-  billId?: string;
-  items?: any[];
 }
 
 export default function BilledServicesPage() {
@@ -111,31 +109,23 @@ export default function BilledServicesPage() {
         return isCredit || isCompleted;
       });
 
-      // One Service Entry bill can contain several service rows. Group all rows
-      // with the same billId so Billed Services shows one bill with one action set.
-      const grouped = new Map<string, any[]>();
-      billedEntries.forEach((item: any) => {
-        const key = String(
+      const formattedEntries = billedEntries.map((item: any, index: number) => {
+        const billKey = String(
           item.billId || item.billID || item.invoiceId || item.id || ''
         ).trim();
-        const bucket = grouped.get(key) || [];
-        bucket.push(item);
-        grouped.set(key, bucket);
-      });
-
-      const formattedEntries = Array.from(grouped.entries()).map(([billKey, billItems], index) => {
-        const firstItem = billItems[0] || {};
         const savedBill = savedBillsById.get(billKey);
 
         const pending = Number(
           savedBill?.balance ??
           savedBill?.owedAmount ??
           savedBill?.pendingAmount ??
-          billItems.reduce((sum, row) => sum + Number(row.pendingAmount ?? row.balance ?? 0), 0)
+          item.pendingAmount ??
+          item.balance ??
+          0
         );
 
         const rawStatus = String(
-          savedBill?.status ?? firstItem.status ?? ''
+          savedBill?.status ?? item.status ?? ''
         ).trim().toLowerCase();
 
         const displayStatus =
@@ -143,70 +133,43 @@ export default function BilledServicesPage() {
             ? 'credit'
             : 'completed';
 
-        const totalAmount = Number(
-          savedBill?.totalAmount ??
-          billItems.reduce((sum, row) => sum + Number(row.totalAmount ?? row.total ?? 0), 0)
-        ) || 0;
-
-        const receivedAmount = Number(
-          savedBill?.totalPaid ??
-          billItems.reduce((sum, row) => sum + Number(row.receivedAmount ?? row.received ?? 0), 0)
-        ) || 0;
-
-        const cashReceived = Number(
-          savedBill?.cash ??
-          billItems.reduce((sum, row) => sum + Number(row.cashReceived ?? 0), 0)
-        ) || 0;
-
-        const gpayAmount = Number(
-          savedBill?.gpay ??
-          billItems.reduce((sum, row) => sum + Number(row.gpayAmount ?? row.gpay ?? 0), 0)
-        ) || 0;
-
         return {
-          id: billKey || firstItem.id || `bill-${index}-${Date.now()}`,
-          billId: billKey,
+          id: item.id || `entry-${index}-${Date.now()}`,
           dateTime:
             savedBill?.dateTime ||
-            firstItem.dateTime ||
-            firstItem.date ||
+            item.dateTime ||
+            item.date ||
             new Date().toLocaleString(),
           customerName:
             savedBill?.customerName ||
-            firstItem.customerName ||
-            firstItem.name ||
+            item.customerName ||
+            item.name ||
             'Customer',
           customerPhone:
             savedBill?.mobile ||
             savedBill?.mobileNumber ||
-            firstItem.customerPhone ||
-            firstItem.phone ||
-            firstItem.mobile ||
+            item.customerPhone ||
+            item.phone ||
+            item.mobile ||
             'N/A',
-          serviceName:
-            billItems.length > 1
-              ? `${billItems.length} Services`
-              : firstItem.serviceName || firstItem.service || 'Service',
-          quantity: billItems.length > 1
-            ? billItems.reduce((sum, row) => sum + (Number(row.quantity) || 1), 0)
-            : Number(firstItem.quantity) || 1,
-          totalAmount,
-          receivedAmount,
-          cashReceived,
-          gpayAmount,
+          serviceName: item.serviceName || item.service || 'Service',
+          quantity: Number(item.quantity) || 1,
+          totalAmount:
+            Number(savedBill?.totalAmount ?? item.totalAmount ?? item.total) || 0,
+          receivedAmount:
+            Number(savedBill?.totalPaid ?? item.receivedAmount ?? item.received) || 0,
+          cashReceived:
+            Number(savedBill?.cash ?? item.cashReceived) || 0,
+          gpayAmount:
+            Number(savedBill?.gpay ?? item.gpayAmount ?? item.gpay) || 0,
           pendingAmount: pending,
           staffName:
             savedBill?.staffName ||
-            firstItem.staffName ||
-            firstItem.staff ||
+            item.staffName ||
+            item.staff ||
             'Admin',
           status: displayStatus as 'completed' | 'credit',
-          originalData: {
-            ...firstItem,
-            billId: billKey,
-            items: billItems.map((row: any) => ({ ...row })),
-          },
-          items: billItems.map((row: any) => ({ ...row })),
+          originalData: item,
         };
       });
 
@@ -343,46 +306,13 @@ export default function BilledServicesPage() {
     normalizedStaff === 'admin' ||
     normalizedStaff === 'admin user';
 
-  const parseBillDate = (value: unknown): number => {
-    const raw = String(value ?? '').trim();
-    if (!raw) return NaN;
-
-    const direct = new Date(raw).getTime();
-    if (Number.isFinite(direct)) return direct;
-
-    // Handles common Indian/European localStorage strings such as
-    // "14/08/2026, 3:45:12 pm", which Date.parse may reject in some browsers.
-    const match = raw.match(
-      /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})(?:,?\s+)(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?$/i
-    );
-    if (!match) return NaN;
-
-    const [, dd, mm, yyyy, hhRaw, min, secRaw, meridiem] = match;
-    let hh = Number(hhRaw);
-    if (meridiem) {
-      const lower = meridiem.toLowerCase();
-      if (lower === 'pm' && hh < 12) hh += 12;
-      if (lower === 'am' && hh === 12) hh = 0;
-    }
-
-    return new Date(
-      Number(yyyy),
-      Number(mm) - 1,
-      Number(dd),
-      hh,
-      Number(min),
-      Number(secRaw || 0)
-    ).getTime();
-  };
-
   const canModifyService = (item: BilledServiceItem) => {
     if (isAdmin) return true;
 
-    const createdAt = parseBillDate(item.dateTime);
+    const createdAt = new Date(item.dateTime).getTime();
     if (!Number.isFinite(createdAt)) return false;
 
-    const age = Date.now() - createdAt;
-    return age >= 0 && age <= 5 * 60 * 1000;
+    return Date.now() - createdAt <= 5 * 60 * 1000;
   };
 
   const handleDelete = (id: string) => {
@@ -390,58 +320,19 @@ export default function BilledServicesPage() {
     if (!item) return;
 
     if (!isAdmin && !canModifyService(item)) {
-      alert('The 5-minute edit/delete time limit has expired. Only Admin can modify this bill now.');
+      alert('The 5-minute edit/delete time limit has expired. Only Admin can modify this entry now.');
       return;
     }
 
-    if (!confirm('Are you sure you want to delete this entire bill and all its services?')) {
-      return;
-    }
+    if (confirm("Are you sure you want to delete this entry?")) {
+      const updated = services.filter(s => s.id !== id);
+      setServices(updated);
 
-    if (typeof window !== 'undefined') {
-      try {
-        const billId = String(item.billId || item.id || '').trim();
-        const serviceEntries = JSON.parse(localStorage.getItem('serviceEntries') || '[]');
-        const remainingEntries = Array.isArray(serviceEntries)
-          ? serviceEntries.filter((row: any) => {
-              const rowBillId = String(
-                row.billId || row.billID || row.invoiceId || row.id || ''
-              ).trim();
-              return rowBillId !== billId;
-            })
-          : [];
-
-        localStorage.setItem('serviceEntries', JSON.stringify(remainingEntries));
-
-        const creditBills = JSON.parse(localStorage.getItem('smart_akshaya_bills') || '[]');
-        if (Array.isArray(creditBills)) {
-          localStorage.setItem(
-            'smart_akshaya_bills',
-            JSON.stringify(
-              creditBills.filter(
-                (bill: any) =>
-                  String(bill.id || bill.billId || '').trim() !== billId
-              )
-            )
-          );
-        }
-
-        const performanceRecords = JSON.parse(localStorage.getItem('performanceRecords') || '[]');
-        if (Array.isArray(performanceRecords)) {
-          localStorage.setItem(
-            'performanceRecords',
-            JSON.stringify(
-              performanceRecords.filter(
-                (record: any) => String(record.billId || '').trim() !== billId
-              )
-            )
-          );
-        }
-
-        loadBilledData();
-      } catch (error) {
-        console.error('Failed to delete billed bill:', error);
-        alert('Unable to delete this bill.');
+      if (typeof window !== 'undefined') {
+        const jsonVal = JSON.stringify(updated);
+        localStorage.setItem('serviceEntries', jsonVal);
+        localStorage.setItem('savedBills', jsonVal);
+        localStorage.setItem('billedServicesData', jsonVal);
       }
     }
   };
@@ -452,46 +343,188 @@ export default function BilledServicesPage() {
   // recalculate together.
   const handleOpenEdit = (item: BilledServiceItem) => {
     if (!isAdmin && !canModifyService(item)) {
-      alert('The 5-minute edit time limit has expired. Only Admin can edit this bill now.');
+      alert('The 5-minute edit time limit has expired. Only Admin can edit this entry now.');
       return;
     }
 
     try {
-      const billId = String(item.billId || item.id || '').trim();
-      const billItems = Array.isArray(item.items) ? item.items : [];
+      const source = item.originalData || {};
+      const billId = String(
+        source.billId ||
+        source.billID ||
+        source.invoiceId ||
+        item.id
+      );
 
-      // Keep the complete bill payload together so the Service Entry editor can
-      // restore all services instead of only the first service row.
+      const allEntries = JSON.parse(
+        localStorage.getItem('serviceEntries') || '[]'
+      );
+
+      const billEntries = Array.isArray(allEntries)
+        ? allEntries.filter((entry: any) =>
+            String(
+              entry.billId ||
+              entry.billID ||
+              entry.invoiceId ||
+              entry.id ||
+              ''
+            ) === billId
+          )
+        : [];
+
+      const savedBills = JSON.parse(
+        localStorage.getItem('savedBillsList') || '[]'
+      );
+      const savedBill = Array.isArray(savedBills)
+        ? savedBills.find((bill: any) =>
+            String(bill.id || bill.billId || '') === billId
+          )
+        : null;
+
+      const creditBills = JSON.parse(
+        localStorage.getItem('smart_akshaya_bills') || '[]'
+      );
+      const creditBill = Array.isArray(creditBills)
+        ? creditBills.find((bill: any) =>
+            String(bill.id || bill.billId || '') === billId
+          )
+        : null;
+
+      const sourceItems =
+        Array.isArray(savedBill?.items) && savedBill.items.length > 0
+          ? savedBill.items
+          : Array.isArray(creditBill?.items) && creditBill.items.length > 0
+            ? creditBill.items
+            : billEntries;
+
+      const restoredItems = sourceItems.map((entry: any, index: number) => {
+        const entryTotal = Number(
+          entry.totalAmount ?? entry.total ?? 0
+        ) || 0;
+
+        return {
+          id: String(entry.id || `EDIT-${billId}-${index}`),
+          name: String(
+            entry.name ||
+            entry.serviceName ||
+            entry.service ||
+            'Service'
+          ),
+          wallet: String(
+            entry.wallet ||
+            entry.walletName ||
+            'Select Wallet'
+          ),
+          walletChg: Number(
+            entry.walletChg ??
+            entry.deptChg ??
+            entry.deptFee ??
+            0
+          ) || 0,
+          srvChg: Number(
+            entry.srvChg ??
+            entry.srvCharge ??
+            entry.serviceCharge ??
+            // Older billed records stored only the combined item total.
+            entryTotal
+          ) || 0,
+          qty: Math.max(
+            1,
+            Number(entry.qty ?? entry.quantity ?? 1) || 1
+          ),
+          status: 'Completed',
+        };
+      });
+
+      const totalAmount = Number(
+        savedBill?.totalAmount ??
+        creditBill?.totalAmount ??
+        billEntries.reduce(
+          (sum: number, entry: any) => sum + (Number(entry.totalAmount) || 0),
+          0
+        ) ??
+        item.totalAmount
+      ) || 0;
+
+      const totalPaid = Number(
+        savedBill?.totalPaid ??
+        creditBill?.paidAmount ??
+        billEntries.reduce(
+          (sum: number, entry: any) => sum + (Number(entry.receivedAmount) || 0),
+          0
+        )
+      ) || 0;
+
+      const cashReceived = Number(
+        savedBill?.cash ??
+        billEntries.reduce(
+          (sum: number, entry: any) => sum + (Number(entry.cashReceived) || 0),
+          0
+        )
+      ) || 0;
+
+      const gpayAmount = Number(
+        savedBill?.gpay ??
+        billEntries.reduce(
+          (sum: number, entry: any) => sum + (Number(entry.gpayAmount) || 0),
+          0
+        )
+      ) || 0;
+
       localStorage.setItem(
         'serviceEntryEditData',
         JSON.stringify({
           id: billId,
           billId,
-          customerName: item.customerName,
-          mobile: item.customerPhone,
+          customerName:
+            savedBill?.customerName ||
+            creditBill?.customerName ||
+            item.customerName,
+          mobile:
+            savedBill?.mobile ||
+            creditBill?.mobileNumber ||
+            item.customerPhone,
           customerPhone: item.customerPhone,
-          totalAmount: item.totalAmount,
-          receivedAmount: item.receivedAmount,
-          cashReceived: item.cashReceived,
-          gpayAmount: item.gpayAmount,
-          pendingAmount: item.pendingAmount,
-          staffName: item.staffName,
-          dateTime: item.dateTime,
+          items: restoredItems,
+          totalAmount,
+          totalPaid,
+          receivedAmount: totalPaid,
+          cash: cashReceived,
+          cashReceived,
+          gpay: gpayAmount,
+          gpayAmount,
+          previousBalance: Number(
+            savedBill?.previousBalance ??
+            creditBill?.previousBalance ??
+            0
+          ),
+          pendingAmount: Number(
+            savedBill?.balance ??
+            creditBill?.owedAmount ??
+            item.pendingAmount ??
+            0
+          ),
+          staffName:
+            savedBill?.staffName ||
+            creditBill?.staffName ||
+            item.staffName,
+          dateTime:
+            savedBill?.dateTime ||
+            creditBill?.dateTime ||
+            item.dateTime,
           status: item.status,
-          items: billItems.map((row: any) => ({ ...row })),
-          originalItems: billItems.map((row: any) => ({ ...row })),
         })
       );
 
-      // Existing Service Entry versions use ?resume=... for restoring bills.
-      // The edit payload remains in storage so the editor can use the full
-      // grouped bill without losing any service rows.
-      router.push(`/dashboard/service-entry?edit=${encodeURIComponent(billId)}&resume=${encodeURIComponent(billId)}`);
+      router.push(
+        `/dashboard/service-entry?edit=${encodeURIComponent(billId)}`
+      );
     } catch (error) {
-      console.error('Failed to prepare service edit:', error);
+      console.error('Failed to prepare service edit', error);
       alert('Unable to open this bill for editing.');
     }
   };
+
 
   const handleExportExcel = () => {
     const rows = filteredServices.map((item) => ({
@@ -586,14 +619,6 @@ export default function BilledServicesPage() {
 
     return matchesSearch && matchesStart && matchesEnd;
   });
-
-  const selectedStaffHistory = selectedStaff !== 'ALL'
-    ? filteredServices.filter(
-        (item) =>
-          String(item.staffName || '').trim().toLowerCase() ===
-          String(selectedStaff || '').trim().toLowerCase()
-      )
-    : [];
 
   // Summary Calculations
   const totalRevenue = filteredServices.reduce((sum, s) => sum + s.totalAmount, 0);
@@ -696,27 +721,6 @@ export default function BilledServicesPage() {
         </div>
       </div>
 
-      {isAdmin && selectedStaff !== 'ALL' && (
-        <div className="bg-white border border-blue-100 rounded-2xl px-5 py-4 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500">STAFF BILL HISTORY</p>
-              <p className="text-lg font-black text-slate-800 mt-1">{selectedStaff}</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Showing {selectedStaffHistory.length} bill(s) for this staff member.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedStaff('ALL')}
-              className="text-xs font-bold text-blue-600 hover:bg-blue-50 border border-blue-100 rounded-lg px-3 py-2"
-            >
-              Back to All Staff
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* TABLE */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="hidden md:grid grid-cols-12 bg-slate-50/80 border-b border-slate-200 py-3 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
@@ -745,14 +749,7 @@ export default function BilledServicesPage() {
                       <p className="font-bold text-slate-800">{item.customerName}</p>
                       <p className="text-[11px] text-slate-400">📞 {item.customerPhone}</p>
                     </div>
-                    <div className="col-span-2 font-medium text-slate-700">
-                      {item.serviceName}
-                      {Array.isArray(item.items) && item.items.length > 1 && (
-                        <span className="ml-2 text-[10px] text-slate-400">
-                          ({item.items.length} services)
-                        </span>
-                      )}
-                    </div>
+                    <div className="col-span-2 font-medium text-slate-700">{item.quantity}x {item.serviceName}</div>
                     <div className="col-span-1">
                       <span
                         className="inline-flex max-w-full truncate rounded-full border border-blue-100 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700"
@@ -824,32 +821,9 @@ export default function BilledServicesPage() {
                       </div>
                       <div className="space-y-3">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SERVICE DESCRIPTION</p>
-                        <div className="bg-slate-100/70 rounded-lg p-3 text-slate-700 font-medium">
-                          {Array.isArray(item.items) && item.items.length > 0 ? (
-                            <div className="space-y-2">
-                              {item.items.map((row: any, serviceIndex: number) => (
-                                <div
-                                  key={`${String(row.id || serviceIndex)}`}
-                                  className="flex items-center justify-between gap-3 border-b border-slate-200 last:border-0 pb-2 last:pb-0"
-                                >
-                                  <span>
-                                    {Number(row.quantity ?? row.qty ?? 1) || 1}x {String(row.serviceName || row.service || row.name || 'Service')}
-                                  </span>
-                                  <span className="font-bold">
-                                    ₹{Number(row.totalAmount ?? row.total ?? 0).toFixed(2)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            `${item.quantity}x ${item.serviceName}`
-                          )}
-                        </div>
+                        <div className="bg-slate-100/70 rounded-lg p-3 text-slate-700 font-medium">{item.quantity}x {item.serviceName}</div>
                         <div className="flex items-center gap-6 text-slate-500 text-[11px] pt-1">
                           <span>Staff: <strong className="text-slate-700">{item.staffName}</strong></span>
-                          {isAdmin && selectedStaff !== 'ALL' && (
-                            <span>Staff History: <strong className="text-slate-700">{selectedStaffHistory.length} bill(s)</strong></span>
-                          )}
                         </div>
                       </div>
                     </div>

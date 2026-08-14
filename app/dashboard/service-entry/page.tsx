@@ -4,7 +4,6 @@ import html2canvas from "html2canvas";
 import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import QuickReceiptScan from "./components/QuickReceiptScan";
-import { supabase } from '@/lib/supabase';
 import { 
   Calendar, User, Phone, Search, Plus, Trash2, 
   ReceiptText, CreditCard, Calculator, Printer, Share2, QrCode, Lock, ShieldCheck, X, Palette
@@ -52,203 +51,11 @@ const DEFAULT_STAFF_MEMBERS: StaffUser[] = [
   { id: '5', name: 'SAHLA', pin: '1234', role: 'Staff' },
 ];
 
-const CENTRAL_STORAGE_ROW_ID = 999999;
-const CENTRAL_STORAGE_VERSION = 1;
-const CENTRAL_STORAGE_KEY = "__smart_akshaya_shared_storage__";
-
-const SHARED_STORAGE_KEYS = [
-  "managedServices",
-  "managedWallets",
-  "walletTransactions",
-  "managedCustomers",
-  "savedBillsList",
-  "serviceEntries",
-  "smart_akshaya_bills",
-  "performanceRecords",
-  "billedServicesData",
-] as const;
-
-type SharedStorageKey = (typeof SHARED_STORAGE_KEYS)[number];
-type SharedStorage = Partial<Record<SharedStorageKey, any[]>>;
-
-const safeParseArray = (key: SharedStorageKey): any[] => {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-const recordIdentity = (item: any, key: SharedStorageKey): string => {
-  const id = item?.id ?? item?.billId ?? item?.staffId;
-  if (id !== undefined && id !== null && String(id).trim() !== "") {
-    return `id:${String(id)}`;
-  }
-
-  if (key === "managedCustomers") {
-    return `customer:${String(item?.mobile ?? "").trim()}:${String(item?.name ?? "").trim().toLowerCase()}`;
-  }
-
-  if (key === "managedServices") {
-    return `service:${String(item?.name ?? "").trim().toLowerCase()}`;
-  }
-
-  return `value:${JSON.stringify(item)}`;
-};
-
-const mergeSharedArrays = (
-  remote: any[] = [],
-  local: any[] = [],
-  key: SharedStorageKey,
-): any[] => {
-  const merged = new Map<string, any>();
-
-  for (const item of remote) {
-    if (item && typeof item === "object") {
-      merged.set(recordIdentity(item, key), item);
-    }
-  }
-
-  const storedUser =
-    typeof window !== "undefined"
-      ? (() => {
-          try {
-            return JSON.parse(localStorage.getItem("loggedInUser") || "{}");
-          } catch {
-            return {};
-          }
-        })()
-      : {};
-  const isAdmin = String(storedUser?.role || "").toLowerCase() === "admin";
-
-  // Services are managed centrally. Admin changes can be migrated from the
-  // current browser, while staff browsers do not overwrite an existing
-  // central service definition with stale local data. New local services are
-  // still added. Other business records keep the existing local-write flow so
-  // bills/credits/wallet transactions created by the current user are retained.
-  const localWins = key !== "managedServices" || isAdmin;
-
-  for (const item of local) {
-    if (!item || typeof item !== "object") continue;
-    const identity = recordIdentity(item, key);
-    if (localWins || !merged.has(identity)) {
-      merged.set(identity, item);
-    }
-  }
-
-  return Array.from(merged.values());
-};
-
-const readLocalSharedStore = (): SharedStorage => {
-  const result: SharedStorage = {};
-  for (const key of SHARED_STORAGE_KEYS) {
-    result[key] = safeParseArray(key);
-  }
-  return result;
-};
-
-const writeLocalSharedStore = (store: SharedStorage) => {
-  if (typeof window === "undefined") return;
-
-  for (const key of SHARED_STORAGE_KEYS) {
-    const value = store[key];
-    if (Array.isArray(value)) {
-      // Do not replace a still-available service-management list with an
-      // empty snapshot while the central store is being initialized.
-      if (key === "managedServices" && value.length === 0) continue;
-      localStorage.setItem(key, JSON.stringify(value));
-    }
-  }
-};
-
-const loadCentralSharedStore = async (): Promise<SharedStorage | null> => {
-  try {
-    const { data, error } = await supabase
-      .from("feature_permissions")
-      .select("permissions")
-      .eq("id", CENTRAL_STORAGE_ROW_ID)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    const payload = data?.permissions;
-    if (!payload || payload.storageKey !== CENTRAL_STORAGE_KEY) {
-      return null;
-    }
-
-    const remoteStore = payload.data as SharedStorage | undefined;
-    if (!remoteStore || typeof remoteStore !== "object") return null;
-
-    return remoteStore;
-  } catch (error) {
-    console.error("Central shared storage read failed:", error);
-    return null;
-  }
-};
-
-const saveCentralSharedStore = async (store: SharedStorage): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from("feature_permissions")
-      .upsert(
-        {
-          id: CENTRAL_STORAGE_ROW_ID,
-          permissions: {
-            storageKey: CENTRAL_STORAGE_KEY,
-            version: CENTRAL_STORAGE_VERSION,
-            data: store,
-          },
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" },
-      );
-
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error("Central shared storage write failed:", error);
-    return false;
-  }
-};
-
-const syncCentralStorage = async (): Promise<SharedStorage> => {
-  const localStore = readLocalSharedStore();
-  const remoteStore = await loadCentralSharedStore();
-
-  const merged: SharedStorage = {};
-
-  for (const key of SHARED_STORAGE_KEYS) {
-    merged[key] = mergeSharedArrays(
-      Array.isArray(remoteStore?.[key]) ? remoteStore?.[key] : [],
-      Array.isArray(localStore[key]) ? localStore[key] : [],
-      key,
-    );
-  }
-
-  writeLocalSharedStore(merged);
-
-  // Always push the merged snapshot back. This both migrates existing
-  // localhost data after deployment and makes later staff/admin sessions share
-  // the same central data without changing the existing page structure.
-  await saveCentralSharedStore(merged);
-
-  return merged;
-};
-
-const pushCurrentLocalStorageToCentral = async () => {
-  const localStore = readLocalSharedStore();
-  await saveCentralSharedStore(localStore);
-};
-
 function ServiceEntryForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const resumeId = searchParams.get('resume') || searchParams.get('creditId');
+  const editId = searchParams.get('edit');
+  const resumeId = searchParams.get('resume') || searchParams.get('creditId') || editId;
 
   // Theme State
   const [currentTheme, setCurrentTheme] = useState<string>('slate');
@@ -298,7 +105,6 @@ function ServiceEntryForm() {
   const paymentQrBoxRef = useRef<HTMLDivElement>(null);
   const [billCompleted, setBillCompleted] = useState(false);
   const [customerPaidInput, setCustomerPaidInput] = useState<string>('');
-  const [centralStorageReady, setCentralStorageReady] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const customerDropdownRef = useRef<HTMLDivElement>(null);
@@ -337,38 +143,8 @@ function ServiceEntryForm() {
   };
 
   useEffect(() => {
-    let cancelled = false;
-
-    const initialiseSharedStorage = async () => {
-      // Keep the UI responsive with the current browser cache first.
-      loadWallets();
-      loadSavedCustomers();
-
-      const merged = await syncCentralStorage();
-      if (cancelled) return;
-
-      writeLocalSharedStore(merged);
-      loadWallets();
-      loadSavedCustomers();
-      loadManagedServices();
-      setCentralStorageReady(true);
-    };
-
-    void initialiseSharedStorage();
-
-    const handleFocus = () => {
-      void syncCentralStorage().then(() => {
-        if (!cancelled) {
-          loadWallets();
-          loadSavedCustomers();
-          loadManagedServices();
-        }
-      });
-    };
-
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('online', handleFocus);
-
+    loadWallets();
+    loadSavedCustomers();
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
@@ -379,12 +155,7 @@ function ServiceEntryForm() {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      cancelled = true;
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('online', handleFocus);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -399,6 +170,8 @@ function ServiceEntryForm() {
           console.error("Error parsing loggedInUser", e);
         }
       }
+
+      loadManagedServices();
 
       const savedStaff = localStorage.getItem('managedStaff');
       if (savedStaff) {
@@ -438,26 +211,51 @@ function ServiceEntryForm() {
     if (!resumeId || typeof window === 'undefined') return;
 
     try {
-      const savedBills = JSON.parse(localStorage.getItem('savedBillsList') || '[]');
-      const savedBill = Array.isArray(savedBills)
-        ? savedBills.find((bill: any) =>
-            String(bill.id || bill.billId || '') === String(resumeId)
-          )
-        : null;
+      let bill: any = null;
 
-      const creditBills = JSON.parse(localStorage.getItem('smart_akshaya_bills') || '[]');
-      const creditBill = !savedBill && Array.isArray(creditBills)
-        ? creditBills.find((bill: any) =>
-            String(bill.id || bill.billId || '') === String(resumeId)
-          )
-        : null;
+      // Billed Services -> Edit uses this payload. It contains the complete
+      // original bill, including every service item.
+      if (editId) {
+        const editRaw = localStorage.getItem('serviceEntryEditData');
+        if (editRaw) {
+          try {
+            const editData = JSON.parse(editRaw);
+            if (
+              String(editData?.billId || editData?.id || '') === String(resumeId) ||
+              String(editData?.id || '') === String(editId)
+            ) {
+              bill = editData;
+            }
+          } catch (error) {
+            console.error('Failed to parse serviceEntryEditData:', error);
+          }
+        }
+      }
 
-      const bill = savedBill || creditBill;
+      // Saved Bill / Credit resume remains fully compatible.
+      if (!bill) {
+        const savedBills = JSON.parse(localStorage.getItem('savedBillsList') || '[]');
+        const savedBill = Array.isArray(savedBills)
+          ? savedBills.find((candidate: any) =>
+              String(candidate.id || candidate.billId || '') === String(resumeId)
+            )
+          : null;
+
+        const creditBills = JSON.parse(localStorage.getItem('smart_akshaya_bills') || '[]');
+        const creditBill = !savedBill && Array.isArray(creditBills)
+          ? creditBills.find((candidate: any) =>
+              String(candidate.id || candidate.billId || '') === String(resumeId)
+            )
+          : null;
+
+        bill = savedBill || creditBill;
+      }
+
       if (!bill) return;
 
       setCustomerName(String(bill.customerName || bill.name || ''));
       setMobile(String(bill.mobile || bill.mobileNumber || bill.customerPhone || ''));
-      setGpay(Number(bill.gpay ?? bill.gpayAmount ?? 0));
+      setGpay(Number(bill.gpay ?? bill.gpayAmount ?? bill.totalPaid ?? 0));
       setCash(Number(bill.cash ?? bill.cashReceived ?? 0));
       setPreviousBalance(Number(bill.previousBalance ?? 0));
 
@@ -465,13 +263,20 @@ function ServiceEntryForm() {
         ? bill.items.map((item: any, index: number) => ({
             id: String(item.id || `RESUME-${Date.now()}-${index}`),
             name: String(item.name || item.serviceName || item.service || 'Service'),
-            wallet: String(item.wallet || 'Select Wallet'),
+            wallet: String(item.wallet || item.walletName || 'Select Wallet'),
             walletChg: Number(item.walletChg ?? item.deptChg ?? item.deptFee ?? 0),
-            srvChg: Number(item.srvChg ?? item.srvCharge ?? item.serviceCharge ?? 0),
+            srvChg: Number(
+              item.srvChg ??
+              item.srvCharge ??
+              item.serviceCharge ??
+              item.totalAmount ??
+              item.total ??
+              0
+            ),
             qty: Number(item.qty ?? item.quantity ?? 1) > 0
               ? Number(item.qty ?? item.quantity ?? 1)
               : 1,
-            status: String(item.status || 'In Progress') === 'Completed'
+            status: String(item.status || 'Completed').toLowerCase() === 'completed'
               ? 'Completed'
               : 'In Progress',
           }))
@@ -488,9 +293,9 @@ function ServiceEntryForm() {
 
       setTimeout(() => serviceInputRef.current?.focus(), 150);
     } catch (error) {
-      console.error('Failed to resume saved bill:', error);
+      console.error('Failed to resume/edit bill:', error);
     }
-  }, [resumeId, centralStorageReady]);
+  }, [resumeId, editId]);
 
   const registerNewServicesIfNeeded = () => {
     try {
@@ -520,7 +325,6 @@ function ServiceEntryForm() {
       if (updated) {
         localStorage.setItem('managedServices', JSON.stringify(managedList));
         loadManagedServices();
-        void pushCurrentLocalStorageToCentral();
       }
     } catch (e) {
       console.error("Error registering new services", e);
@@ -1004,7 +808,7 @@ function ServiceEntryForm() {
     loadWallets();
   };
 
-  const handleSaveBill = async () => {
+  const handleSaveBill = () => {
     if (hasCompletedItems) {
       alert("⚠️ 'Completed' സ്റ്റാറ്റസ് ഉള്ള ബില്ലുകൾ സേവ് ചെയ്യാൻ കഴിയില്ല. 'Complete Bill' ചെയ്യുക!");
       return;
@@ -1048,7 +852,6 @@ function ServiceEntryForm() {
 
     withoutCurrent.unshift(savedBill);
     localStorage.setItem('savedBillsList', JSON.stringify(withoutCurrent));
-    await pushCurrentLocalStorageToCentral();
 
     alert('Bill saved successfully to Saved Bills & Customer Directory!');
 
@@ -1073,7 +876,7 @@ function ServiceEntryForm() {
   };
 
 
-  const handleCompleteBill = async () => {
+  const handleCompleteBill = () => {
     if (hasInProgressItems) {
       alert("⚠️ 'In Progress' സ്റ്റാറ്റസ് ഉള്ളതിനാൽ കംപ്ലീറ്റ് ചെയ്യാനാകില്ല. സേവ് (Save) ചെയ്യുക!");
       return;
@@ -1118,6 +921,10 @@ function ServiceEntryForm() {
         customerPhone: mobile || '',
         serviceName: item.name,
         quantity: itemQty,
+        wallet: item.wallet,
+        walletName: item.wallet,
+        walletChg: Number(item.walletChg || 0),
+        srvChg: Number(item.srvChg || 0),
         totalAmount: Number(itemTotal.toFixed(2)),
         receivedAmount: Number(paidShare.toFixed(2)),
         cashReceived: Number(
@@ -1216,8 +1023,6 @@ function ServiceEntryForm() {
         console.error('Failed to remove completed Saved Bill:', error);
       }
     }
-
-    await pushCurrentLocalStorageToCentral();
 
     setLastCompletedBill({
       customerName,
