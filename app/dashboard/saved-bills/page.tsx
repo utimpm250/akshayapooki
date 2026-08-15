@@ -30,20 +30,41 @@ export default function SavedBillsPage() {
       const storedUser = localStorage.getItem('loggedInUser');
       const currentUser = storedUser ? JSON.parse(storedUser) : { username: 'Admin User', role: 'admin' };
 
-      const data = localStorage.getItem('savedBills');
+      // Service Entry saves drafts in savedBillsList.
+      // Keep savedBills as a legacy fallback so older data is still visible.
+      const data =
+        localStorage.getItem('savedBillsList') ||
+        localStorage.getItem('savedBills');
+
       if (data) {
         try {
           const parsed = JSON.parse(data);
           if (Array.isArray(parsed)) {
-            let billsList = parsed.map((item: any, index: number) => ({
-              id: item.id || `bill-${index}-${Date.now()}`,
-              customerName: item.customerName || item.name || 'Customer',
-              mobile: item.mobile || item.customerPhone || 'N/A',
-              date: item.date || item.dateTime || new Date().toLocaleDateString(),
-              staffName: item.staffName || item.staff || 'Admin User',
-              pendingCount: item.pendingCount || 'Pending',
-              amount: Number(item.amount || item.totalAmount || 0)
-            }));
+            let billsList = parsed.map((item: any, index: number) => {
+              const totalAmount = Number(
+                item.totalAmount ??
+                item.amount ??
+                item.total ??
+                0
+              ) || 0;
+
+              const balance = Number(
+                item.balance ??
+                item.pendingAmount ??
+                item.owedAmount ??
+                0
+              ) || 0;
+
+              return {
+                id: item.id || item.billId || `bill-${index}-${Date.now()}`,
+                customerName: item.customerName || item.name || 'Customer',
+                mobile: item.mobile || item.customerPhone || item.mobileNumber || 'N/A',
+                date: item.date || item.dateTime || item.createdAt || new Date().toLocaleDateString(),
+                staffName: item.staffName || item.staff || 'Admin User',
+                pendingCount: item.pendingCount || (balance > 0 ? 'Pending' : 'Ready to Complete'),
+                amount: totalAmount,
+              };
+            });
 
             // അഡ്മിൻ അല്ലെങ്കില്‍, സ്റ്റാഫിന്റെ പേര് വെച്ച് മാത്രം ഫിൽട്ടർ ചെയ്യുക
             if (currentUser.role.toLowerCase() !== 'admin') {
@@ -88,18 +109,18 @@ export default function SavedBillsPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-5 bg-gradient-to-br from-slate-50 via-white to-cyan-50/30 p-4 sm:p-5 lg:p-6">
+    <div className="p-8 space-y-6 max-w-7xl w-full mx-auto">
       
-      <div className="relative flex flex-col items-start justify-between gap-4 overflow-hidden rounded-[28px] border border-cyan-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-5 text-white shadow-[0_20px_55px_rgba(15,23,42,0.18)] sm:flex-row sm:items-center sm:p-6">
+      <div className="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 text-white rounded-2xl p-8 shadow-md flex justify-between items-center">
         <div>
-          <h3 className="text-2xl font-black tracking-tight sm:text-3xl">Saved Bills</h3>
-          <p className="mt-1.5 text-xs font-medium tracking-wide text-cyan-100/80">
+          <h3 className="text-3xl font-extrabold tracking-tight">Saved Bills</h3>
+          <p className="text-xs text-purple-100 font-medium tracking-wide mt-1.5 opacity-90">
             Bills waiting for final processing
           </p>
         </div>
         <button 
           onClick={handleRefresh}
-          className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-xs font-black backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-white/15 active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl font-semibold text-xs transition active:scale-95 cursor-pointer"
         >
           <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
           <span>Refresh</span>
@@ -108,18 +129,18 @@ export default function SavedBillsPage() {
 
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center pt-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-black tracking-tight text-slate-800">Pending Bills</span>
-          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-xs font-black text-cyan-700">
+          <span className="text-sm font-bold text-slate-700 tracking-tight">Pending Bills</span>
+          <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs font-black rounded-md">
             {filteredBills.length}
           </span>
         </div>
 
-        <div className="relative w-full sm:w-96">
+        <div className="relative w-full sm:w-80">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input 
             type="text"
             placeholder="Search customer, mobile..."
-            className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-xs font-semibold text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/10"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-violet-500 shadow-sm transition"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -131,44 +152,44 @@ export default function SavedBillsPage() {
           filteredBills.map((bill) => (
             <div 
               key={bill.id}
-              className="group flex flex-col justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-[0_8px_28px_rgba(15,23,42,0.05)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-[0_16px_38px_rgba(15,23,42,0.09)] md:flex-row md:items-center"
+              className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-violet-200 transition duration-200"
             >
               <div className="flex items-center gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-sm font-black uppercase text-white shadow-lg shadow-cyan-500/20">
+                <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-black text-sm uppercase shadow-inner shrink-0">
                   {bill.customerName.charAt(0)}
                 </div>
                 <div>
-                  <h4 className="text-base font-black capitalize tracking-tight text-slate-800">{bill.customerName}</h4>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold text-slate-400">
+                  <h4 className="font-bold text-slate-800 text-base capitalize tracking-tight">{bill.customerName}</h4>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs font-semibold text-slate-400">
                     <span className="flex items-center gap-1">
-                      <Smartphone size={12} className="text-cyan-300" /> {bill.mobile}
+                      <Smartphone size={12} className="text-slate-300" /> {bill.mobile}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Calendar size={12} className="text-cyan-300" /> {bill.date}
+                      <Calendar size={12} className="text-slate-300" /> {bill.date}
                     </span>
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-wide text-slate-500">
+                    <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase tracking-wide">
                       {bill.staffName}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 md:justify-end md:border-t-0 md:pt-0">
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black text-amber-700">
+              <div className="flex items-center justify-between md:justify-end gap-4 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+                <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg border border-amber-100">
                   {bill.pendingCount}
                 </span>
 
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => router.push(`/dashboard/service-entry?resume=${bill.id}`)}
-                    className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-cyan-500/15 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-95"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition active:scale-95 cursor-pointer"
                   >
                     Complete Bill
                   </button>
 
-                  <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-2 pl-3 pr-1.5 text-slate-700">
-                    <span className="text-xs font-black text-slate-700">₹{bill.amount.toLocaleString('en-IN')}.00</span>
-                    <button className="rounded-md p-0.5 text-slate-400 transition hover:bg-white hover:text-cyan-600">
+                  <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 py-1.5 pl-3 pr-1.5 rounded-xl text-slate-700">
+                    <span className="text-xs font-black">₹{bill.amount.toLocaleString('en-IN')}.00</span>
+                    <button className="p-0.5 text-slate-400 hover:text-slate-600 transition">
                       <ChevronDown size={14} />
                     </button>
                   </div>
@@ -177,9 +198,9 @@ export default function SavedBillsPage() {
             </div>
           ))
         ) : (
-          <div className="rounded-3xl border border-dashed border-slate-200 bg-white/80 p-12 text-center text-slate-400 shadow-sm">
-            <Clock size={32} className="mx-auto mb-2 text-cyan-300" />
-            <p className="text-xs font-semibold text-slate-500">No pending draft bills found.</p>
+          <div className="bg-white rounded-xl border border-dashed border-slate-200 p-12 text-center text-slate-400">
+            <Clock size={32} className="mx-auto mb-2 text-slate-300" />
+            <p className="text-xs font-semibold">No pending draft bills found.</p>
           </div>
         )}
       </div>

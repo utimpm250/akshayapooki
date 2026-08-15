@@ -18,11 +18,9 @@ const EXPENSE_CATEGORY_SUGGESTIONS = [
   "Rent",
   "Owner Expense",
   "Stationery",
-  "Travel",
-  "Fuel",
   "Internet Bill",
-  "Water Bill",
   "Maintenance",
+  "Staff Salary",
   "Office Expense",
 ];
 
@@ -64,7 +62,11 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [isMounted, setIsMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [filterMode, setFilterMode] = useState<"today" | "month" | "range">("today");
+  const [dateFrom, setDateFrom] = useState(getToday());
+  const [dateTo, setDateTo] = useState(getToday());
 
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -78,7 +80,9 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    setSelectedMonth(getCurrentMonth());
+    const currentDate = new Date();
+    setSelectedYear(String(currentDate.getFullYear()));
+    setSelectedMonth(String(currentDate.getMonth() + 1).padStart(2, "0"));
     const saved = localStorage.getItem("expensesData");
     if (saved) {
       try {
@@ -165,13 +169,29 @@ export default function ExpensesPage() {
       item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.date.includes(searchTerm);
 
-    const matchesMonth = selectedMonth ? item.date.startsWith(selectedMonth) : true;
+    let matchesDate = true;
 
-    return matchesSearch && matchesMonth;
+    if (filterMode === "today") {
+      matchesDate = item.date === getToday();
+    } else if (filterMode === "month") {
+      const selectedYearMonth = selectedYear && selectedMonth
+        ? `${selectedYear}-${selectedMonth}`
+        : "";
+      matchesDate = selectedYearMonth ? item.date.startsWith(selectedYearMonth) : true;
+    } else if (filterMode === "range") {
+      matchesDate =
+        (!dateFrom || item.date >= dateFrom) &&
+        (!dateTo || item.date <= dateTo);
+    }
+
+    return matchesSearch && matchesDate;
   });
 
-  // Calculate Total Amount
-  const totalExpensesAmount = filteredExpenses.reduce((sum, item) => sum + item.amount, 0);
+  // Calculate Total Amount for the currently selected date period.
+  const totalExpensesAmount = filteredExpenses.reduce(
+    (sum, item) => sum + item.amount,
+    0
+  );
 
   if (!isMounted) return null;
 
@@ -185,7 +205,22 @@ export default function ExpensesPage() {
       <div className="relative flex flex-col items-start justify-between gap-6 overflow-hidden rounded-[30px] border border-cyan-400/20 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-6 text-white shadow-[0_22px_55px_rgba(15,23,42,0.2)] md:flex-row md:items-center sm:p-8">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">
-            TOTAL EXPENSES ({selectedMonth ? new Date(selectedMonth + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase() : 'ALL TIME'})
+            {filterMode === "today"
+              ? `TODAY'S EXPENSES (${new Date(getToday()).toLocaleDateString("en-US", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                }).toUpperCase()})`
+              : filterMode === "month"
+              ? `TOTAL EXPENSES (${selectedYear && selectedMonth
+                  ? new Date(
+                      `${selectedYear}-${selectedMonth}-01`
+                    ).toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    }).toUpperCase()
+                  : "ALL TIME"})`
+              : `EXPENSES (${dateFrom || "START"} → ${dateTo || "END"})`}
           </p>
           <h2 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
             ₹{totalExpensesAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -215,16 +250,156 @@ export default function ExpensesPage() {
         </h3>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {/* Month Picker Input */}
-          <div className="relative flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-all hover:border-cyan-200 focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
-            <Calendar className="w-4 h-4 text-slate-400 mr-2 flex-shrink-0" />
-            <input
-              type="month"
-              className="cursor-pointer bg-transparent text-xs font-semibold text-slate-600 outline-none"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            />
+          {/* Date Filter */}
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
+            <button
+              type="button"
+              onClick={() => {
+                setFilterMode("today");
+                setDateFrom(getToday());
+                setDateTo(getToday());
+              }}
+              className={`rounded-xl px-3 py-2 text-[11px] font-black transition ${
+                filterMode === "today"
+                  ? "bg-cyan-600 text-white shadow-sm"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              Today
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterMode("month")}
+              className={`rounded-xl px-3 py-2 text-[11px] font-black transition ${
+                filterMode === "month"
+                  ? "bg-cyan-600 text-white shadow-sm"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              Month
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterMode("range")}
+              className={`rounded-xl px-3 py-2 text-[11px] font-black transition ${
+                filterMode === "range"
+                  ? "bg-cyan-600 text-white shadow-sm"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              Date Range
+            </button>
           </div>
+
+          {filterMode === "month" && (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Year selector - generated dynamically, so no yearly code update is needed */}
+              <div className="relative flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-all hover:border-cyan-200 focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
+                <Calendar className="mr-2 h-4 w-4 flex-shrink-0 text-slate-400" />
+                <select
+                  aria-label="Select year"
+                  className="cursor-pointer bg-transparent text-xs font-semibold text-slate-600 outline-none"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                >
+                  {Array.from(
+                    {
+                      length:
+                        new Date().getFullYear() -
+                        Math.min(
+                          2000,
+                          expenses.length
+                            ? Math.min(
+                                ...expenses.map((item) =>
+                                  Number(item.date.slice(0, 4))
+                                )
+                              )
+                            : new Date().getFullYear()
+                        ) +
+                        2,
+                    },
+                    (_, index) => {
+                      const startYear = Math.min(
+                        2000,
+                        expenses.length
+                          ? Math.min(
+                              ...expenses.map((item) =>
+                                Number(item.date.slice(0, 4))
+                              )
+                            )
+                          : new Date().getFullYear()
+                      );
+                      const year = startYear + index;
+
+                      return (
+                        <option key={year} value={String(year)}>
+                          {year}
+                        </option>
+                      );
+                    }
+                  )}
+                </select>
+              </div>
+
+              {/* Month selector - independent of the selected year */}
+              <div className="relative flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-all hover:border-cyan-200 focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-500/10">
+                <select
+                  aria-label="Select month"
+                  className="cursor-pointer bg-transparent text-xs font-semibold text-slate-600 outline-none"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                >
+                  {Array.from({ length: 12 }, (_, index) => {
+                    const monthNumber = String(index + 1).padStart(2, "0");
+                    const label = new Date(
+                      2000,
+                      index,
+                      1
+                    ).toLocaleDateString("en-US", {
+                      month: "long",
+                    });
+
+                    return (
+                      <option key={monthNumber} value={monthNumber}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {filterMode === "range" && (
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex items-center rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                <span className="mr-2 text-[10px] font-black uppercase text-slate-400">
+                  From
+                </span>
+                <input
+                  type="date"
+                  className="cursor-pointer bg-transparent text-xs font-semibold text-slate-600 outline-none"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+
+              <div className="relative flex items-center rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                <span className="mr-2 text-[10px] font-black uppercase text-slate-400">
+                  To
+                </span>
+                <input
+                  type="date"
+                  className="cursor-pointer bg-transparent text-xs font-semibold text-slate-600 outline-none"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Search Box */}
           <div className="relative flex-1 md:w-80">
