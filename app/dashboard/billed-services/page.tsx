@@ -21,6 +21,7 @@ const SHARED_STORAGE_KEYS = [
   "smart_akshaya_bills",
   "performanceRecords",
   "billedServicesData",
+  "deletedBillIds",
 ] as const;
 
 type SharedStorageKey = (typeof SHARED_STORAGE_KEYS)[number];
@@ -78,14 +79,59 @@ const loadCentralSharedStoreForBilledServices = async (): Promise<SharedStorage 
   }
 };
 
+const saveCentralSharedStoreForBilledServices = async (store: SharedStorage): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('feature_permissions')
+      .upsert({
+        id: CENTRAL_STORAGE_ROW_ID,
+        permissions: {
+          storageKey: CENTRAL_STORAGE_KEY,
+          version: CENTRAL_STORAGE_VERSION,
+          data: store,
+        },
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Billed Services central storage write failed:', error);
+    return false;
+  }
+};
+
 const refreshBilledServicesFromCentral = async () => {
   const remoteStore = await loadCentralSharedStoreForBilledServices();
   if (!remoteStore) return;
 
+  const remoteDeleted = Array.isArray(remoteStore.deletedBillIds) ? remoteStore.deletedBillIds.map(String) : [];
+  const localDeleted = readSharedArray('deletedBillIds').map(String);
+  const deletedIds = Array.from(new Set([...remoteDeleted, ...localDeleted]));
+
   for (const key of SHARED_STORAGE_KEYS) {
+    if (key === 'deletedBillIds') {
+      localStorage.setItem(key, JSON.stringify(deletedIds));
+      continue;
+    }
     const remote = Array.isArray(remoteStore[key]) ? remoteStore[key] : [];
     const local = readSharedArray(key);
-    localStorage.setItem(key, JSON.stringify(mergeSharedArraysForRead(remote, local, key)));
+    let merged = mergeSharedArraysForRead(remote, local, key);
+
+    if (key === 'serviceEntries') {
+      const localBillIds = new Set(local.map((item: any) => String(item?.billId || item?.billID || item?.invoiceId || '').trim()).filter(Boolean));
+      merged = [
+        ...remote.filter((item: any) => {
+          const billId = String(item?.billId || item?.billID || item?.invoiceId || '').trim();
+          return !billId || !localBillIds.has(billId);
+        }),
+        ...local,
+      ];
+    }
+
+    if (deletedIds.length) {
+      merged = merged.filter((item: any) => !deletedIds.includes(String(item?.billId || item?.billID || item?.invoiceId || item?.id || '')));
+    }
+    localStorage.setItem(key, JSON.stringify(merged));
   }
 };
 
@@ -490,7 +536,7 @@ export default function BilledServicesPage() {
     return Date.now() - createdAt <= 5 * 60 * 1000;
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const item = services.find((service) => service.id === id);
     if (!item) return;
 
@@ -515,6 +561,28 @@ export default function BilledServicesPage() {
 
       localStorage.setItem('serviceEntries', JSON.stringify(updatedEntries));
       localStorage.setItem('billedServicesData', JSON.stringify(updatedEntries));
+
+      const deletedIds = Array.from(new Set([
+        ...readSharedArray('deletedBillIds').map(String),
+        billKey,
+      ]));
+      localStorage.setItem('deletedBillIds', JSON.stringify(deletedIds));
+
+      // Persist the deletion marker together with the latest shared snapshot.
+      // The marker prevents another PC's stale local cache from resurrecting
+      // this bill after refresh.
+      const remoteStore = await loadCentralSharedStoreForBilledServices();
+      const central: SharedStorage = remoteStore ? { ...remoteStore } : {};
+      central.deletedBillIds = deletedIds;
+      for (const key of SHARED_STORAGE_KEYS) {
+        if (key === 'deletedBillIds') continue;
+        const current = JSON.parse(localStorage.getItem(key) || '[]');
+        central[key] = Array.isArray(current)
+          ? current.filter((entry: any) => String(entry?.billId || entry?.billID || entry?.invoiceId || entry?.id || '') !== billKey)
+          : [];
+      }
+      await saveCentralSharedStoreForBilledServices(central);
+
       setServices((current) => current.filter((service) => service.id !== id));
     } catch (error) {
       console.error('Failed to delete billed bill:', error);

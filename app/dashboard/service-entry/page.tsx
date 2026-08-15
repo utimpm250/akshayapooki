@@ -480,14 +480,25 @@ function ServiceEntryForm() {
         let editData = editMatches ? storedEditData : null;
         let sourceItems = editData && Array.isArray(editData.items) ? editData.items : [];
 
-        if (sourceItems.length === 0) {
+        // In edit mode, the hand-off payload is authoritative. Only fall back
+        // to serviceEntries when that payload is unavailable.
+        if (editId && sourceItems.length === 0) {
           try {
             const billedEntries = JSON.parse(localStorage.getItem('serviceEntries') || '[]');
-            const billEntries = Array.isArray(billedEntries)
+            const matchingEntries = Array.isArray(billedEntries)
               ? billedEntries.filter((entry: any) =>
-                  String(entry.billId || entry.billID || entry.invoiceId || '') === String(editId)
+                  String(entry.billId || entry.billID || entry.invoiceId || '').trim() === String(editId).trim()
                 )
               : [];
+
+            const billEntries = Array.from(
+              new Map(
+                matchingEntries.map((entry: any, index: number) => [
+                  String(entry.id || `${entry.serviceName || entry.service || 'Service'}-${index}`),
+                  entry,
+                ])
+              ).values()
+            );
 
             if (billEntries.length > 0) {
               const first = billEntries[0];
