@@ -1185,7 +1185,9 @@ function ServiceEntryForm() {
     localStorage.setItem('savedBillsList', JSON.stringify(withoutCurrent));
     await pushCurrentLocalStorageToCentral();
 
-    alert('Bill saved successfully to Saved Bills & Customer Directory!');
+    // Use the same green success notification style as Complete Bill.
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 3000);
 
     // Always return to a fresh Service Entry form after saving.
     setItems([]);
@@ -1500,7 +1502,7 @@ function ServiceEntryForm() {
     <>
       {showSuccessToast && (
         <div className="fixed right-5 top-5 z-[9999] rounded-2xl border border-emerald-400/20 bg-emerald-500 px-6 py-3 font-black text-white shadow-[0_15px_40px_rgba(16,185,129,0.25)]">
-          ✅ Bill Completed Successfully
+          ✅ Bill Saved Successfully
         </div>
       )}
       {showShareToast && (
