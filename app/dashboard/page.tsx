@@ -91,6 +91,8 @@ export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState("");
   const [todayDate, setTodayDate] = useState("");
   const [showUpdateBubble, setShowUpdateBubble] = useState(false);
+  const [pendingCreditBills, setPendingCreditBills] = useState<any[]>([]);
+  const [showAllPendingCredits, setShowAllPendingCredits] = useState(false);
 
   // Popup States for Tools
   const [showCashCounterModal, setShowCashCounterModal] = useState(false);
@@ -324,10 +326,48 @@ const loadDashboardData = () => {
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
+        const loggedInUsername = parsed.username || "Admin User";
         setCurrentUser({
-          username: parsed.username || "Admin User",
+          username: loggedInUsername,
           role: parsed.role || "staff",
         });
+
+        // Attendance popup: show only the pending credit bills belonging
+        // to the currently logged-in account.
+        try {
+          const savedCreditBills = JSON.parse(
+            localStorage.getItem("smart_akshaya_bills") || "[]"
+          );
+
+          if (Array.isArray(savedCreditBills)) {
+            const ownPendingCredits = savedCreditBills
+              .filter(
+                (bill: any) =>
+                  Number(bill?.owedAmount || 0) > 0 &&
+                  String(bill?.staffName || "").toLowerCase() ===
+                    String(loggedInUsername).toLowerCase()
+              )
+              .sort((a: any, b: any) => {
+                const aTime = new Date(
+                  a?.dateTime || a?.date || a?.createdAt || 0
+                ).getTime();
+                const bTime = new Date(
+                  b?.dateTime || b?.date || b?.createdAt || 0
+                ).getTime();
+
+                if (Number.isFinite(aTime) && Number.isFinite(bTime)) {
+                  return bTime - aTime;
+                }
+                return 0;
+              });
+
+            setPendingCreditBills(ownPendingCredits);
+          } else {
+            setPendingCreditBills([]);
+          }
+        } catch {
+          setPendingCreditBills([]);
+        }
 
         const logs = JSON.parse(localStorage.getItem("staff_attendance_logs") || "[]");
         const today = new Date().toISOString().split("T")[0];
@@ -499,7 +539,142 @@ const loadDashboardData = () => {
                 <p className="text-xs text-slate-500 uppercase">Current Time</p>
                 <p className="text-2xl font-bold text-blue-600">{currentTime}</p>
               </div>
+
+              {pendingCreditBills.length > 0 && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-left">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-wider text-red-500">
+                        Pending Credits
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-slate-800">
+                        {pendingCreditBills.length} customer{pendingCreditBills.length === 1 ? "" : "s"} • ₹
+                        {pendingCreditBills
+                          .reduce(
+                            (sum, bill) => sum + Number(bill?.owedAmount || 0),
+                            0
+                          )
+                          .toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                        pending
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-red-100 px-3 py-2 text-lg font-black text-red-600">
+                      ₹
+                    </div>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {pendingCreditBills.slice(0, 3).map((bill) => (
+                      <div
+                        key={String(bill?.id || bill?.billNumber || bill?.mobileNumber)}
+                        className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2.5 shadow-sm"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-slate-800">
+                            {bill?.customerName || "Customer"}
+                          </p>
+                          <p className="text-[11px] text-slate-400">
+                            {bill?.mobileNumber || bill?.customerPhone || ""}
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-sm font-black text-red-600">
+                          ₹{Number(bill?.owedAmount || 0).toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {pendingCreditBills.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllPendingCredits(true)}
+                      className="mt-3 w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-extrabold text-red-600 transition hover:bg-red-100"
+                    >
+                      View All Pending Credits ({pendingCreditBills.length - 3} more)
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {pendingCreditBills.length === 0 && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left">
+                  <p className="text-xs font-extrabold uppercase tracking-wider text-emerald-600">
+                    Pending Credits
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-emerald-700">
+                    No pending customer credit.
+                  </p>
+                </div>
+              )}
             </div>
+
+            {showAllPendingCredits && pendingCreditBills.length > 3 && (
+              <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+                <div className="w-full max-w-lg rounded-3xl bg-white p-5 text-left shadow-2xl">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-xl font-black text-slate-800">
+                        Pending Credits
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        {currentUser.username} • {pendingCreditBills.length} customers
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAllPendingCredits(false)}
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-500 hover:bg-slate-200"
+                      aria-label="Close pending credit list"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="mt-4 max-h-[55vh] space-y-2 overflow-y-auto pr-1">
+                    {pendingCreditBills.map((bill) => (
+                      <div
+                        key={String(bill?.id || bill?.billNumber || bill?.mobileNumber)}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-red-100 bg-red-50/60 px-4 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-slate-800">
+                            {bill?.customerName || "Customer"}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {bill?.mobileNumber || bill?.customerPhone || ""}
+                          </p>
+                          {bill?.dateTime || bill?.date ? (
+                            <p className="mt-0.5 text-[10px] text-slate-400">
+                              {bill?.dateTime || bill?.date}
+                            </p>
+                          ) : null}
+                        </div>
+                        <p className="shrink-0 text-sm font-black text-red-600">
+                          ₹{Number(bill?.owedAmount || 0).toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAllPendingCredits(false)}
+                    className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
 
             {attendanceSaved ? (
               <div className="mt-8 flex flex-col items-center">
