@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import QuickReceiptScan from "./components/QuickReceiptScan";
+import { supabase } from '@/lib/supabase';
 import { 
   Calendar, User, Phone, Search, Plus, Trash2, 
   ReceiptText, CreditCard, Calculator, Printer, Share2, QrCode, Lock, ShieldCheck, X, Palette
@@ -51,11 +52,220 @@ const DEFAULT_STAFF_MEMBERS: StaffUser[] = [
   { id: '5', name: 'SAHLA', pin: '1234', role: 'Staff' },
 ];
 
+const CENTRAL_STORAGE_ROW_ID = 999999;
+const CENTRAL_STORAGE_VERSION = 1;
+const CENTRAL_STORAGE_KEY = "__smart_akshaya_shared_storage__";
+
+const SHARED_STORAGE_KEYS = [
+  "managedServices",
+  "managedWallets",
+  "walletTransactions",
+  "managedCustomers",
+  "savedBillsList",
+  "serviceEntries",
+  "smart_akshaya_bills",
+  "performanceRecords",
+  "billedServicesData",
+] as const;
+
+type SharedStorageKey = (typeof SHARED_STORAGE_KEYS)[number];
+type SharedStorage = Partial<Record<SharedStorageKey, any[]>>;
+
+const safeParseArray = (key: SharedStorageKey): any[] => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const recordIdentity = (item: any, key: SharedStorageKey): string => {
+  const id = item?.id ?? item?.billId ?? item?.staffId;
+  if (id !== undefined && id !== null && String(id).trim() !== "") {
+    return `id:${String(id)}`;
+  }
+
+  if (key === "managedCustomers") {
+    return `customer:${String(item?.mobile ?? "").trim()}:${String(item?.name ?? "").trim().toLowerCase()}`;
+  }
+
+  if (key === "managedServices") {
+    return `service:${String(item?.name ?? "").trim().toLowerCase()}`;
+  }
+
+  return `value:${JSON.stringify(item)}`;
+};
+
+const mergeSharedArrays = (
+  remote: any[] = [],
+  local: any[] = [],
+  key: SharedStorageKey,
+): any[] => {
+  const merged = new Map<string, any>();
+
+  for (const item of remote) {
+    if (item && typeof item === "object") {
+      merged.set(recordIdentity(item, key), item);
+    }
+  }
+
+  const storedUser =
+    typeof window !== "undefined"
+      ? (() => {
+          try {
+            return JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+          } catch {
+            return {};
+          }
+        })()
+      : {};
+  const isAdmin = String(storedUser?.role || "").toLowerCase() === "admin";
+
+  // Services are managed centrally. Admin changes can be migrated from the
+  // current browser, while staff browsers do not overwrite an existing
+  // central service definition with stale local data. New local services are
+  // still added. Other business records keep the existing local-write flow so
+  // bills/credits/wallet transactions created by the current user are retained.
+  const localWins = key !== "managedServices" || isAdmin;
+
+  for (const item of local) {
+    if (!item || typeof item !== "object") continue;
+    const identity = recordIdentity(item, key);
+    if (localWins || !merged.has(identity)) {
+      merged.set(identity, item);
+    }
+  }
+
+  return Array.from(merged.values());
+};
+
+const readLocalSharedStore = (): SharedStorage => {
+  const result: SharedStorage = {};
+  for (const key of SHARED_STORAGE_KEYS) {
+    result[key] = safeParseArray(key);
+  }
+  return result;
+};
+
+const writeLocalSharedStore = (store: SharedStorage) => {
+  if (typeof window === "undefined") return;
+
+  for (const key of SHARED_STORAGE_KEYS) {
+    const value = store[key];
+    if (Array.isArray(value)) {
+      // Do not replace a still-available service-management list with an
+      // empty snapshot while the central store is being initialized.
+      if (key === "managedServices" && value.length === 0) continue;
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+  }
+};
+
+const loadCentralSharedStore = async (): Promise<SharedStorage | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("feature_permissions")
+      .select("permissions")
+      .eq("id", CENTRAL_STORAGE_ROW_ID)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const payload = data?.permissions;
+    if (!payload || payload.storageKey !== CENTRAL_STORAGE_KEY) {
+      return null;
+    }
+
+    const remoteStore = payload.data as SharedStorage | undefined;
+    if (!remoteStore || typeof remoteStore !== "object") return null;
+
+    return remoteStore;
+  } catch (error) {
+    console.error("Central shared storage read failed:", error);
+    return null;
+  }
+};
+
+const saveCentralSharedStore = async (store: SharedStorage): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from("feature_permissions")
+      .upsert(
+        {
+          id: CENTRAL_STORAGE_ROW_ID,
+          permissions: {
+            storageKey: CENTRAL_STORAGE_KEY,
+            version: CENTRAL_STORAGE_VERSION,
+            data: store,
+          },
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" },
+      );
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Central shared storage write failed:", error);
+    return false;
+  }
+};
+
+const syncCentralStorage = async (): Promise<SharedStorage> => {
+  const localStore = readLocalSharedStore();
+  const remoteStore = await loadCentralSharedStore();
+
+  const merged: SharedStorage = {};
+
+  for (const key of SHARED_STORAGE_KEYS) {
+    merged[key] = mergeSharedArrays(
+      Array.isArray(remoteStore?.[key]) ? remoteStore?.[key] : [],
+      Array.isArray(localStore[key]) ? localStore[key] : [],
+      key,
+    );
+  }
+
+  writeLocalSharedStore(merged);
+
+  // Always push the merged snapshot back. This both migrates existing
+  // localhost data after deployment and makes later staff/admin sessions share
+  // the same central data without changing the existing page structure.
+  await saveCentralSharedStore(merged);
+
+  return merged;
+};
+
+const pushCurrentLocalStorageToCentral = async () => {
+  // Never push a browser's stale snapshot directly over the central store.
+  // First merge the current browser data with the latest central snapshot so
+  // records created on another PC are retained.
+  const localStore = readLocalSharedStore();
+  const remoteStore = await loadCentralSharedStore();
+  const merged: SharedStorage = {};
+
+  for (const key of SHARED_STORAGE_KEYS) {
+    merged[key] = mergeSharedArrays(
+      Array.isArray(remoteStore?.[key]) ? remoteStore[key] : [],
+      Array.isArray(localStore[key]) ? localStore[key] : [],
+      key,
+    );
+  }
+
+  writeLocalSharedStore(merged);
+  await saveCentralSharedStore(merged);
+};
+
 function ServiceEntryForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const resumeId = searchParams.get('resume') || searchParams.get('creditId');
   const editId = searchParams.get('edit');
-  const resumeId = searchParams.get('resume') || searchParams.get('creditId') || editId;
+  const editDataRef = useRef<any>(null);
 
   // Theme State
   const [currentTheme, setCurrentTheme] = useState<string>('slate');
@@ -105,6 +315,7 @@ function ServiceEntryForm() {
   const paymentQrBoxRef = useRef<HTMLDivElement>(null);
   const [billCompleted, setBillCompleted] = useState(false);
   const [customerPaidInput, setCustomerPaidInput] = useState<string>('');
+  const [centralStorageReady, setCentralStorageReady] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const customerDropdownRef = useRef<HTMLDivElement>(null);
@@ -143,8 +354,38 @@ function ServiceEntryForm() {
   };
 
   useEffect(() => {
-    loadWallets();
-    loadSavedCustomers();
+    let cancelled = false;
+
+    const initialiseSharedStorage = async () => {
+      // Keep the UI responsive with the current browser cache first.
+      loadWallets();
+      loadSavedCustomers();
+
+      const merged = await syncCentralStorage();
+      if (cancelled) return;
+
+      writeLocalSharedStore(merged);
+      loadWallets();
+      loadSavedCustomers();
+      loadManagedServices();
+      setCentralStorageReady(true);
+    };
+
+    void initialiseSharedStorage();
+
+    const handleFocus = () => {
+      void syncCentralStorage().then(() => {
+        if (!cancelled) {
+          loadWallets();
+          loadSavedCustomers();
+          loadManagedServices();
+        }
+      });
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
@@ -155,7 +396,12 @@ function ServiceEntryForm() {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+    };
   }, []);
 
   useEffect(() => {
@@ -170,8 +416,6 @@ function ServiceEntryForm() {
           console.error("Error parsing loggedInUser", e);
         }
       }
-
-      loadManagedServices();
 
       const savedStaff = localStorage.getItem('managedStaff');
       if (savedStaff) {
@@ -205,84 +449,160 @@ function ServiceEntryForm() {
   };
 
 
-  // Resume a previously saved draft bill with the exact saved customer,
-  // service items, quantities and payment values.
+  // Restore an existing draft/credit or a recently billed service opened for editing.
   useEffect(() => {
-    if (!resumeId || typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
+
+    const restoreItems = (sourceItems: any[]) => sourceItems.map((item: any, index: number) => ({
+      id: String(item.id || `RESUME-${Date.now()}-${index}`),
+      name: String(item.name || item.serviceName || item.service || 'Service'),
+      wallet: String(item.wallet || item.defaultWallet || 'Select Wallet'),
+      walletChg: Number(item.walletChg ?? item.deptChg ?? item.deptFee ?? 0),
+      srvChg: Number(item.srvChg ?? item.srvCharge ?? item.serviceCharge ?? 0),
+      qty: Number(item.qty ?? item.quantity ?? 1) > 0
+        ? Number(item.qty ?? item.quantity ?? 1)
+        : 1,
+      status: String(item.status || 'In Progress') === 'Completed'
+        ? 'Completed'
+        : 'In Progress',
+    }));
 
     try {
-      let bill: any = null;
-
-      // Billed Services -> Edit uses this payload. It contains the complete
-      // original bill, including every service item.
       if (editId) {
-        const editRaw = localStorage.getItem('serviceEntryEditData');
-        if (editRaw) {
+        const rawEdit = localStorage.getItem('serviceEntryEditData');
+        const storedEditData = rawEdit ? JSON.parse(rawEdit) : null;
+        const editMatches = storedEditData &&
+          String(storedEditData.id || storedEditData.billId || '') === String(editId);
+
+        // The edit payload is a convenience cache only. The real source of
+        // truth is serviceEntries, so an edit can never open as a blank form
+        // just because the temporary localStorage payload is missing/stale.
+        let editData = editMatches ? storedEditData : null;
+        let sourceItems = editData && Array.isArray(editData.items) ? editData.items : [];
+
+        if (sourceItems.length === 0) {
           try {
-            const editData = JSON.parse(editRaw);
-            if (
-              String(editData?.billId || editData?.id || '') === String(resumeId) ||
-              String(editData?.id || '') === String(editId)
-            ) {
-              bill = editData;
+            const billedEntries = JSON.parse(localStorage.getItem('serviceEntries') || '[]');
+            const billEntries = Array.isArray(billedEntries)
+              ? billedEntries.filter((entry: any) =>
+                  String(entry.billId || entry.billID || entry.invoiceId || '') === String(editId)
+                )
+              : [];
+
+            if (billEntries.length > 0) {
+              const first = billEntries[0];
+              const totalPaid = billEntries.reduce((sum: number, entry: any) =>
+                sum + Number(entry.receivedAmount ?? entry.received ?? 0), 0);
+              const cashPaid = billEntries.reduce((sum: number, entry: any) =>
+                sum + Number(entry.cashReceived ?? 0), 0);
+              const gpayPaid = billEntries.reduce((sum: number, entry: any) =>
+                sum + Number(entry.gpayAmount ?? entry.gpay ?? 0), 0);
+              const pending = billEntries.reduce((sum: number, entry: any) =>
+                sum + Number(entry.pendingAmount ?? entry.balance ?? 0), 0);
+
+              editData = {
+                id: String(editId),
+                billId: String(editId),
+                customerName: first.customerName || first.name || 'Walk-in',
+                mobile: first.customerPhone || first.phone || first.mobile || '',
+                customerPhone: first.customerPhone || first.phone || first.mobile || '',
+                gpay: gpayPaid,
+                cash: cashPaid,
+                totalPaid,
+                previousBalance: 0,
+                dateTime: first.dateTime || first.date || '',
+                createdAt: first.createdAt || '',
+                staffName: first.staffName || first.staff || '',
+                status: first.status || 'completed',
+              };
+
+              // serviceEntries is written with unshift(), so reverse the bill
+              // records here to restore the same service order the user entered.
+              sourceItems = [...billEntries].reverse().map((entry: any) => ({
+                id: entry.id,
+                name: entry.serviceName || entry.service || 'Service',
+                wallet: entry.wallet || entry.defaultWallet || 'Select Wallet',
+                walletChg: entry.walletChg ?? entry.deptChg ?? entry.deptFee ?? 0,
+                srvChg: entry.srvChg ?? entry.srvCharge ?? entry.serviceCharge ?? 0,
+                qty: entry.quantity ?? entry.qty ?? 1,
+                status: 'Completed',
+              }));
             }
           } catch (error) {
-            console.error('Failed to parse serviceEntryEditData:', error);
+            console.error('Failed to restore billed service records for edit:', error);
           }
         }
+
+        if (!editData || sourceItems.length === 0) return;
+
+        editDataRef.current = editData;
+        setCustomerName(String(editData.customerName || editData.name || ''));
+        setMobile(String(editData.mobile || editData.mobileNumber || editData.customerPhone || ''));
+        setGpay(Number(editData.gpay ?? editData.gpayAmount ?? editData.gpayPaid ?? 0));
+        setCash(Number(editData.cash ?? editData.cashReceived ?? editData.cashPaid ?? 0));
+        setPreviousBalance(Number(editData.previousBalance ?? 0));
+
+        // Older billed records did not store the original charge fields.
+        // Recover them from the current managed-service definitions only when
+        // they are missing, while preserving any exact values already stored.
+        try {
+          const managed = JSON.parse(localStorage.getItem('managedServices') || '[]');
+          if (Array.isArray(managed)) {
+            sourceItems = sourceItems.map((item: any) => {
+              const found = managed.find((service: any) =>
+                String(service?.name || '').trim().toLowerCase() ===
+                String(item?.name || item?.serviceName || item?.service || '').trim().toLowerCase()
+              );
+              return {
+                ...item,
+                wallet: item.wallet || found?.defaultWallet,
+                walletChg: item.walletChg ?? item.deptChg ?? item.deptFee ?? found?.deptFee ?? 0,
+                srvChg: item.srvChg ?? item.srvCharge ?? item.serviceCharge ?? found?.srvCharge ?? 0,
+              };
+            });
+          }
+        } catch (error) {
+          console.error('Failed to restore managed service charges for edit:', error);
+        }
+
+        setItems(restoreItems(sourceItems));
+        setSearchService('');
+        setSelectedService(null);
+        setWallet('Select Wallet');
+        setWalletChg(0);
+        setSrvChg(0);
+        setQty(1);
+        setShowDropdown(false);
+        setBillCompleted(false);
+        setTimeout(() => serviceInputRef.current?.focus(), 150);
+        return;
       }
 
-      // Saved Bill / Credit resume remains fully compatible.
-      if (!bill) {
-        const savedBills = JSON.parse(localStorage.getItem('savedBillsList') || '[]');
-        const savedBill = Array.isArray(savedBills)
-          ? savedBills.find((candidate: any) =>
-              String(candidate.id || candidate.billId || '') === String(resumeId)
-            )
-          : null;
+      if (!resumeId) return;
 
-        const creditBills = JSON.parse(localStorage.getItem('smart_akshaya_bills') || '[]');
-        const creditBill = !savedBill && Array.isArray(creditBills)
-          ? creditBills.find((candidate: any) =>
-              String(candidate.id || candidate.billId || '') === String(resumeId)
-            )
-          : null;
+      const savedBills = JSON.parse(localStorage.getItem('savedBillsList') || '[]');
+      const savedBill = Array.isArray(savedBills)
+        ? savedBills.find((bill: any) =>
+            String(bill.id || bill.billId || '') === String(resumeId)
+          )
+        : null;
 
-        bill = savedBill || creditBill;
-      }
+      const creditBills = JSON.parse(localStorage.getItem('smart_akshaya_bills') || '[]');
+      const creditBill = !savedBill && Array.isArray(creditBills)
+        ? creditBills.find((bill: any) =>
+            String(bill.id || bill.billId || '') === String(resumeId)
+          )
+        : null;
 
+      const bill = savedBill || creditBill;
       if (!bill) return;
 
       setCustomerName(String(bill.customerName || bill.name || ''));
       setMobile(String(bill.mobile || bill.mobileNumber || bill.customerPhone || ''));
-      setGpay(Number(bill.gpay ?? bill.gpayAmount ?? bill.totalPaid ?? 0));
+      setGpay(Number(bill.gpay ?? bill.gpayAmount ?? 0));
       setCash(Number(bill.cash ?? bill.cashReceived ?? 0));
       setPreviousBalance(Number(bill.previousBalance ?? 0));
-
-      const restoredItems = Array.isArray(bill.items)
-        ? bill.items.map((item: any, index: number) => ({
-            id: String(item.id || `RESUME-${Date.now()}-${index}`),
-            name: String(item.name || item.serviceName || item.service || 'Service'),
-            wallet: String(item.wallet || item.walletName || 'Select Wallet'),
-            walletChg: Number(item.walletChg ?? item.deptChg ?? item.deptFee ?? 0),
-            srvChg: Number(
-              item.srvChg ??
-              item.srvCharge ??
-              item.serviceCharge ??
-              item.totalAmount ??
-              item.total ??
-              0
-            ),
-            qty: Number(item.qty ?? item.quantity ?? 1) > 0
-              ? Number(item.qty ?? item.quantity ?? 1)
-              : 1,
-            status: String(item.status || 'Completed').toLowerCase() === 'completed'
-              ? 'Completed'
-              : 'In Progress',
-          }))
-        : [];
-
-      setItems(restoredItems);
+      setItems(restoreItems(Array.isArray(bill.items) ? bill.items : []));
       setSearchService('');
       setSelectedService(null);
       setWallet('Select Wallet');
@@ -290,12 +610,11 @@ function ServiceEntryForm() {
       setSrvChg(0);
       setQty(1);
       setShowDropdown(false);
-
       setTimeout(() => serviceInputRef.current?.focus(), 150);
     } catch (error) {
-      console.error('Failed to resume/edit bill:', error);
+      console.error('Failed to restore service entry:', error);
     }
-  }, [resumeId, editId]);
+  }, [resumeId, editId, centralStorageReady]);
 
   const registerNewServicesIfNeeded = () => {
     try {
@@ -325,6 +644,7 @@ function ServiceEntryForm() {
       if (updated) {
         localStorage.setItem('managedServices', JSON.stringify(managedList));
         loadManagedServices();
+        void pushCurrentLocalStorageToCentral();
       }
     } catch (e) {
       console.error("Error registering new services", e);
@@ -808,7 +1128,7 @@ function ServiceEntryForm() {
     loadWallets();
   };
 
-  const handleSaveBill = () => {
+  const handleSaveBill = async () => {
     if (hasCompletedItems) {
       alert("⚠️ 'Completed' സ്റ്റാറ്റസ് ഉള്ള ബില്ലുകൾ സേവ് ചെയ്യാൻ കഴിയില്ല. 'Complete Bill' ചെയ്യുക!");
       return;
@@ -852,6 +1172,7 @@ function ServiceEntryForm() {
 
     withoutCurrent.unshift(savedBill);
     localStorage.setItem('savedBillsList', JSON.stringify(withoutCurrent));
+    await pushCurrentLocalStorageToCentral();
 
     alert('Bill saved successfully to Saved Bills & Customer Directory!');
 
@@ -876,7 +1197,7 @@ function ServiceEntryForm() {
   };
 
 
-  const handleCompleteBill = () => {
+  const handleCompleteBill = async () => {
     if (hasInProgressItems) {
       alert("⚠️ 'In Progress' സ്റ്റാറ്റസ് ഉള്ളതിനാൽ കംപ്ലീറ്റ് ചെയ്യാനാകില്ല. സേവ് (Save) ചെയ്യുക!");
       return;
@@ -889,12 +1210,22 @@ function ServiceEntryForm() {
     }
 
     registerNewServicesIfNeeded();
-    processWalletUpdates();
-    saveCustomerToDirectory();
+    if (!editId) {
+      processWalletUpdates();
+      saveCustomerToDirectory();
+    }
 
-    const billId = resumeId || ("BILL-" + Date.now());
-    const billDate = new Date().toLocaleDateString('en-GB');
-    const billTimestamp = new Date().toLocaleString();
+    const billId = editId || resumeId || ("BILL-" + Date.now());
+    const existingEditData = editDataRef.current;
+    const billDate = editId
+      ? String(existingEditData?.dateTime || new Date().toLocaleDateString('en-GB'))
+      : new Date().toLocaleDateString('en-GB');
+    const billTimestamp = editId
+      ? String(existingEditData?.dateTime || new Date().toLocaleString())
+      : new Date().toLocaleString();
+    const billCreatedAt = editId
+      ? String(existingEditData?.createdAt || new Date().toISOString())
+      : new Date().toISOString();
 
     // Create the real billed-service records only now.
     const serviceEntries = JSON.parse(localStorage.getItem('serviceEntries') || '[]');
@@ -916,15 +1247,15 @@ function ServiceEntryForm() {
       entriesWithoutThisBill.unshift({
         id: "SE-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
         billId,
+        createdAt: billCreatedAt,
         dateTime: billTimestamp,
         customerName: customerName || 'Walk-in',
         customerPhone: mobile || '',
         serviceName: item.name,
         quantity: itemQty,
         wallet: item.wallet,
-        walletName: item.wallet,
-        walletChg: Number(item.walletChg || 0),
-        srvChg: Number(item.srvChg || 0),
+        walletChg: Number(item.walletChg) || 0,
+        srvChg: Number(item.srvChg) || 0,
         totalAmount: Number(itemTotal.toFixed(2)),
         receivedAmount: Number(paidShare.toFixed(2)),
         cashReceived: Number(
@@ -941,7 +1272,7 @@ function ServiceEntryForm() {
 
     localStorage.setItem('serviceEntries', JSON.stringify(entriesWithoutThisBill));
 
-    if (isCredit) {
+    if (isCredit || editId) {
       const creditBills = JSON.parse(localStorage.getItem("smart_akshaya_bills") || "[]");
       const creditWithoutThisBill = Array.isArray(creditBills)
         ? creditBills.filter(
@@ -970,9 +1301,12 @@ function ServiceEntryForm() {
       );
     }
 
-    const existingRecords = JSON.parse(
+    const existingRecordsRaw = JSON.parse(
       localStorage.getItem("performanceRecords") || "[]"
     );
+    const existingRecords = Array.isArray(existingRecordsRaw)
+      ? existingRecordsRaw.filter((record: any) => String(record?.billId || '') !== String(billId))
+      : [];
 
     const departmentFee = items.reduce(
       (sum, item) => sum + Number(item.walletChg || 0) * Number(item.qty || 1),
@@ -1024,6 +1358,8 @@ function ServiceEntryForm() {
       }
     }
 
+    await pushCurrentLocalStorageToCentral();
+
     setLastCompletedBill({
       customerName,
       mobile,
@@ -1054,6 +1390,11 @@ function ServiceEntryForm() {
     setQty(1);
     setShowDropdown(false);
     setBillCompleted(true);
+
+    if (editId) {
+      localStorage.removeItem('serviceEntryEditData');
+      editDataRef.current = null;
+    }
 
     router.push('/dashboard/service-entry');
     setTimeout(() => serviceInputRef.current?.focus(), 150);
@@ -1429,7 +1770,7 @@ function ServiceEntryForm() {
         {/* Top Header with New Entry & Theme Selector Dropdown */}
         <div className="flex justify-between items-center">
           <div className="inline-block bg-white border border-slate-200 px-4 py-1.5 rounded-xl text-xs font-bold text-slate-700 shadow-sm">
-            New Entry {resumeId ? '(Settle / Resume Bill)' : ''}
+            New Entry {editId ? '(Edit Bill)' : resumeId ? '(Settle / Resume Bill)' : ''}
           </div>
 
           {/* Theme Selector Dropdown */}

@@ -2,10 +2,92 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import { 
   Search, Download, Briefcase, ChevronDown, ChevronUp, 
   Pencil, Trash2, Calendar, RefreshCw
 } from "lucide-react";
+
+const CENTRAL_STORAGE_ROW_ID = 999999;
+const CENTRAL_STORAGE_VERSION = 1;
+const CENTRAL_STORAGE_KEY = "__smart_akshaya_shared_storage__";
+const SHARED_STORAGE_KEYS = [
+  "managedServices",
+  "managedWallets",
+  "walletTransactions",
+  "managedCustomers",
+  "savedBillsList",
+  "serviceEntries",
+  "smart_akshaya_bills",
+  "performanceRecords",
+  "billedServicesData",
+] as const;
+
+type SharedStorageKey = (typeof SHARED_STORAGE_KEYS)[number];
+type SharedStorage = Partial<Record<SharedStorageKey, any[]>>;
+
+const readSharedArray = (key: SharedStorageKey): any[] => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const sharedIdentity = (item: any, key: SharedStorageKey) => {
+  const id = item?.id ?? item?.billId ?? item?.staffId;
+  if (id !== undefined && id !== null && String(id).trim()) return `id:${String(id)}`;
+  if (key === 'managedCustomers') {
+    return `customer:${String(item?.mobile ?? '').trim()}:${String(item?.name ?? '').trim().toLowerCase()}`;
+  }
+  if (key === 'managedServices') {
+    return `service:${String(item?.name ?? '').trim().toLowerCase()}`;
+  }
+  return `value:${JSON.stringify(item)}`;
+};
+
+const mergeSharedArraysForRead = (remote: any[] = [], local: any[] = [], key: SharedStorageKey) => {
+  const merged = new Map<string, any>();
+  remote.forEach((item) => {
+    if (item && typeof item === 'object') merged.set(sharedIdentity(item, key), item);
+  });
+  local.forEach((item) => {
+    if (item && typeof item === 'object') {
+      const identity = sharedIdentity(item, key);
+      if (!merged.has(identity)) merged.set(identity, item);
+    }
+  });
+  return Array.from(merged.values());
+};
+
+const loadCentralSharedStoreForBilledServices = async (): Promise<SharedStorage | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('feature_permissions')
+      .select('permissions')
+      .eq('id', CENTRAL_STORAGE_ROW_ID)
+      .maybeSingle();
+    if (error) throw error;
+    const payload = data?.permissions;
+    if (!payload || payload.storageKey !== CENTRAL_STORAGE_KEY) return null;
+    return payload.data && typeof payload.data === 'object' ? payload.data as SharedStorage : null;
+  } catch (error) {
+    console.error('Billed Services central storage read failed:', error);
+    return null;
+  }
+};
+
+const refreshBilledServicesFromCentral = async () => {
+  const remoteStore = await loadCentralSharedStoreForBilledServices();
+  if (!remoteStore) return;
+
+  for (const key of SHARED_STORAGE_KEYS) {
+    const remote = Array.isArray(remoteStore[key]) ? remoteStore[key] : [];
+    const local = readSharedArray(key);
+    localStorage.setItem(key, JSON.stringify(mergeSharedArraysForRead(remote, local, key)));
+  }
+};
 
 interface BilledServiceItem {
   id: string;
@@ -24,7 +106,25 @@ interface BilledServiceItem {
   originalData?: any[];
   billId?: string;
   serviceCount?: number;
+  createdAt?: string;
 }
+
+const parseStoredDate = (value: unknown): number => {
+  const raw = String(value ?? '').trim();
+  if (!raw) return NaN;
+  const direct = new Date(raw).getTime();
+  if (Number.isFinite(direct)) return direct;
+
+  const match = raw.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})(?:,?\s+)(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (!match) return NaN;
+  let hours = Number(match[4]);
+  const minutes = Number(match[5]);
+  const seconds = Number(match[6] || 0);
+  const meridiem = String(match[7] || '').toUpperCase();
+  if (meridiem === 'PM' && hours < 12) hours += 12;
+  if (meridiem === 'AM' && hours === 12) hours = 0;
+  return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]), hours, minutes, seconds).getTime();
+};
 
 export default function BilledServicesPage() {
   const router = useRouter();
@@ -39,10 +139,11 @@ export default function BilledServicesPage() {
   const [staffList, setStaffList] = useState<string[]>([]);
 
   // localStorage-ൽ നിന്ന് ലൈവ് ഡാറ്റ വായിക്കുന്നു
-  const loadBilledData = () => {
+  const loadBilledData = async () => {
     if (typeof window === 'undefined') return;
 
     try {
+      await refreshBilledServicesFromCentral();
       // serviceEntries is the source for actual billed/credit entries.
       // savedBillsList is used only to identify a bill that is still a draft.
       const serviceEntries = JSON.parse(localStorage.getItem('serviceEntries') || '[]');
@@ -114,18 +215,24 @@ export default function BilledServicesPage() {
       // One displayed row must represent one complete bill.
       // serviceEntries intentionally stores one record per service, so group
       // those records by billId for the Billed Services UI only.
-      const groupedBills = new Map<string, any[]>();
-      billedEntries.forEach((entry: any) => {
+      const groupedBills = new Map<string, { entries: any[]; firstIndex: number }>();
+      billedEntries.forEach((entry: any, entryIndex: number) => {
         const key = String(
           entry.billId || entry.billID || entry.invoiceId || entry.id || ''
         ).trim();
-        const existing = groupedBills.get(key) || [];
-        existing.push(entry);
-        groupedBills.set(key, existing);
+        const existing = groupedBills.get(key);
+        if (existing) {
+          existing.entries.push(entry);
+        } else {
+          // serviceEntries is stored newest-first (new bills use unshift).
+          // Keep that storage order instead of reparsing locale date strings.
+          groupedBills.set(key, { entries: [entry], firstIndex: entryIndex });
+        }
       });
 
       const formattedEntries = Array.from(groupedBills.entries()).map(
-        ([billKey, billItems], index) => {
+        ([billKey, group], index) => {
+          const billItems = group.entries;
           const firstItem = billItems[0] || {};
           const savedBill = savedBillsById.get(billKey);
 
@@ -174,6 +281,10 @@ export default function BilledServicesPage() {
               firstItem.dateTime ||
               firstItem.date ||
               new Date().toLocaleString(),
+            createdAt:
+              savedBill?.createdAt ||
+              firstItem.createdAt ||
+              '',
             customerName:
               savedBill?.customerName ||
               firstItem.customerName ||
@@ -207,6 +318,9 @@ export default function BilledServicesPage() {
         }
       );
 
+      // Do not sort by browser-parsed locale dates here. serviceEntries is
+      // intentionally stored newest-first, so grouping already gives the
+      // correct Billed Services order and avoids date-format reversals.
       setServices(formattedEntries);
     } catch (e) {
       console.error('Error loading billed services', e);
@@ -326,7 +440,7 @@ export default function BilledServicesPage() {
         : ['Admin User', 'FASNIL', 'SUMAYYA', 'SHEEJA', 'SAHLA'];
 
       setStaffList(finalStaffList);
-      loadBilledData();
+      await loadBilledData();
     };
 
     loadUserAndStaff();
@@ -340,10 +454,37 @@ export default function BilledServicesPage() {
     normalizedStaff === 'admin' ||
     normalizedStaff === 'admin user';
 
+  const parseBillDateTime = (value: unknown): number => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return NaN;
+
+    const native = new Date(raw).getTime();
+    if (Number.isFinite(native)) return native;
+
+    // Service Entry stores dateTime using the browser's locale string.
+    // In India this is commonly DD/MM/YYYY, which Date.parse() does not
+    // reliably understand across browsers.
+    const match = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?$/i);
+    if (!match) return NaN;
+
+    const [, day, month, year, hourText, minuteText, secondText = '0', meridiem] = match;
+    let hour = Number(hourText);
+    const minute = Number(minuteText);
+    const second = Number(secondText);
+    if (meridiem) {
+      const lower = meridiem.toLowerCase();
+      if (lower === 'pm' && hour < 12) hour += 12;
+      if (lower === 'am' && hour === 12) hour = 0;
+    }
+
+    const date = new Date(Number(year), Number(month) - 1, Number(day), hour, minute, second);
+    return Number.isNaN(date.getTime()) ? NaN : date.getTime();
+  };
+
   const canModifyService = (item: BilledServiceItem) => {
     if (isAdmin) return true;
 
-    const createdAt = new Date(item.dateTime).getTime();
+    const createdAt = parseStoredDate(item.createdAt) || parseBillDateTime(item.dateTime);
     if (!Number.isFinite(createdAt)) return false;
 
     return Date.now() - createdAt <= 5 * 60 * 1000;
@@ -404,11 +545,26 @@ export default function BilledServicesPage() {
           receivedAmount: item.receivedAmount,
           cashReceived: item.cashReceived,
           gpayAmount: item.gpayAmount,
+          totalPaid: item.receivedAmount,
+          cash: item.cashReceived,
+          gpay: item.gpayAmount,
+          previousBalance: 0,
           pendingAmount: item.pendingAmount,
           staffName: item.staffName,
           dateTime: item.dateTime,
           status: item.status,
-          items: Array.isArray(item.originalData) ? item.originalData : [],
+          createdAt: item.createdAt || new Date().toISOString(),
+          items: Array.isArray(item.originalData)
+            ? [...item.originalData].reverse().map((entry: any) => ({
+                id: entry.id,
+                name: entry.serviceName || entry.service || 'Service',
+                wallet: entry.wallet || entry.defaultWallet || 'Select Wallet',
+                walletChg: Number(entry.walletChg ?? entry.deptChg ?? entry.deptFee ?? 0),
+                srvChg: Number(entry.srvChg ?? entry.srvCharge ?? entry.serviceCharge ?? 0),
+                qty: Number(entry.quantity ?? entry.qty ?? 1) || 1,
+                status: 'Completed',
+              }))
+            : [],
           serviceName: item.serviceName,
           quantity: item.quantity,
         })
@@ -504,7 +660,7 @@ export default function BilledServicesPage() {
         String(entry.serviceName || entry.service || '').toLowerCase().includes(searchTerm.toLowerCase())
       ));
 
-    const serviceDate = new Date(s.dateTime).getTime();
+    const serviceDate = parseStoredDate(s.createdAt) || parseStoredDate(s.dateTime);
     const matchesStart =
       !startDate ||
       (Number.isFinite(serviceDate) &&
