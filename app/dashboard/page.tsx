@@ -339,14 +339,59 @@ const loadDashboardData = () => {
             localStorage.getItem("smart_akshaya_bills") || "[]"
           );
 
+          const normalizeStaffValue = (value: unknown) =>
+            String(value ?? "")
+              .trim()
+              .replace(/\\s+/g, " ")
+              .toLowerCase();
+
+          const loggedInUserValues = [
+            parsed.username,
+            parsed.name,
+            parsed.fullName,
+            parsed.displayName,
+            parsed.staffName,
+          ]
+            .map(normalizeStaffValue)
+            .filter(Boolean);
+
           if (Array.isArray(savedCreditBills)) {
             const ownPendingCredits = savedCreditBills
-              .filter(
-                (bill: any) =>
-                  Number(bill?.owedAmount || 0) > 0 &&
-                  String(bill?.staffName || "").toLowerCase() ===
-                    String(loggedInUsername).toLowerCase()
-              )
+              .filter((bill: any) => {
+                if (Number(bill?.owedAmount || 0) <= 0) return false;
+
+                // Different versions of the service-entry/staff data may
+                // store the same staff identity under slightly different
+                // field names. Compare all known identity fields without
+                // changing the existing credit data structure.
+                const billStaffValues = [
+                  bill?.staffName,
+                  bill?.staff,
+                  bill?.staffUsername,
+                  bill?.username,
+                  bill?.createdBy,
+                  bill?.employeeName,
+                ]
+                  .map((value) => {
+                    if (value && typeof value === "object") {
+                      return [
+                        value.username,
+                        value.name,
+                        value.fullName,
+                        value.displayName,
+                        value.staffName,
+                      ]
+                        .map(normalizeStaffValue)
+                        .filter(Boolean);
+                    }
+                    return [normalizeStaffValue(value)].filter(Boolean);
+                  })
+                  .flat();
+
+                return billStaffValues.some((billStaff) =>
+                  loggedInUserValues.includes(billStaff)
+                );
+              })
               .sort((a: any, b: any) => {
                 const aTime = new Date(
                   a?.dateTime || a?.date || a?.createdAt || 0
@@ -412,6 +457,8 @@ const loadDashboardData = () => {
       if (
         event.key === "managedWallets" ||
         event.key === "managedServices" ||
+        event.key === "smart_akshaya_bills" ||
+        event.key === "loggedInUser" ||
         event.key === null
       ) {
         refreshDashboardData();
