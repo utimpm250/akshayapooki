@@ -9,6 +9,14 @@ interface ExpenseItem {
   category: string;
   description: string;
   amount: number;
+  walletId?: string;
+  walletName?: string;
+}
+
+interface WalletItem {
+  id: string;
+  name: string;
+  currentBalance: number;
 }
 
 const EXPENSE_CATEGORY_SUGGESTIONS = [
@@ -77,12 +85,37 @@ export default function ExpensesPage() {
   const [formCategory, setFormCategory] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formAmount, setFormAmount] = useState("");
+  const [wallets, setWallets] = useState<WalletItem[]>([]);
+  const [formWalletId, setFormWalletId] = useState("");
+
+  const loadExpenseWallets = () => {
+    try {
+      const savedWallets = localStorage.getItem("managedWallets");
+      const parsed = savedWallets ? JSON.parse(savedWallets) : [];
+      const allowed = Array.isArray(parsed)
+        ? parsed.filter(
+            (wallet: WalletItem) =>
+              wallet &&
+              typeof wallet.name === "string" &&
+              ["cash", "bank"].includes(wallet.name.trim().toLowerCase())
+          )
+        : [];
+      setWallets(allowed);
+    } catch {
+      setWallets([]);
+    }
+  };
 
   useEffect(() => {
     setIsMounted(true);
     const currentDate = new Date();
     setSelectedYear(String(currentDate.getFullYear()));
     setSelectedMonth(String(currentDate.getMonth() + 1).padStart(2, "0"));
+    loadExpenseWallets();
+
+    const handleStorage = () => loadExpenseWallets();
+    window.addEventListener("storage", handleStorage);
+
     const saved = localStorage.getItem("expensesData");
     if (saved) {
       try {
@@ -94,6 +127,8 @@ export default function ExpensesPage() {
       setExpenses(DEFAULT_EXPENSES);
       localStorage.setItem("expensesData", JSON.stringify(DEFAULT_EXPENSES));
     }
+
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const saveExpensesToStorage = (data: ExpenseItem[]) => {
@@ -106,6 +141,7 @@ export default function ExpensesPage() {
     setFormCategory("");
     setFormDescription("");
     setFormAmount("");
+    setFormWalletId("");
     setEditingExpense(null);
     setShowAddModal(false);
   };
@@ -113,32 +149,131 @@ export default function ExpensesPage() {
   // Add / Edit Expense
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formCategory.trim() || !formAmount) return;
+    if (!formCategory.trim() || !formAmount || !formWalletId) return;
 
     const parsedAmount = parseFloat(formAmount) || 0;
+    if (parsedAmount <= 0) return;
 
-    if (editingExpense) {
-      const updated = expenses.map((item) =>
-        item.id === editingExpense.id
-          ? {
-              ...item,
-              date: formDate,
-              category: formCategory.trim(),
-              description: formDescription.trim() || "-",
-              amount: parsedAmount,
-            }
-          : item
+    try {
+      const storedWallets = JSON.parse(localStorage.getItem("managedWallets") || "[]");
+      const storedTransactions = JSON.parse(localStorage.getItem("walletTransactions") || "[]");
+      const walletList: WalletItem[] = Array.isArray(storedWallets) ? storedWallets : [];
+      const transactionList: any[] = Array.isArray(storedTransactions) ? storedTransactions : [];
+      const selectedWallet = walletList.find((wallet) => String(wallet.id) === String(formWalletId));
+
+      if (!selectedWallet) return;
+
+      if (editingExpense) {
+        const oldWallet = walletList.find(
+          (wallet) =>
+            String(wallet.id) === String(editingExpense.walletId) ||
+            (editingExpense.walletName &&
+              wallet.name.trim().toLowerCase() === editingExpense.walletName.trim().toLowerCase())
+        );
+
+        // Reverse the previous expense from its old wallet first.
+        if (oldWallet && editingExpense.walletId) {
+          oldWallet.currentBalance = Number(
+            (Number(oldWallet.currentBalance || 0) + Number(editingExpense.amount || 0)).toFixed(2)
+          );
+        }
+
+        selectedWallet.currentBalance = Number(
+          (Number(selectedWallet.currentBalance || 0) - parsedAmount).toFixed(2)
+        );
+
+        const updated = expenses.map((item) =>
+          item.id === editingExpense.id
+            ? {
+                ...item,
+                date: formDate,
+                category: formCategory.trim(),
+                description: formDescription.trim() || "-",
+                amount: parsedAmount,
+                walletId: selectedWallet.id,
+                walletName: selectedWallet.name,
+              }
+            : item
+        );
+
+        const remainingTransactions = transactionList.filter(
+          (tx: any) => String(tx.expenseId || "") !== String(editingExpense.id)
+        );
+
+        remainingTransactions.unshift({
+          id: "TX-EXP-" + Date.now(),
+          expenseId: editingExpense.id,
+          walletId: selectedWallet.id,
+          walletName: selectedWallet.name,
+          type: "OUT",
+          amount: parsedAmount,
+          balanceAfter: selectedWallet.currentBalance,
+          description: `Expense: ${formCategory.trim()}`,
+          date: formDate,
+          dateTime: new Date().toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          wallet: selectedWallet.name,
+        });
+
+        localStorage.setItem("managedWallets", JSON.stringify(walletList));
+        localStorage.setItem("walletTransactions", JSON.stringify(remainingTransactions));
+        saveExpensesToStorage(updated);
+      } else {
+        selectedWallet.currentBalance = Number(
+          (Number(selectedWallet.currentBalance || 0) - parsedAmount).toFixed(2)
+        );
+
+        const newExpenseId = "EXP-" + Date.now();
+        const newExpense: ExpenseItem = {
+          id: newExpenseId,
+          date: formDate,
+          category: formCategory.trim(),
+          description: formDescription.trim() || "-",
+          amount: parsedAmount,
+          walletId: selectedWallet.id,
+          walletName: selectedWallet.name,
+        };
+
+        transactionList.unshift({
+          id: "TX-EXP-" + Date.now(),
+          expenseId: newExpenseId,
+          walletId: selectedWallet.id,
+          walletName: selectedWallet.name,
+          type: "OUT",
+          amount: parsedAmount,
+          balanceAfter: selectedWallet.currentBalance,
+          description: `Expense: ${formCategory.trim()}`,
+          date: formDate,
+          dateTime: new Date().toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          wallet: selectedWallet.name,
+        });
+
+        localStorage.setItem("managedWallets", JSON.stringify(walletList));
+        localStorage.setItem("walletTransactions", JSON.stringify(transactionList));
+        saveExpensesToStorage([newExpense, ...expenses]);
+      }
+
+      setWallets(
+        walletList.filter((wallet) =>
+          ["cash", "bank"].includes(wallet.name.trim().toLowerCase())
+        )
       );
-      saveExpensesToStorage(updated);
-    } else {
-      const newExpense: ExpenseItem = {
-        id: "EXP-" + Date.now(),
-        date: formDate,
-        category: formCategory.trim(),
-        description: formDescription.trim() || "-",
-        amount: parsedAmount,
-      };
-      saveExpensesToStorage([newExpense, ...expenses]);
+    } catch (error) {
+      console.error("Error saving expense and updating wallet:", error);
+      return;
     }
 
     resetForm();
@@ -151,12 +286,57 @@ export default function ExpensesPage() {
     setFormCategory(item.category);
     setFormDescription(item.description === "-" ? "" : item.description);
     setFormAmount(item.amount.toString());
+    const matchingWallet = wallets.find(
+      (wallet) =>
+        String(wallet.id) === String(item.walletId) ||
+        (item.walletName &&
+          wallet.name.trim().toLowerCase() === item.walletName.trim().toLowerCase())
+    );
+    setFormWalletId(matchingWallet?.id || "");
     setShowAddModal(true);
   };
 
   // Delete action
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this expense entry?")) {
+      const item = expenses.find((expense) => expense.id === id);
+
+      try {
+        if (item?.walletId) {
+          const storedWallets = JSON.parse(localStorage.getItem("managedWallets") || "[]");
+          const storedTransactions = JSON.parse(localStorage.getItem("walletTransactions") || "[]");
+          const walletList: WalletItem[] = Array.isArray(storedWallets) ? storedWallets : [];
+          const transactionList: any[] = Array.isArray(storedTransactions) ? storedTransactions : [];
+
+          const wallet = walletList.find(
+            (entry) =>
+              String(entry.id) === String(item.walletId) ||
+              (item.walletName &&
+                entry.name.trim().toLowerCase() === item.walletName.trim().toLowerCase())
+          );
+
+          if (wallet) {
+            wallet.currentBalance = Number(
+              (Number(wallet.currentBalance || 0) + Number(item.amount || 0)).toFixed(2)
+            );
+          }
+
+          const remainingTransactions = transactionList.filter(
+            (tx: any) => String(tx.expenseId || "") !== String(id)
+          );
+
+          localStorage.setItem("managedWallets", JSON.stringify(walletList));
+          localStorage.setItem("walletTransactions", JSON.stringify(remainingTransactions));
+          setWallets(
+            walletList.filter((entry) =>
+              ["cash", "bank"].includes(entry.name.trim().toLowerCase())
+            )
+          );
+        }
+      } catch (error) {
+        console.error("Error restoring wallet balance after expense deletion:", error);
+      }
+
       const updated = expenses.filter((item) => item.id !== id);
       saveExpensesToStorage(updated);
     }
@@ -548,6 +728,26 @@ export default function ExpensesPage() {
                   value={formAmount}
                   onChange={(e) => setFormAmount(e.target.value)}
                 />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-600">Wallet *</label>
+                <select
+                  required
+                  value={formWalletId}
+                  onChange={(e) => setFormWalletId(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-xs font-semibold outline-none transition-all focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                >
+                  <option value="">— Select Wallet —</option>
+                  {wallets.map((wallet) => (
+                    <option key={wallet.id} value={wallet.id}>
+                      {wallet.name} (₹{Number(wallet.currentBalance || 0).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
